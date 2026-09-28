@@ -37,4 +37,6 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   'reroll-used': 'Hôm nay đã làm mới danh sách rồi, mai quay lại nhé.',
   'not-resigning': 'Người này không xin nghỉ.',
   'nothing-hidden': 'Ứng viên này không có gì cần tìm hiểu thêm.',
+  'unknown-station': 'Không có vị trí này.',
+  'station-full': 'Vị trí này đã đủ người.',
 };

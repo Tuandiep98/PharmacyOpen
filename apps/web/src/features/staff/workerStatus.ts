@@ -17,7 +17,8 @@ export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly
   if (!isOnDuty(state, worker)) return 'Ngoài ca, đang nghỉ';
   if (!isPresent(state, worker)) return 'Chưa tới ca, đang trên đường';
   if (state.counters[0]?.operatorId === worker.id) return state.counters[0]?.customerId ? 'Đang nghe khách' : 'Đang chờ khách ở quầy';
-  return worker.controller === 'ai' ? 'Rảnh, sẽ tự bổ sung hàng khi kệ vơi' : 'Đang nghỉ';
+  if (worker.controller !== 'ai') return 'Đang nghỉ';
+  return worker.station === 'stock' ? 'Ở kho, nhập hàng ngay khi kệ vơi' : 'Rảnh, sẽ tự bổ sung hàng khi kệ gần hết';
 }
 
 export function workerProgress(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): number | null {

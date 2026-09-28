@@ -62,6 +62,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     arrivesAtMs: 0,
     streak: 0,
     restDay: null,
+    station: 'support',
   };
 
   const prices = {} as Record<ProductId, number>;
@@ -174,6 +175,7 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     arrivesAtMs: 0,
     streak: 0,
     restDay: null,
+    station: 'support',
   };
 }
 

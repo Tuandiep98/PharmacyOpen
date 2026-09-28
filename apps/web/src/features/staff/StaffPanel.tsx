@@ -10,8 +10,13 @@ import {
   retainWage,
   SHIFT_IDS,
   shiftHeadcount,
+  stationHeadcount,
+  stationOf,
+  STATION_IDS,
+  STATIONS,
   TRAITS,
   type DeepReadonly,
+  type StationId,
   type Rarity,
   type Recruit,
   type ShiftId,
@@ -227,6 +232,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
 
       <CounterPolicy state={state} />
       <ShiftCoverage state={state} />
+      <StationSummary state={state} />
 
       <h3>
         Đội ngũ{' '}
@@ -283,10 +289,11 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
               </span>
             </div>
             {w.controller === 'ai' && <ShiftToggle state={state} worker={w} />}
+            {w.controller === 'ai' && <StationPicker state={state} worker={w} />}
             <div className="team-card-actions">
-              {operatorId !== w.id && isOnDuty(state, w) && (
+              {w.controller === 'player' && operatorId !== w.id && (
                 <GameButton size="small" onClick={() => assignCounter(w.id)}>
-                  Giao quầy
+                  Tự đứng quầy
                 </GameButton>
               )}
               {w.controller === 'ai' && (
@@ -356,6 +363,62 @@ function RestLine({ state, worker }: { state: DeepReadonly<SimState>; worker: De
         </GameButton>
       )}
     </span>
+  );
+}
+
+/** Số người ở từng vị trí (liệt kê theo danh mục STATIONS, thêm vị trí mới tự hiện ở đây). */
+function StationSummary({ state }: { state: DeepReadonly<SimState> }) {
+  return (
+    <div className="shift-coverage" aria-label="Số người ở mỗi vị trí">
+      {STATION_IDS.map((id) => {
+        const cap = id === 'counter' ? state.counters.length : STATIONS[id].capacity;
+        return (
+          <span key={id} className="coverage-chip station-chip" title={STATIONS[id].description}>
+            {STATIONS[id].name}:{' '}
+            <b>
+              {stationHeadcount(state, id)}
+              {cap === null ? '' : `/${cap}`}
+            </b>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Chọn vị trí làm việc cho một nhân viên. Nút "Quầy bán" cần người đó đang trong ca; vị trí đủ người thì khoá.
+ * Danh sách nút lấy từ STATIONS nên thêm vị trí mới không phải sửa giao diện.
+ */
+function StationPicker({ state, worker }: { state: DeepReadonly<SimState>; worker: DeepReadonly<Worker> }) {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
+  const current = stationOf(state, worker);
+  const assign = (station: StationId) => {
+    const r = bridge.dispatch({ type: 'assignStation', workerId: worker.id, station });
+    if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+  };
+  return (
+    <div className="shift-toggle station-picker" role="group" aria-label={`Vị trí của ${worker.name}`}>
+      <span className="small muted">Vị trí:</span>
+      {STATION_IDS.map((id) => {
+        const cap = id === 'counter' ? null : STATIONS[id].capacity;
+        const full = current !== id && cap !== null && stationHeadcount(state, id, worker.id) >= cap;
+        const unavailable = id === 'counter' && current !== 'counter' && !isOnDuty(state, worker);
+        return (
+          <button
+            key={id}
+            aria-pressed={current === id}
+            disabled={full || unavailable}
+            title={STATIONS[id].description}
+            onClick={() => assign(id)}
+          >
+            {STATIONS[id].name}
+            {full ? ' (đủ người)' : ''}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

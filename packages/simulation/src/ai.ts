@@ -6,7 +6,8 @@ import type { ProductId } from './content/types';
 import type { Emit } from './events';
 import { nextFloat, nextInt } from './rng';
 import { effectiveKnowledge, hasTrait } from './recruit';
-import { dayElapsed, isPresent } from './shift';
+import type { StationId } from './content/stations';
+import { dayElapsed, isPresent, stationOf } from './shift';
 import { PREP_TASK_IDS, type Order, type SimState, type Worker } from './types';
 
 /**
@@ -116,39 +117,22 @@ function decide(state: SimState, worker: Worker, order: Order, emit: Emit): void
 }
 
 type Candidate = { score: number; run: () => void };
+type Behavior = (state: SimState, worker: Worker, emit: Emit) => Candidate[];
+
+/**
+ * Việc mỗi vị trí có thể làm khi rảnh (chấm điểm, chọn việc điểm cao nhất).
+ * Thêm vị trí mới (content/stations.ts): thêm một hàm ở đây, mọi hành động vẫn đi qua Command.
+ */
+const STATION_BEHAVIOR: Record<StationId, Behavior> = {
+  // Đứng quầy: phục vụ khách là ưu tiên, rảnh thì bổ sung kệ gần hết như người hỗ trợ.
+  counter: (state, worker, emit) => [...serveOptions(state, worker, emit), ...restockOptions(state, worker, emit, 'shared')],
+  support: (state, worker, emit) => restockOptions(state, worker, emit, 'shared'),
+  // Kho: bổ sung kệ sớm và nhanh hơn, không phải chờ người khác nhập xong.
+  stock: (state, worker, emit) => restockOptions(state, worker, emit, 'dedicated'),
+};
 
 function chooseTask(state: SimState, worker: Worker, emit: Emit): void {
-  const options: Candidate[] = [];
-
-  for (const counter of state.counters) {
-    if (counter.operatorId !== worker.id || !counter.customerId) continue;
-    const customer = state.customers[counter.customerId];
-    if (!customer || customer.orderId) continue;
-    const urgency = 1 - customer.patienceMs / customer.patienceMaxMs;
-    options.push({
-      score: 1 + urgency,
-      run: () => applyCommand(state, { type: 'startService', workerId: worker.id, customerId: customer.id }, emit),
-    });
-  }
-
-  // Mỗi lúc chỉ một người đi bổ sung kệ, và giữ lại ít nhất đủ tiền 2 món để không cạn vốn.
-  const someoneRestocking = Object.values(state.workers).some((w) => w.task?.kind === 'restock');
-  if (!someoneRestocking) {
-    for (const id of PRODUCT_IDS) {
-      const entry = state.stock[id];
-      const ratio = entry.shelf / entry.capacity;
-      if (ratio > state.config.aiRestockThreshold || state.money < PRODUCTS[id].cost * 2) continue;
-      options.push({
-        score: 0.3 + (1 - ratio) * 0.6,
-        run: () => {
-          const hardworking = hasTrait(worker, 'hardworking') ? 0.7 : 1;
-          const total = Math.round((state.config.aiRestockMs * hardworking) / effectiveSpeed(worker, state.config.owedWageSpeedFactor));
-          worker.task = { kind: 'restock', productId: id, timerMs: total, timerTotalMs: total };
-          emit({ type: 'restockStarted', productId: id, workerId: worker.id });
-        },
-      });
-    }
-  }
+  const options = STATION_BEHAVIOR[stationOf(state, worker)](state, worker, emit);
 
   // "Siêu lười": có việc cần làm thì 25% lần lướt điện thoại vài giây trước đã.
   if (options.length > 0 && hasTrait(worker, 'lazy') && nextFloat(state.rng.ai) < 0.25) {
@@ -159,6 +143,52 @@ function chooseTask(state: SimState, worker: Worker, emit: Emit): void {
   let best: Candidate | undefined;
   for (const option of options) if (!best || option.score > best.score) best = option;
   best?.run();
+}
+
+function serveOptions(state: SimState, worker: Worker, emit: Emit): Candidate[] {
+  const options: Candidate[] = [];
+  for (const counter of state.counters) {
+    if (counter.operatorId !== worker.id || !counter.customerId) continue;
+    const customer = state.customers[counter.customerId];
+    if (!customer || customer.orderId) continue;
+    const urgency = 1 - customer.patienceMs / customer.patienceMaxMs;
+    options.push({
+      score: 1 + urgency,
+      run: () => applyCommand(state, { type: 'startService', workerId: worker.id, customerId: customer.id }, emit),
+    });
+  }
+  return options;
+}
+
+/**
+ * Bổ sung kệ. 'shared': chỉ khi kệ gần hết và mỗi lúc chỉ một người (ngoài kho) đi nhập.
+ * 'dedicated' (người ở kho): nhập từ sớm, nhanh hơn, chỉ tránh món người khác đang nhập.
+ * Luôn giữ lại ít nhất đủ tiền 2 món để không cạn vốn.
+ */
+function restockOptions(state: SimState, worker: Worker, emit: Emit, mode: 'shared' | 'dedicated'): Candidate[] {
+  const workers = Object.values(state.workers);
+  if (mode === 'shared' && workers.some((w) => w.task?.kind === 'restock' && stationOf(state, w) !== 'stock')) return [];
+  const busy = new Set(workers.map((w) => (w.task?.kind === 'restock' ? w.task.productId : null)));
+  const threshold = mode === 'dedicated' ? state.config.stockStationThreshold : state.config.aiRestockThreshold;
+  const options: Candidate[] = [];
+  for (const id of PRODUCT_IDS) {
+    const entry = state.stock[id];
+    const ratio = entry.shelf / entry.capacity;
+    if (ratio > threshold || busy.has(id) || state.money < PRODUCTS[id].cost * 2) continue;
+    options.push({
+      score: (mode === 'dedicated' ? 0.5 : 0.3) + (1 - ratio) * 0.6,
+      run: () => {
+        const hardworking = hasTrait(worker, 'hardworking') ? 0.7 : 1;
+        const dedicated = mode === 'dedicated' ? state.config.stockStationTimeFactor : 1;
+        const total = Math.round(
+          (state.config.aiRestockMs * hardworking * dedicated) / effectiveSpeed(worker, state.config.owedWageSpeedFactor),
+        );
+        worker.task = { kind: 'restock', productId: id, timerMs: total, timerTotalMs: total };
+        emit({ type: 'restockStarted', productId: id, workerId: worker.id });
+      },
+    });
+  }
+  return options;
 }
 
 const SLACK_MS = 3000;

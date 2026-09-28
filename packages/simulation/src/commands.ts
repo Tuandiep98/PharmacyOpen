@@ -10,7 +10,8 @@ import type { Emit } from './events';
 import { dismissCustomer, newId, PLAYER_WORKER_ID, workerFromCandidate } from './state';
 import { gainExperience, hasTrait, refreshRecruits, retainWage } from './recruit';
 import { nextFloat, nextInt } from './rng';
-import { checkIn, currentShift, handOverCounters, isOnDuty, isPresent, markPrepDone, openStore } from './shift';
+import { STATIONS, type StationId } from './content/stations';
+import { checkIn, currentShift, handOverCounters, isOnDuty, isPresent, markPrepDone, openStore, stationHeadcount } from './shift';
 import { addStock, takeStock } from './stock';
 import { PREP_TASK_IDS, SHIFT_IDS, type DeepReadonly, type Order, type PrepTaskId, type ShiftId, type SimState } from './types';
 
@@ -38,7 +39,8 @@ export type Command =
   | { type: 'retainStaff'; workerId: string }
   | { type: 'interviewRecruit'; slot: number }
   | { type: 'setRestDay'; workerId: string; rest: boolean }
-  | { type: 'setCounterPolicy'; keepOnShiftChange: boolean };
+  | { type: 'setCounterPolicy'; keepOnShiftChange: boolean }
+  | { type: 'assignStation'; workerId: string; station: StationId };
 
 export type RejectReason =
   | 'unknown-worker'
@@ -76,7 +78,9 @@ export type RejectReason =
   | 'unknown-recruit'
   | 'reroll-used'
   | 'not-resigning'
-  | 'nothing-hidden';
+  | 'nothing-hidden'
+  | 'unknown-station'
+  | 'station-full';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
 
@@ -123,6 +127,8 @@ export function applyCommand(state: SimState, command: Command, emit: Emit): Com
       return interviewRecruit(state, command.slot, emit);
     case 'setRestDay':
       return setRestDay(state, command.workerId, command.rest, emit);
+    case 'assignStation':
+      return assignStation(state, command.workerId, command.station, emit);
     case 'setCounterPolicy':
       state.keepCounterOnShiftChange = command.keepOnShiftChange;
       return OK;
@@ -347,6 +353,32 @@ function assignCounter(state: SimState, counterId: string, workerId: string, emi
   // Đơn đang làm dở vẫn do người cũ hoàn tất; người mới nhận từ khách tiếp theo.
   counter.operatorId = workerId;
   emit({ type: 'counterAssigned', counterId, workerId });
+  return OK;
+}
+
+/**
+ * Xếp vị trí làm việc. "Quầy bán" dùng đúng luật giao quầy; vị trí khác ghi vào nhân viên. Người đang
+ * đứng quầy chuyển sang vị trí khác thì quầy được giao lại (người "Hỗ trợ" trong ca, không có thì người chơi).
+ */
+function assignStation(state: SimState, workerId: string, station: StationId, emit: Emit): CommandResult {
+  const def = STATIONS[station];
+  if (!def) return reject('unknown-station');
+  const worker = state.workers[workerId];
+  if (!worker) return reject('unknown-worker');
+  if (station === 'counter') {
+    const counter = state.counters.find((c) => c.operatorId !== workerId) ?? state.counters[0];
+    return counter ? assignCounter(state, counter.id, workerId, emit) : reject('unknown-counter');
+  }
+  if (worker.controller === 'player') return reject('cannot-schedule-player');
+  if (def.capacity !== null && stationHeadcount(state, station, workerId) >= def.capacity) return reject('station-full');
+  worker.station = station;
+  for (const counter of state.counters) {
+    if (counter.operatorId !== workerId) continue;
+    counter.operatorId = PLAYER_WORKER_ID;
+    handOverCounters(state, emit, true);
+    if (counter.operatorId === PLAYER_WORKER_ID) emit({ type: 'counterAssigned', counterId: counter.id, workerId: PLAYER_WORKER_ID });
+  }
+  emit({ type: 'stationAssigned', workerId, station });
   return OK;
 }
 

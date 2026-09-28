@@ -63,6 +63,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7b | Ca làm, mở/đóng cửa, chấm công, tổng kết ngày, xếp hạng sao | ✅ |
 | 7c | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính | ✅ |
 | 7d | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca | ✅ |
+| 7e | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được) | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
 ## 3b. Tự động hoá (bước 3)
@@ -176,6 +177,17 @@ Logic nằm ở `packages/simulation/src/recruit.ts` (sinh ứng viên, cấp đ
 - Save v6 → v7: `streak` = 0, không có lịch nghỉ, tắt giữ quầy.
 - Save v5 → v6: một đặc điểm cũ thành danh sách; lương trọn ngày chia đôi thành lương ca (tổng mỗi ngày không đổi); kinh nghiệm bằng số lượt đã bán; sinh danh sách ứng viên khi tải.
 - Balance 12 seed × 12 ngày, một người ca sáng + một người ca chiều: 205–211 xu/ngày, vắng 35 phút ước tính 513–526 xu; nhân viên đạt khoảng cấp 7 sau 12 ngày.
+
+## 3h. Vị trí làm việc (bước 7e)
+
+Danh mục ở `packages/simulation/src/content/stations.ts`, hành vi AI ở `STATION_BEHAVIOR` (`ai.ts`).
+
+- **Quầy bán** (`counter`, mỗi quầy một người): người đứng quầy vẫn lưu ở `counter.operatorId` như trước; phục vụ khách là ưu tiên, rảnh thì bổ sung kệ gần hết.
+- **Kho & nhập hàng** (`stock`, tối đa 2): bổ sung kệ khi còn dưới `stockStationThreshold` (60%) thay vì 34%, nhanh hơn (`stockStationTimeFactor` 0,75), không phải chờ người khác nhập xong (chỉ tránh món đang có người nhập), không bị gọi ra quầy khi đổi ca.
+- **Hỗ trợ** (`support`, không giới hạn): hành vi cũ; đầu ca được ưu tiên nhận quầy. Người chơi luôn là "Hỗ trợ" khi không đứng quầy.
+- Vị trí ngoài quầy lưu ở `worker.station`; `stationOf()` trả về vị trí thực tế (đang đứng quầy thì là quầy bán). Lệnh chung `assignStation`; chọn quầy bán dùng đúng luật giao quầy. Chuyển người đứng quầy sang vị trí khác thì quầy giao cho người hỗ trợ trong ca, không có thì người chơi.
+- **Thêm vị trí mới:** thêm id vào `StationId`, một mục trong `STATIONS` (tên, mô tả, số chỗ) và một hàm trong `STATION_BEHAVIOR` trả về các việc có thể làm kèm điểm. Giao diện (nút chọn vị trí, dòng đếm người) tự đọc theo danh mục.
+- Save v7 → v8: mọi nhân viên hiện có vào "Hỗ trợ" nên hành vi không đổi; balance mặc định giữ nguyên số liệu.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

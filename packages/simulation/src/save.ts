@@ -1,6 +1,7 @@
 import { cloneConfig, DEFAULT_CONFIG } from './config';
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
 import { STAFF_CANDIDATES, TRAITS } from './content/staff';
+import { BACK_STATION_IDS, type BackStationId } from './content/stations';
 import { levelFor, refreshRecruits } from './recruit';
 import { createStream } from './rng';
 import { PREP_TASK_IDS, SAVE_VERSION, SHIFT_IDS, type DeepReadonly, type PrepTaskId, type ShiftId, type SimState } from './types';
@@ -247,6 +248,13 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     }
     if (typeof state.keepCounterOnShiftChange !== 'boolean') state.keepCounterOnShiftChange = false;
   },
+  7: (state) => {
+    // v8: vị trí làm việc (quầy / kho / hỗ trợ). Mọi người đang làm được xếp vào "Hỗ trợ" như hành vi cũ.
+    if (isObject(state.workers)) {
+      for (const worker of Object.values(state.workers))
+        if (isObject(worker) && typeof worker.station !== 'string') worker.station = 'support';
+    }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -301,6 +309,7 @@ function isValidState(state: Loose): state is SimState & Loose {
       !isNum(worker.fatigue) ||
       typeof worker.resigning !== 'boolean' ||
       !isNum(worker.streak) ||
+      !BACK_STATION_IDS.includes(worker.station as BackStationId) ||
       !(worker.restDay === null || isNum(worker.restDay)) ||
       !isObject(worker.look) ||
       (worker.look.gender !== 'female' && worker.look.gender !== 'male')

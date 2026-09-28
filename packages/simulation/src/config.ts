@@ -13,6 +13,8 @@ export const DEFAULT_CONFIG: SimConfig = {
   interviewCost: 10,
   streakFatigueDays: 6,
   streakFatigue: 25,
+  stockStationThreshold: 0.6,
+  stockStationTimeFactor: 0.75,
   aiThinkMs: 1500,
   aiRestockMs: 3000,
   aiRestockThreshold: 0.34,

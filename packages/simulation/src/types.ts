@@ -1,4 +1,5 @@
 import type { ComplaintResponse } from './content/reviews';
+import type { BackStationId } from './content/stations';
 import type {
   ArchetypeId,
   ProductId,
@@ -12,7 +13,7 @@ import type {
 } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 7;
+export const SAVE_VERSION = 8;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = 'morning' | 'afternoon';
@@ -60,6 +61,9 @@ export interface SimConfig {
   /** Làm liên tục từ chừng này ngày trở lên thì mỗi ngày mệt thêm `streakFatigue`. */
   streakFatigueDays: number;
   streakFatigue: number;
+  /** Người ở kho bổ sung kệ khi kệ còn dưới tỉ lệ này, và làm nhanh hơn theo hệ số thời gian. */
+  stockStationThreshold: number;
+  stockStationTimeFactor: number;
   /** Thời gian NPC suy nghĩ trước khi chọn món (chia cho speed, cộng thêm khi kiến thức thấp). */
   aiThinkMs: number;
   /** Thời gian một lần NPC đi bổ sung kệ (chia cho speed). */
@@ -228,6 +232,8 @@ export interface Worker {
   streak: number;
   /** Ngày được cho nghỉ (không vào ca nào), null nếu không có lịch nghỉ. */
   restDay: number | null;
+  /** Vị trí ngoài quầy (kho, hỗ trợ…). Đang đứng quầy thì vẫn giữ để quay về khi rời quầy. */
+  station: BackStationId;
 }
 
 /** Ứng viên trong danh sách tuyển hằng ngày; khoá thì được giữ sang ngày sau. */

@@ -1,3 +1,4 @@
+import type { StationId } from './content/stations';
 import type { Emit } from './events';
 import { storeRating } from './reputation';
 import { fatigueDelta, hasTrait, QUIT_FATIGUE, refreshRecruits } from './recruit';
@@ -58,6 +59,17 @@ export function checkIn(state: SimState, worker: Worker): void {
   if (!worker.shifts.includes(shift) || worker.shiftsToday.includes(shift) || worker.restDay === state.day) return;
   worker.shiftsToday.push(shift);
   worker.arrivesAtMs = state.timeMs + (hasTrait(worker, 'late') ? LATE_MS : 0);
+}
+
+/** Vị trí đang làm: đứng quầy nào thì là quầy bán, không thì vị trí ngoài quầy đã xếp. */
+export function stationOf(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): StationId {
+  if (state.counters.some((c) => c.operatorId === worker.id)) return 'counter';
+  return worker.controller === 'player' ? 'support' : worker.station;
+}
+
+/** Số người đang ở một vị trí (tính theo lịch, không kể đang trong ca hay không). */
+export function stationHeadcount(state: DeepReadonly<SimState>, station: StationId, exceptId?: string): number {
+  return Object.values(state.workers).filter((w) => w.id !== exceptId && stationOf(state, w) === station).length;
 }
 
 /** Người "Hay đi trễ" vào ca muộn chừng này. */
@@ -149,10 +161,11 @@ export function handOverCounters(state: SimState, emit: Emit, shiftStart = false
     // Đầu ca: quầy người chơi đang giữ được giao cho NPC trong ca, trừ khi người chơi bật "giữ quầy khi đổi ca".
     const handBack = shiftStart && !state.keepCounterOnShiftChange && operator?.controller === 'player';
     if (operator && isOnDuty(state, operator) && !handBack) continue;
-    const next =
-      Object.values(state.workers).find(
-        (w) => w.controller === 'ai' && isOnDuty(state, w) && !state.counters.some((c) => c.operatorId === w.id),
-      )?.id ?? PLAYER_WORKER_ID;
+    // Ưu tiên người "Hỗ trợ"; người ở kho chỉ bị gọi ra quầy khi không còn ai khác trong ca.
+    const free = Object.values(state.workers).filter(
+      (w) => w.controller === 'ai' && isOnDuty(state, w) && !state.counters.some((c) => c.operatorId === w.id),
+    );
+    const next = (free.find((w) => w.station === 'support') ?? free.find((w) => w.station !== 'stock'))?.id ?? PLAYER_WORKER_ID;
     if (next === counter.operatorId) continue;
     counter.operatorId = next;
     emit({ type: 'counterAssigned', counterId: counter.id, workerId: next });

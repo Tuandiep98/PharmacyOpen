@@ -44,9 +44,10 @@ function assignWorkerSpots(state: State): { worker: DeepReadonly<Worker>; spot: 
   // Người ngoài ca chỉ còn trong cảnh khi đang làm nốt việc dở.
   // Người đi trễ chưa tới thì chưa xuất hiện.
   const others = Object.values(state.workers).filter((w) => w.id !== operatorId && (isPresent(state, w) || !!w.orderId || !!w.task));
-  // Người đang bổ sung kệ đứng ở kệ; người rảnh đứng sau quầy, người thứ hai đứng cạnh kệ.
-  others.sort((a, b) => Number(!!b.task) - Number(!!a.task));
-  const free = others[0]?.task ? [SHELF_SPOT, BEHIND_SPOT] : [BEHIND_SPOT, SHELF_SPOT];
+  // Người đang bổ sung kệ hoặc ở vị trí kho đứng ở kệ; người rảnh đứng sau quầy, người thứ hai đứng cạnh kệ.
+  const atShelf = (w: DeepReadonly<Worker>) => !!w.task || w.station === 'stock';
+  others.sort((a, b) => Number(atShelf(b)) - Number(atShelf(a)));
+  const free = others[0] && atShelf(others[0]) ? [SHELF_SPOT, BEHIND_SPOT] : [BEHIND_SPOT, SHELF_SPOT];
   const result = others.map((worker, i) => ({ worker, spot: free[i] ?? SHELF_SPOT }));
   const operator = state.workers[operatorId];
   if (operator && (isPresent(state, operator) || operator.orderId)) result.push({ worker: operator, spot: SERVE_SPOT });

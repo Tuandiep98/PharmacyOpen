@@ -33,7 +33,19 @@ export {
   wagesDueToday,
   type DayGoalId,
 } from './economy';
-export { currentShift, dayElapsed, dayPhase, isOnDuty, isPresent, prepComplete, RATING_MILESTONES, shiftPay, shiftSummary } from './shift';
+export {
+  currentShift,
+  dayElapsed,
+  dayPhase,
+  isOnDuty,
+  isPresent,
+  prepComplete,
+  RATING_MILESTONES,
+  shiftPay,
+  shiftSummary,
+  stationHeadcount,
+  stationOf,
+} from './shift';
 export { effectiveKnowledge, hasTrait, LEVEL_XP, levelFor, MAX_LEVEL, QUIT_FATIGUE, retainWage } from './recruit';
 export { createSave, loadSave, SAVE_FORMAT, type LoadError, type LoadResult, type SaveFile } from './save';
 export { runOffline, type OfflineSummary } from './offline';

@@ -1,3 +1,4 @@
+import type { StationId } from './content/stations';
 import type { ProductId, TraitId } from './content/types';
 import type { DayReport, PrepTaskId, ShiftId, ShiftSummary } from './types';
 
@@ -39,6 +40,7 @@ export type SimEvent = { at: number } & (
   | { type: 'recruitsRefreshed'; paid: boolean }
   | { type: 'recruitInterviewed'; slot: number; traits: TraitId[] }
   | { type: 'restScheduled'; workerId: string; day: number | null }
+  | { type: 'stationAssigned'; workerId: string; station: StationId }
 );
 
 export type SimEventType = SimEvent['type'];

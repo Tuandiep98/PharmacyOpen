@@ -1,4 +1,13 @@
-import { dayProgress, storeRating, TRAITS, UPGRADES, type DeepReadonly, type SimEvent, type SimState } from '@pharmacy/simulation';
+import {
+  dayProgress,
+  STATIONS,
+  storeRating,
+  TRAITS,
+  UPGRADES,
+  type DeepReadonly,
+  type SimEvent,
+  type SimState,
+} from '@pharmacy/simulation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BRAND } from './brand';
 import { DandelionLogo } from './art/Furniture';
@@ -211,6 +220,11 @@ function useEventFeedback() {
           case 'staffRetained':
             pushToast('good', `Đã tăng lương lên ${e.wage} ${BRAND.currency}/ca, nhân viên ở lại.`);
             break;
+          case 'stationAssigned': {
+            const worker = bridge.state.workers[e.workerId];
+            pushToast('info', `${worker?.name ?? 'Nhân viên'} chuyển sang ${STATIONS[e.station].name.toLowerCase()}.`);
+            break;
+          }
           case 'recruitInterviewed': {
             const bad = e.traits.some((id) => TRAITS[id].tone === 'bad');
             pushToast(bad ? 'warn' : 'good', `Phỏng vấn xong: ứng viên là người "${e.traits.map((id) => TRAITS[id].name).join('", "')}".`);
