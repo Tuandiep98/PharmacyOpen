@@ -28,12 +28,12 @@ import { UpgradePanel } from './features/expansion/UpgradePanel';
 import { ReviewsPanel } from './features/reviews/ReviewsPanel';
 import { LedgerSheet } from './features/ledger/LedgerSheet';
 import { OfflineDialog } from './features/ledger/OfflineDialog';
-import { SaveSection } from './features/save/SaveSection';
+import { OnboardingDialog } from './features/onboarding/OnboardingDialog';
 import { formatRating, starText } from './ui/Stars';
 import { useBridge, useGameEvents, useGameState } from './game/useGame';
 import { useUi, type Tab, type Toast } from './ui/uiStore';
 import { useSettings } from './ui/settings';
-import { GameButton, IconButton } from './ui/primitives';
+import { IconButton } from './ui/primitives';
 import { playSfx } from './audio/sfx';
 import { burst, celebrate } from './fx/confetti';
 
@@ -91,7 +91,7 @@ export function App() {
       <DragGhost />
       {offline && !showInfo && <OfflineDialog summary={offline} onClose={() => setOffline(null)} />}
       {showInfo && (
-        <WelcomeDialog
+        <OnboardingDialog
           seed={state.seed}
           showSave={!firstVisit || state.tick > 0}
           onClose={() => {
@@ -109,13 +109,23 @@ function useEventFeedback() {
   const pushToast = useUi((s) => s.pushToast);
   const pushFloater = useUi((s) => s.pushFloater);
   const lastTurnedAwayToast = useRef(-Infinity);
+  const lastExpiryToast = useRef(-Infinity);
   const handler = useCallback(
     (events: SimEvent[]) => {
       for (const e of events) {
         switch (e.type) {
           case 'customerArrived':
-            playSfx('arrive');
+            playSfx(bridge.state.customers[e.customerId]?.loyaltyId ? 'return' : 'arrive');
             break;
+          case 'stockExpired': {
+            const now = performance.now();
+            if (now - lastExpiryToast.current > 20_000) {
+              lastExpiryToast.current = now;
+              playSfx('warn');
+              pushToast('warn', 'Có hàng đã hết hạn và được lấy khỏi kệ. Mở Kho để kiểm tra và nhập lại.');
+            }
+            break;
+          }
           case 'saleCompleted': {
             pushFloater(`+${e.amount} ${BRAND.currency}`, REGISTER_SPOT.x, REGISTER_SPOT.y);
             const sales = bridge.state.stats.sales;
@@ -400,35 +410,6 @@ function ToastItem({ toast }: { toast: Toast }) {
     <div className={`toast ${toast.tone}`} onClick={() => dismiss(toast.id)}>
       {icon}
       <span>{toast.text}</span>
-    </div>
-  );
-}
-
-function WelcomeDialog({ seed, showSave, onClose }: { seed: number; showSave: boolean; onClose: () => void }) {
-  return (
-    <div className="modal-backdrop">
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
-        <svg width={56} height={56} viewBox="-15 -15 30 30" aria-hidden>
-          <DandelionLogo r={14} />
-        </svg>
-        <h1 id="welcome-title">{BRAND.name}</h1>
-        <p>Chạm vào khách ở quầy, lắng nghe nhu cầu và chọn đúng món. Nhớ nhập hàng khi kệ vơi!</p>
-        <p className="small muted">Tuyển nhân viên và giao quầy để tiệm tự bán — kể cả khi bạn rời game. Tiến trình tự lưu.</p>
-        <ul className="disclaimer">
-          <li>Đây là trò chơi mô phỏng. Cửa hàng, nhãn hiệu, sản phẩm và nhân vật đều là hư cấu.</li>
-          <li>Nội dung trong game không phải lời khuyên y tế và không thay thế bác sĩ hay dược sĩ.</li>
-          <li>Khi khách mô tả triệu chứng, hành động đúng trong game luôn là khuyên khách đi khám.</li>
-        </ul>
-        <GameButton tone="primary" size="large" onClick={onClose} autoFocus>
-          {showSave ? 'Tiếp tục' : 'Mở cửa tiệm'}
-        </GameButton>
-        {showSave && <SaveSection />}
-        <p className="muted small">
-          Bản thử nghiệm · seed {seed}
-          <br />
-          Font Nunito (SIL OFL 1.1) · canvas-confetti (ISC)
-        </p>
-      </div>
     </div>
   );
 }

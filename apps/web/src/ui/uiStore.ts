@@ -1,5 +1,6 @@
 import type { OfflineSummary, ProductId } from '@pharmacy/simulation';
 import { create } from 'zustand';
+import type { CatalogCategory } from './catalog';
 
 export type Selection =
   | { kind: 'customer'; id: string }
@@ -40,6 +41,10 @@ interface UiState {
   floaters: Floater[];
   /** Tổng kết lần vắng mặt gần nhất, hiện thành hộp thoại "Chào mừng trở lại". */
   offline: OfflineSummary | null;
+  catalogCategory: CatalogCategory;
+  catalogPage: number;
+  setCatalogCategory: (category: CatalogCategory) => void;
+  setCatalogPage: (page: number) => void;
   setOffline: (summary: OfflineSummary | null) => void;
   setTab: (tab: Tab) => void;
   select: (selection: Selection) => void;
@@ -61,6 +66,10 @@ export const useUi = create<UiState>((set) => ({
   toasts: [],
   floaters: [],
   offline: null,
+  catalogCategory: 'all',
+  catalogPage: 0,
+  setCatalogCategory: (catalogCategory) => set({ catalogCategory, catalogPage: 0 }),
+  setCatalogPage: (catalogPage) => set({ catalogPage }),
   setOffline: (offline) => set({ offline }),
   setTab: (tab) => set({ tab }),
   select: (selection) => set({ selection }),

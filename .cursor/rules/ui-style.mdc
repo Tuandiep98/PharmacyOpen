@@ -13,6 +13,7 @@ alwaysApply: true
 - Preserve the fixed-step simulation and command path. UI reads state and dispatches commands; it does not change game rules.
 - Make important controls at least 44 px tall, give keyboard focus a visible ring, and show status with text or shape as well as colour.
 - Keep the main service tray available on portrait phones and the scene beside the tray on landscape tablets.
+- For new products, add a distinct 40×48 `ProductArt`, a named request and a need request, and make the request reachable from an archetype. Keep the scene and tray on the same shared catalog page (5 products). Use `CatalogControls` in the inventory view.
 - Collapse the service tray to operator status while an NPC runs the counter; show detailed selling controls only when the player runs it. Keep staff cards scannable and details collapsible.
 - Never draw a red cross, green cross logo, real pharmacy brand, real drug or dosage. Read `docs/content-rules.md` before adding game content.
 - Run `npm run check` and `npm run build` after UI changes.

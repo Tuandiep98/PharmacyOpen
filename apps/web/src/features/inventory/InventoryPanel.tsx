@@ -1,13 +1,17 @@
-import { nextExpiry, PRODUCT_IDS, PRODUCTS, type DeepReadonly, type SimState } from '@pharmacy/simulation';
+import { nextExpiry, PRODUCTS, type DeepReadonly, type SimState } from '@pharmacy/simulation';
 import { ProductIcon } from '../../art/Products';
 import { BRAND } from '../../brand';
 import { useUi } from '../../ui/uiStore';
 import { PanelHeading } from '../../ui/primitives';
 import { RestockButton } from './ProductSheet';
+import { CatalogControls } from '../../ui/CatalogControls';
+import { catalogProducts } from '../../ui/catalog';
 
 export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
+  const category = useUi((s) => s.catalogCategory);
+  const visibleProducts = catalogProducts(category);
   return (
     <div className="panel">
       <PanelHeading description={
@@ -15,8 +19,10 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
         Hàng được bán trực tiếp từ kệ. Nhập hàng sẽ lấp đầy kệ trong giới hạn số xu hiện có. Chạm vào tên món để xem chi tiết và chỉnh giá bán.
         </>
       }>Kho hàng</PanelHeading>
+      <CatalogControls />
+      <p className="small muted">{visibleProducts.length} mặt hàng trong nhóm đang xem.</p>
       <ul className="inventory-list">
-        {PRODUCT_IDS.map((id) => {
+        {visibleProducts.map((id) => {
           const p = PRODUCTS[id];
           const shelf = state.stock[id].shelf;
           const expiry = nextExpiry(state, id);

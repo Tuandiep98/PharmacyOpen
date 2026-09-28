@@ -2,7 +2,7 @@
 // Chuyển thể từ src/lib/audio/sfx.ts của dự án LLs (cùng tác giả).
 import { useSettings } from '../ui/settings';
 
-export type Sfx = 'pick' | 'drop' | 'sale' | 'wrong' | 'warn' | 'refer' | 'restock' | 'arrive' | 'leave' | 'milestone';
+export type Sfx = 'pick' | 'drop' | 'sale' | 'wrong' | 'warn' | 'refer' | 'restock' | 'arrive' | 'return' | 'page' | 'leave' | 'milestone';
 
 let ctx: AudioContext | null = null;
 
@@ -82,6 +82,15 @@ export function playSfx(name: Sfx): void {
       // Chuông cửa.
       tone(988, 0, 0.18, 'sine', 0.07);
       tone(784, 0.14, 0.26, 'sine', 0.07);
+      break;
+    case 'return':
+      tone(784, 0, 0.12, 'sine', 0.07);
+      tone(988, 0.1, 0.18, 'sine', 0.07);
+      tone(1175, 0.2, 0.16, 'sine', 0.05);
+      break;
+    case 'page':
+      tone(460, 0, 0.045, 'triangle', 0.055);
+      tone(620, 0.045, 0.07, 'triangle', 0.045);
       break;
     case 'leave':
       tone(294, 0, 0.18, 'sine', 0.1);

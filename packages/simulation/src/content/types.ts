@@ -1,4 +1,8 @@
-export type ProductId = 'mask' | 'bandage' | 'sunscreen' | 'sanitizer' | 'lipbalm';
+export type ProductId =
+  | 'mask' | 'bandage' | 'sunscreen' | 'sanitizer' | 'lipbalm'
+  | 'soap' | 'tissues' | 'wipes' | 'cottonpads' | 'toothbrush'
+  | 'toothpaste' | 'floss' | 'cottonswab' | 'comb' | 'gauze'
+  | 'tape' | 'elasticbandage' | 'moisturizer' | 'cleanser' | 'handcream';
 
 export type ProductCategory = 'hygiene' | 'first-aid' | 'skin-care';
 
@@ -102,7 +106,7 @@ export interface UpgradeDef {
   effects: UpgradeEffect[];
 }
 
-export type ArchetypeId = 'hurried' | 'curious' | 'demanding';
+export type ArchetypeId = 'hurried' | 'curious' | 'demanding' | 'careful' | 'thrifty';
 
 export interface ArchetypeDef {
   id: ArchetypeId;

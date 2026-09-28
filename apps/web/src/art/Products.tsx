@@ -70,12 +70,177 @@ function LipBalmStick() {
   </g>;
 }
 
+function Carton({ fill, band, children }: { fill: string; band: string; children: React.ReactNode }) {
+  return <g>
+    <ellipse cx={20} cy={46} rx={15} ry={2} fill={INK} opacity={0.12} />
+    <rect x={5} y={8} width={30} height={38} rx={4} fill={fill} {...stroke} />
+    <path d="M5 14h30v7H5z" fill={band} stroke={INK} strokeWidth={1.2} />
+    {children}
+  </g>;
+}
+
+function Tube({ fill, band, children }: { fill: string; band: string; children: React.ReactNode }) {
+  return <g>
+    <ellipse cx={20} cy={46} rx={13} ry={2} fill={INK} opacity={0.12} />
+    <path d="M10 5h20l-3 33H13z" fill={fill} {...stroke} />
+    <path d="M10 5h20v6H10z" fill={band} {...stroke} />
+    <rect x={14} y={38} width={12} height={8} rx={2} fill={band} {...stroke} />
+    {children}
+  </g>;
+}
+
+function PumpBottle({ fill, label, children }: { fill: string; label: string; children: React.ReactNode }) {
+  return <g>
+    <ellipse cx={20} cy={46} rx={15} ry={2} fill={INK} opacity={0.12} />
+    <rect x={10} y={13} width={20} height={33} rx={6} fill={fill} {...stroke} />
+    <path d="M18 13V7h11v3h-7" fill="none" {...stroke} strokeWidth={2.2} />
+    <rect x={12} y={23} width={16} height={16} rx={3} fill={label} stroke={INK} strokeWidth={1.1} />
+    {children}
+  </g>;
+}
+
+function SoapBar() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={16} ry={2} fill={INK} opacity={.12} />
+    <rect x={4} y={15} width={32} height={30} rx={7} fill="#E6BDA4" {...stroke} />
+    <path d="M4 24h32v12H4z" fill="#F5D7C5" stroke={INK} strokeWidth={1.1} />
+    <circle cx={19} cy={30} r={5} fill={ART.paper} stroke={INK} strokeWidth={1.1} />
+    <circle cx={29} cy={10} r={4} fill="#DCEFE3" stroke={INK} strokeWidth={1} />
+    <circle cx={34} cy={5} r={2} fill="#DCEFE3" stroke={INK} strokeWidth={.8} />
+  </g>;
+}
+
+function TissueBox() {
+  return <Carton fill="#E8F0E7" band="#7EAF9B">
+    <path d="M13 8c-2-5 1-7 4-5 2-3 6-2 6 2 4-1 6 2 4 5" fill={ART.paper} {...stroke} strokeWidth={1.2} />
+    <path d="M10 30h20M12 34h16" stroke={ART.leaf} strokeWidth={1.5} strokeLinecap="round" />
+  </Carton>;
+}
+
+function WipesPack() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={17} ry={2} fill={INK} opacity={.12} />
+    <path d="M5 25Q5 20 10 20h20q5 0 5 5v18q0 3-4 3H9q-4 0-4-3z" fill="#B8D9CD" {...stroke} />
+    <rect x={12} y={22} width={16} height={10} rx={3} fill={ART.paper} {...stroke} strokeWidth={1.1} />
+    <path d="M16 27h8M11 38h18" stroke={ART.leaf} strokeWidth={1.5} strokeLinecap="round" />
+  </g>;
+}
+
+function CottonPadsPack() {
+  return <Carton fill="#F4E5D8" band="#CB9D8C">
+    <circle cx={20} cy={32} r={8} fill={ART.paper} {...stroke} strokeWidth={1.2} />
+    <path d="M14 33q6-7 12 0" fill="none" stroke="#D4C2AC" strokeWidth={1.1} />
+  </Carton>;
+}
+
+function ToothbrushPack() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={13} ry={2} fill={INK} opacity={.12} />
+    <rect x={10} y={4} width={20} height={42} rx={5} fill="#DFEEE9" {...stroke} />
+    <path d="M19 39V17h3v22" fill="#6BA9AA" {...stroke} strokeWidth={1} />
+    <rect x={17} y={10} width={7} height={8} rx={2} fill={ART.paper} {...stroke} strokeWidth={1} />
+    <path d="M18 10V7m2 3V7m2 3V7" stroke={INK} strokeWidth={.9} />
+  </g>;
+}
+
+function ToothpasteTube() {
+  return <Tube fill="#F1E7D2" band="#7BA5AD">
+    <path d="M17 18q-3 5 3 12 6-7 3-12" fill={ART.paper} {...stroke} strokeWidth={1.1} />
+    <path d="M16 34h8" stroke="#7BA5AD" strokeWidth={1.5} />
+  </Tube>;
+}
+
+function FlossCase() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={14} ry={2} fill={INK} opacity={.12} />
+    <rect x={8} y={15} width={24} height={30} rx={10} fill="#E8D7B9" {...stroke} />
+    <path d="M10 24h20" stroke={INK} strokeWidth={1.2} />
+    <circle cx={20} cy={34} r={5} fill={ART.paper} {...stroke} strokeWidth={1} />
+    <path d="M20 28v-7q7-7 13-3" fill="none" stroke={ART.leaf} strokeWidth={1.2} />
+  </g>;
+}
+
+function CottonSwabBox() {
+  return <Carton fill="#DCEDE8" band="#9DBEB2">
+    <path d="M12 26l16 12M28 26L12 38" stroke={INK} strokeWidth={1.3} />
+    <g fill={ART.paper} stroke={INK} strokeWidth={.8}><circle cx={12} cy={26} r={2}/><circle cx={28} cy={38} r={2}/><circle cx={28} cy={26} r={2}/><circle cx={12} cy={38} r={2}/></g>
+  </Carton>;
+}
+
+function PocketComb() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={16} ry={2} fill={INK} opacity={.12} />
+    <rect x={4} y={14} width={32} height={31} rx={4} fill="#EFD8C0" {...stroke} />
+    <path d="M8 27h24v6H8z" fill="#A6785D" {...stroke} strokeWidth={1.1} />
+    <path d="M10 33v8m4-8v8m4-8v8m4-8v8m4-8v8m4-8v8" stroke={INK} strokeWidth={1.2} />
+  </g>;
+}
+
+function GauzePack() {
+  return <Carton fill="#EEECE1" band="#A6BDB2">
+    <rect x={11} y={26} width={18} height={14} rx={2} fill={ART.paper} {...stroke} strokeWidth={1} />
+    <path d="M11 30h18m-18 4h18m-12-8v14m6-14v14" stroke="#C4D6CF" strokeWidth={.8} />
+  </Carton>;
+}
+
+function TapeRoll() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={16} ry={2} fill={INK} opacity={.12} />
+    <rect x={5} y={20} width={30} height={25} rx={4} fill="#E5C99F" {...stroke} />
+    <circle cx={20} cy={32} r={10} fill="#E4B879" {...stroke} strokeWidth={1.2} />
+    <circle cx={20} cy={32} r={4} fill={ART.paper} {...stroke} strokeWidth={1.1} />
+  </g>;
+}
+
+function ElasticBandageRoll() {
+  return <g>
+    <ellipse cx={20} cy={46} rx={16} ry={2} fill={INK} opacity={.12} />
+    <rect x={5} y={20} width={30} height={26} rx={4} fill="#E8D0AF" {...stroke} />
+    <path d="M9 22h22v22H9z" fill="#EBD8B8" stroke={INK} strokeWidth={1} />
+    <path d="M10 26h20m-20 5h20m-20 5h20m-20 5h20" stroke="#B48D6B" strokeWidth={1.2} />
+    <ellipse cx={20} cy={19} rx={14} ry={4} fill="#F1DFC4" {...stroke} strokeWidth={1.1} />
+  </g>;
+}
+
+function MoisturizerBottle() {
+  return <PumpBottle fill="#DDD7E9" label={ART.paper}>
+    <path d="M20 27c-4 5-3 8 0 9 3-1 4-4 0-9z" fill="#A39BC7" stroke={INK} strokeWidth={1} />
+  </PumpBottle>;
+}
+
+function CleanserBottle() {
+  return <PumpBottle fill="#BBDDD6" label={ART.paper}>
+    <path d="M16 33q4-8 8 0-4 6-8 0z" fill="#7AB7AC" stroke={INK} strokeWidth={1} />
+  </PumpBottle>;
+}
+
+function HandCreamTube() {
+  return <Tube fill="#EECAC3" band="#C88982">
+    <path d="M20 21c-6-5-9 4 0 11 9-7 6-16 0-11z" fill={ART.paper} stroke={INK} strokeWidth={1.1} />
+  </Tube>;
+}
+
 const PRODUCT_DRAWINGS: Record<ProductId, () => React.JSX.Element> = {
   mask: MaskPack,
   bandage: BandagePack,
   sunscreen: SunscreenTube,
   sanitizer: SanitizerBottle,
   lipbalm: LipBalmStick,
+  soap: SoapBar,
+  tissues: TissueBox,
+  wipes: WipesPack,
+  cottonpads: CottonPadsPack,
+  toothbrush: ToothbrushPack,
+  toothpaste: ToothpasteTube,
+  floss: FlossCase,
+  cottonswab: CottonSwabBox,
+  comb: PocketComb,
+  gauze: GauzePack,
+  tape: TapeRoll,
+  elasticbandage: ElasticBandageRoll,
+  moisturizer: MoisturizerBottle,
+  cleanser: CleanserBottle,
+  handcream: HandCreamTube,
 };
 
 export function ProductArt({ id, x = 0, y = 0, scale = 1 }: { id: ProductId; x?: number; y?: number; scale?: number }) {

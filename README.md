@@ -1,6 +1,7 @@
 # Tiệm thuốc Bồ Công Anh — Idle Pharmacy (prototype)
 
 Game mô phỏng quản lý tiệm thuốc **hư cấu**, ưu tiên web và điện thoại dọc, thích ứng tablet ngang.
+Hiện có 20 mặt hàng, 5 kiểu khách, kho theo lô/hạn dùng, âm thanh và hướng dẫn chơi lần đầu.
 Không phải công cụ y tế. Xem thêm [`docs/spec-v1.1.md`](docs/spec-v1.1.md) và [`docs/content-rules.md`](docs/content-rules.md).
 Quy ước giao diện và art cho các bước tiếp theo: [`docs/ui-style.md`](docs/ui-style.md).
 

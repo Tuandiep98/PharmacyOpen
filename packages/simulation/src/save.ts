@@ -123,6 +123,23 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       state.dayStart.stats.returningCustomers = 0;
     }
   },
+  3: (state) => {
+    // v4: danh mục mở rộng. Save cũ nhận hàng mẫu và giá mặc định cho các mặt hàng mới.
+    const stock = isObject(state.stock) ? state.stock : {};
+    const prices = isObject(state.prices) ? state.prices : {};
+    const timeMs = isNum(state.timeMs) ? state.timeMs : 0;
+    const config = isObject(state.config) ? state.config : {};
+    const life = isNum(config.stockShelfLifeMs) ? config.stockShelfLifeMs : DEFAULT_CONFIG.stockShelfLifeMs;
+    for (const id of PRODUCT_IDS) {
+      if (!isObject(stock[id])) {
+        const qty = PRODUCTS[id].shelfCapacity;
+        stock[id] = { shelf: qty, capacity: qty, batches: [{ qty, expiresAtMs: timeMs + life }] };
+      }
+      if (!isNum(prices[id])) prices[id] = PRODUCTS[id].price;
+    }
+    state.stock = stock;
+    state.prices = prices;
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */

@@ -18,6 +18,7 @@ import { ART, INK } from '../../art/palette';
 import { ProductArt } from '../../art/Products';
 import { beginProductGesture } from '../../ui/drag';
 import { useUi } from '../../ui/uiStore';
+import { catalogPageProducts } from '../../ui/catalog';
 import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
 
 type State = DeepReadonly<SimState>;
@@ -50,17 +51,16 @@ function assignWorkerSpots(state: State): { worker: DeepReadonly<Worker>; spot: 
 }
 
 interface SlotDef {
-  id: ProductId | null;
   x: number;
   base: number;
 }
 const SHELF_SLOTS: SlotDef[] = [
-  { id: 'mask', x: 74, base: 126 },
-  { id: 'bandage', x: 180, base: 126 },
-  { id: 'sunscreen', x: 286, base: 126 },
-  { id: 'sanitizer', x: 74, base: 200 },
-  { id: 'lipbalm', x: 180, base: 200 },
-  { id: null, x: 286, base: 200 },
+  { x: 74, base: 126 },
+  { x: 180, base: 126 },
+  { x: 286, base: 126 },
+  { x: 74, base: 200 },
+  { x: 180, base: 200 },
+  { x: 286, base: 200 },
 ];
 
 /** Khung cao hơn tỉ lệ cảnh thì nới phần tường lên trên, để quầy và khay luôn sát nhau. */
@@ -85,6 +85,9 @@ export function StoreScene({ state }: { state: State }) {
   const selection = useUi((s) => s.selection);
   const select = useUi((s) => s.select);
   const drag = useUi((s) => s.drag);
+  const catalogCategory = useUi((s) => s.catalogCategory);
+  const catalogPage = useUi((s) => s.catalogPage);
+  const visibleProducts = catalogPageProducts(catalogCategory, catalogPage);
   const { give } = useServiceActions();
   const counter = state.counters[0]!;
   const counterCustomerId = counter.customerId;
@@ -119,28 +122,29 @@ export function StoreScene({ state }: { state: State }) {
       <WallAndFloor />
       <StoreSign name={BRAND.name} />
       <ShelfUnit />
-      {SHELF_SLOTS.map((slot) =>
-        slot.id ? (
+      {SHELF_SLOTS.map((slot, index) => {
+        const id = visibleProducts[index];
+        return id ? (
           <ShelfSlot
-            key={slot.id}
-            productId={slot.id}
+            key={`${index}-${id}`}
+            productId={id}
             x={slot.x}
             base={slot.base}
-            count={state.stock[slot.id].shelf}
-            capacity={state.stock[slot.id].capacity}
-            selected={selection?.kind === 'product' && selection.id === slot.id}
+            count={state.stock[id].shelf}
+            capacity={state.stock[id].capacity}
+            selected={selection?.kind === 'product' && selection.id === id}
             onPointerDown={(e) =>
-              beginProductGesture(e, slot.id!, {
+              beginProductGesture(e, id, {
                 onDrop: give,
-                onTap: (id) => select({ kind: 'product', id }),
-                draggable: state.stock[slot.id!].shelf > 0,
+                onTap: (productId) => select({ kind: 'product', id: productId }),
+                draggable: state.stock[id].shelf > 0,
               })
             }
           />
         ) : (
-          <LockedSlot key="locked" x={slot.x} base={slot.base} />
-        ),
-      )}
+          <EmptySlot key={`empty-${index}`} x={slot.x} base={slot.base} />
+        );
+      })}
       <Plant x={30} y={296} />
 
       {workerSpots.map(({ worker, spot }) => (
@@ -302,14 +306,12 @@ function ShelfSlot(props: {
   );
 }
 
-function LockedSlot({ x, base }: { x: number; base: number }) {
+function EmptySlot({ x, base }: { x: number; base: number }) {
   return (
-    <g opacity={0.6}>
+    <g opacity={0.45}>
       <rect x={x - 44} y={base - 58} width={88} height={40} rx={6} fill="none" stroke="#C9B49A" strokeWidth={1.6} strokeDasharray="5 4" />
-      <rect x={x - 7} y={base - 48} width={14} height={11} rx={2} fill="#E5E0EC" stroke={INK} strokeWidth={1.4} />
-      <path d={`M${x - 4},${base - 48} v-3 a4,4 0 0 1 8,0 v3`} fill="none" stroke={INK} strokeWidth={1.4} />
       <text x={x} y={base - 25} textAnchor="middle" fontSize={9} fontWeight={800} fill="#8C7A66">
-        MỞ RỘNG SAU
+        TRỐNG
       </text>
     </g>
   );

@@ -10,7 +10,7 @@
 | Góc nhìn | top-down/isometric, để cấu hình | **Diorama 2D nhìn chính diện**. Nhân vật đứng ở các điểm cố định (quầy, hàng chờ, sau quầy) | Không cần sắp xếp chiều sâu isometric, không cần pathfinding, art rẻ hơn nhiều |
 | Chuyển động | Vòng đời đi lại đầy đủ | **Không có animation đi bộ.** Khi đổi chỗ thì trượt nhẹ bằng CSS transition, lúc đứng yên có nhịp "thở" | Trạng thái quan trọng hơn chuyển động |
 | Thể hiện trạng thái | pose idle/walk/work… | **Biểu cảm khuôn mặt** (khách: 8 biểu cảm, dược sĩ: 4), bong bóng yêu cầu/tiến độ, thanh kiên nhẫn có cả độ dài lẫn ký hiệu "!", không chỉ dựa vào màu | Nhìn là hiểu, dễ tiếp cận |
-| Render | Phaser + React | **React + SVG** (bỏ Phaser) | Cảnh tĩnh ít đối tượng; bundle chỉ khoảng 86 KB gzip; không cần cầu nối hai hệ vẽ. Chỉ cân nhắc PixiJS nếu sau này cần hơn ~40 nhân vật hoặc hiệu ứng hạt |
+| Render | Phaser + React | **React + SVG** (bỏ Phaser) | Cảnh tĩnh ít đối tượng, không cần cầu nối hai hệ vẽ. Chỉ cân nhắc PixiJS nếu sau này cần hơn ~40 nhân vật hoặc hiệu ứng hạt |
 | Vai người chơi | để ngỏ | **Người chơi là quản lý, điều khiển dược sĩ "An" bằng chạm.** NPC ở bước 3 dùng đúng các `Command` mà người chơi dùng | Hợp với game idle trên điện thoại, không cần joystick |
 | Tiền | — | Số nguyên, đơn vị "xu" | Tránh sai số float, giữ tính tất định |
 | RNG | seeded | mulberry32, **mỗi hệ thống một luồng riêng** (`spawn`, `customer`, sau này thêm `review`…) | Thêm random ở hệ này không làm lệch hệ khác |
@@ -59,7 +59,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 4 | Đánh giá sao, hiệu suất nội bộ tách riêng, danh tiếng cửa hàng, khiếu nại | ✅ |
 | 5 | Kinh tế idle: ngày + lương, giá bán, sổ sách, lưu/tải có phiên bản, tiến trình offline có giới hạn, PWA service worker | ✅ (hạn dùng dời sang bước 6) |
 | 6 | Hạn dùng, khách quen, balance simulator | ✅ |
-| 7 | Nội dung (~20 sản phẩm, ~5 archetype), âm thanh, onboarding | |
+| 7 | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
 ## 3b. Tự động hoá (bước 3)
@@ -132,6 +132,15 @@ Cổng kiểm duyệt nội dung chặn thêm lời bình nói về kết quả 
 - **Vắng mặt** (`offline.ts#runOffline`): chạy đúng mô phỏng (cùng NPC, luật, seed) cho thời gian đã trôi; trần hiện tại **10 phút** sau cân bằng bước 6. Áp dụng cả khi mở lại game lẫn khi quay lại tab. Nếu người chơi tự đứng quầy thì tiệm đóng cửa: thời gian không trôi, không mất khách, không trả lương. Hộp thoại "Chào mừng trở lại" tóm tắt trung thực, kể cả khách bỏ về và khiếu nại.
 - **PWA:** `public/sw.js` tự viết (không thêm thư viện). Trang ưu tiên mạng, tài nguyên có hash dùng cache trước. Chỉ đăng ký ở bản build.
 
+## 3e. Nội dung, âm thanh và hướng dẫn (bước 7)
+
+- Danh mục có **20 sản phẩm** chăm sóc cá nhân/sơ cứu không kê đơn, **5 kiểu khách**. Mỗi món có hình SVG 40×48 riêng, một yêu cầu gọi tên và một yêu cầu theo nhu cầu sinh hoạt. Các kiểu khách có xu hướng lựa chọn, mức kiên nhẫn và cảm nhận giá khác nhau; mọi yêu cầu đều có thể xuất hiện.
+- Kệ trong cảnh và khay phục vụ cùng xem **5 món mỗi trang**, có bộ chọn nhóm hàng dùng chung. Tab Kho lọc cùng nhóm nhưng liệt kê đầy đủ để kiểm tra hàng, hạn dùng và giá. Chạm và kéo thả vẫn dùng chung luật simulation.
+- Âm thanh Web Audio có bật/tắt; bổ sung âm báo chuyển trang và khách quen quay lại. Hàng hết hạn có âm và cảnh báo giới hạn tần suất để không làm phiền.
+- Lần đầu mở game có hướng dẫn 4 bước: giới thiệu/lưu ý nội dung, đọc yêu cầu, phục vụ/chăm kệ, khuyên đi khám và giao quầy. Nút thông tin mở lại hướng dẫn; người chơi có thể bỏ qua và truy cập bản lưu nhanh.
+- Save v3 tự nâng lên v4: giữ nguyên tiền, hàng cũ, giá cũ và thêm hàng mẫu/giá mặc định cho 15 món mới. Cổng kiểm duyệt nội dung và test đảm bảo cả 20 món đều có yêu cầu xuất hiện được.
+- Balance simulator 12 seed × 12 ngày với danh mục mới: lợi nhuận trung bình khoảng 174–178 xu/ngày theo nhân viên; trần offline 10 phút vẫn giữ phần thưởng dự kiến dưới 650 xu.
+
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 
 - Bước 6 đã thêm kho theo lô: mỗi lô có số lượng và hạn theo thời gian game; lấy hàng theo hạn gần nhất trước, hàng hết hạn rời kệ. Món đã cầm mà hết hạn trước lúc thanh toán cũng bị loại và nhân viên phải chọn lại. Save v2 được nâng lên v3; hàng cũ nhận hạn mới, không bị mất.
@@ -141,5 +150,3 @@ Cổng kiểm duyệt nội dung chặn thêm lời bình nói về kết quả 
 - Khiếu nại chưa xử lý tự đóng sau 2 ngày game, không xóa hay sửa đánh giá. Hộp thoại vắng mặt báo số khiếu nại còn mở.
 - Cần tiếp tục đo trên nhiều cấu hình giá bán, nâng cấp và các seed bất lợi để cân bằng sâu hơn. Hạn dùng hiện là một thời hạn chung cho mọi sản phẩm, có thể tách riêng theo mặt hàng ở bước nội dung.
 - `commandLog` chỉ giữ 5000 lệnh gần nhất: `replay` dùng cho debug phiên ngắn, không cho cả ván dài.
-- Khách quen và khách quay lại (`loyalty`) chưa có.
-- Chưa có balance simulator. `tests/helpers.ts#autoPlay` là nền để dựng công cụ đó.

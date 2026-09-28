@@ -1,6 +1,5 @@
 import {
   ARCHETYPES,
-  PRODUCT_IDS,
   PRODUCTS,
   REFERRAL_MESSAGE,
   REQUESTS,
@@ -17,6 +16,8 @@ import { GameButton } from '../../ui/primitives';
 import { Portrait } from './CustomerInfo';
 import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
 import { workerProgress, workerStatus } from '../staff/workerStatus';
+import { CatalogControls } from '../../ui/CatalogControls';
+import { catalogPageProducts } from '../../ui/catalog';
 
 const WORKING_LABEL: Record<string, string> = {
   retrieving: 'đang lấy',
@@ -32,6 +33,9 @@ const WORKING_LABEL: Record<string, string> = {
 export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const { give, refer, restock, assignCounter } = useServiceActions();
   const dragging = useUi((s) => s.drag?.productId ?? null);
+  const catalogCategory = useUi((s) => s.catalogCategory);
+  const catalogPage = useUi((s) => s.catalogPage);
+  const visibleProducts = catalogPageProducts(catalogCategory, catalogPage);
   const counter = state.counters[0]!;
   const player = state.workers[PLAYER_WORKER_ID]!;
   const operator = state.workers[counter.operatorId] ?? player;
@@ -140,8 +144,9 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         </GameButton>
       </div>
 
+      <CatalogControls pages />
       <ul className="tray-items">
-        {PRODUCT_IDS.map((id) => {
+        {visibleProducts.map((id) => {
           const p = PRODUCTS[id];
           const stock = state.stock[id].shelf;
           if (stock === 0) {
