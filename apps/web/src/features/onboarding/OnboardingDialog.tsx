@@ -33,16 +33,16 @@ export function OnboardingDialog({ seed, showSave, onClose }: { seed: number; sh
         {showSave && <GameButton tone="quiet" onClick={() => setStep(STEP_COUNT - 1)}>Bản lưu & cài đặt</GameButton>}
       </>}
       {step === 1 && <>
-        <div className="onboarding-art"><ProductIcon id="tissues" size={52} /><span className="onboarding-speech">“Cho mình khăn giấy nhé!”</span></div>
+        <div className="onboarding-art"><ProductIcon id="mask" size={52} /><span className="onboarding-speech">“Cho mình khẩu trang nhé!”</span></div>
         <h1 id="onboarding-title">Nghe khách ở quầy</h1>
         <p>Khách có thể gọi tên món hoặc kể một nhu cầu thường ngày. Nhìn câu nói, rồi tìm món trong nhóm hàng phù hợp.</p>
-        <p className="small muted">Đổi nhóm và trang ở trên dãy sản phẩm. Kệ trong cảnh sẽ đổi theo trang bạn xem.</p>
+        <p className="small muted">Tiệm mới chỉ có 4 món. Khi bán đủ hàng và qua ngày, hãy nâng Kho và Cửa hàng trong mục Mở rộng để có thêm món mới.</p>
       </>}
       {step === 2 && <>
         <div className="onboarding-art"><ProductIcon id="mask" size={52} /><span className="onboarding-arrow">→</span><span className="onboarding-target">Khách</span></div>
         <h1 id="onboarding-title">Một chạm để phục vụ</h1>
         <p>Chạm món trong khay, hoặc kéo từ kệ hay khay vào khách. Đưa đúng món thì thanh toán tự diễn ra.</p>
-        <p className="small muted">Món hết hàng có nút “+ Nhập”. Bạn cũng có thể quản lý hàng và giá ở tab Kho.</p>
+        <p className="small muted">Món hết hàng có nút “+ Nhập”. Món có nhãn Bán chạy được khách hỏi nhiều hơn; xem giá nhập trong tab Kho trước khi nhập.</p>
       </>}
       {step === 3 && <>
         <div className="onboarding-art"><ClinicIcon size={42} /><BoxIcon size={42} /><StaffIcon size={42} /></div>

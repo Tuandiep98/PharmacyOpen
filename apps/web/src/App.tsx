@@ -1,4 +1,4 @@
-import { dayProgress, storeRating, UPGRADES, type DeepReadonly, type SimEvent, type SimState } from '@pharmacy/simulation';
+import { dayProgress, storeRating, UPGRADES, MILESTONES, playerLevel, type DeepReadonly, type SimEvent, type SimState } from '@pharmacy/simulation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BRAND } from './brand';
 import { DandelionLogo } from './art/Furniture';
@@ -73,6 +73,15 @@ export function App() {
   useEffect(() => () => bridge.setRunning(false), [bridge]);
 
   useEventFeedback();
+  const level = playerLevel(state);
+  const previousLevel = useRef(level);
+  useEffect(() => {
+    if (level > previousLevel.current) {
+      useUi.getState().pushToast('good', `Tiệm đạt cấp ${level}! Mở mục Mở rộng để nâng Kho và Cửa hàng, thêm mặt hàng mới.`);
+      playSfx('milestone');
+    }
+    previousLevel.current = level;
+  }, [level]);
 
   return (
     <div className="app">
@@ -250,6 +259,8 @@ function Hud({ state, onInfo }: { state: DeepReadonly<SimState>; onInfo: () => v
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
   const progress = dayProgress(state);
+  const level = playerLevel(state);
+  const next = MILESTONES.find((m) => m.level > level);
   const owed = Object.values(state.workers).some((w) => w.wageOwed > 0);
   const openLedger = () => {
     setTab('store');
@@ -275,6 +286,9 @@ function Hud({ state, onInfo }: { state: DeepReadonly<SimState>; onInfo: () => v
             N{state.day}
             <i style={{ width: `${progress * 100}%` }} />
           </span>
+        </button>
+        <button className="chip chip-btn level-chip" onClick={() => setTab('expansion')} aria-label={`Tiệm cấp ${level}. ${next ? `Cấp sau cần bán ${next.sales} món và tới ngày ${next.day}` : 'Đã đạt cấp tối đa'}. Mở rộng`}>
+          <b>Cấp {level}</b>
         </button>
         <span className="chip" aria-label={`Đánh giá cửa hàng ${formatRating(storeRating(state))} trên 5 sao`}>
           <StarIcon size={20} />

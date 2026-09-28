@@ -4,9 +4,15 @@ import { DandelionLogo } from './Furniture';
 const S = { stroke: INK, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
 /** Tranh SVG riêng cho từng nâng cấp, dùng ở cả thẻ và chi tiết sau này. */
-export function UpgradeArt({ id }: { id: string }) {
+export function UpgradeArt({ id, level = 0 }: { id: string; level?: number }) {
   let drawing: React.ReactNode;
   switch (id) {
+    case 'warehouse':
+      drawing = <g><path d="M13,31 L48,13 L83,31 V60 H13Z" fill={level >= 3 ? ART.leafLight : ART.woodLight} {...S} /><path d="M20,30 H76 V60 H20Z" fill={ART.woodInner} {...S} /><rect x={33} y={38} width={30} height={22} rx={2} fill={ART.paper} {...S} /><path d="M39,45 H57 M39,51 H57" stroke={ART.wood} strokeWidth={2} />{level >= 2 && <circle cx={72} cy={22} r={5} fill={ART.honey} {...S} />}</g>;
+      break;
+    case 'storefront':
+      drawing = <g><rect x={16} y={29} width={64} height={32} fill={ART.paper} {...S} /><path d="M12,29 L20,17 H76 L84,29Z" fill={level >= 3 ? ART.honey : ART.leaf} {...S} /><path d="M21,29 V38 Q28,43 34,38 Q41,43 48,38 Q55,43 62,38 Q69,43 76,38 V29" fill={ART.leafLight} {...S} /><rect x={30} y={45} width={17} height={16} fill={ART.sky} {...S} /><rect x={56} y={44} width={15} height={10} fill={ART.woodInner} {...S} /></g>;
+      break;
     case 'scanner':
       drawing = <g>
         <path d="M17,51 H79 L74,61 H21Z" fill={ART.woodLight} {...S} />
@@ -68,8 +74,9 @@ export function UpgradeArt({ id }: { id: string }) {
       </g>;
   }
   return <svg className="upgrade-art" viewBox="0 0 96 72" aria-hidden focusable="false">
-    <rect x={1} y={1} width={94} height={70} rx={11} fill={ART.wall} />
+    <rect x={1} y={1} width={94} height={70} rx={11} fill={level >= 3 ? '#E8F2E0' : level >= 1 ? '#EDF4EA' : ART.wall} />
     <path d="M8,61 H88" stroke={ART.floorLine} strokeWidth={1.5} />
     {drawing}
+    {level > 0 && <><circle cx={82} cy={13} r={10} fill={ART.honey} stroke={INK} strokeWidth={1.5} /><text x={82} y={17} textAnchor="middle" fontSize={10} fontWeight={900} fill={INK}>{level}</text></>}
   </svg>;
 }

@@ -140,6 +140,17 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     state.stock = stock;
     state.prices = prices;
   },
+  4: (state) => {
+    // Người chơi v4 đã có cả 20 món, nên giữ quyền nhập và trưng bày toàn bộ.
+    const upgrades = Array.isArray(state.upgrades) ? state.upgrades : [];
+    for (let level = 2; level <= 5; level++) {
+      for (const facility of ['warehouse', 'storefront']) {
+        const id = `${facility}-${level}`;
+        if (!upgrades.includes(id)) upgrades.push(id);
+      }
+    }
+    state.upgrades = upgrades;
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */

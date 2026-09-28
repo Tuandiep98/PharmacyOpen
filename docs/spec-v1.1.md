@@ -62,6 +62,13 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7 | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
+### Điều chỉnh sau bước 7: nhịp mở danh mục và nâng cấp
+
+- Ván mới có 4 món; 20 món chia 5 cấp, mỗi cấp thêm 4 món. Cấp tiệm dựa đồng thời trên số món đã bán và ngày: cấp 2 (8 món/ngày 2), cấp 3 (22/ngày 3), cấp 4 (45/ngày 5), cấp 5 (80/ngày 7). Khách chỉ hỏi món đã mở; yêu cầu triệu chứng vẫn có thể xuất hiện ở mọi cấp.
+- Nhóm hàng mới cần cấp tiệm tương ứng và nâng **cả Kho lẫn Cửa hàng**. Món mới lên kệ với số lượng 0, phải tự nhập lần đầu. Save v4 giữ đủ 20 món và quyền nhập/trưng bày để không mất tiến trình.
+- Kệ cấp 1–4 hiển thị 4/6/8/10 ô trên một trang, thay số ngăn, chiều rộng và màu trang trí. Sắp kệ theo nhóm gom món cùng loại, thêm 2 ô mỗi trang (tối đa 12). Vật dụng khác có nhiều cấp với giá tăng và thay đổi trong cảnh. Món bán chạy đổi theo ngày: khách hỏi nhiều hơn 2,2 lần; giá nhập tăng 20%, giá bán do người chơi chỉnh trong giới hạn hiện hành. UI gợi ý giá bán, không tự thay giá đã đặt.
+- Giá mở Kho và Cửa hàng theo cấp 2–5 lần lượt 65/145/270/430 xu cho mỗi hạng mục. Giá vật dụng tăng theo cấp để phản ánh hiệu quả cộng dồn. Cần đo thêm tỷ lệ người chơi đạt các mốc với phong cách tự phục vụ và NPC để tinh chỉnh.
+
 ## 3b. Tự động hoá (bước 3)
 
 - **Nhân viên:** có 3 ứng viên hư cấu (Bình, Chi, Dũng), tối đa 2 NPC. Mỗi người có 3 chỉ số:

@@ -1,0 +1,52 @@
+import { PRODUCT_IDS, PRODUCTS } from './content/products';
+import type { ProductId } from './content/types';
+import type { DeepReadonly, SimState } from './types';
+
+export const MILESTONES = [
+  { level: 1, sales: 0, day: 1, slots: 4 },
+  { level: 2, sales: 8, day: 2, slots: 8 },
+  { level: 3, sales: 22, day: 3, slots: 12 },
+  { level: 4, sales: 45, day: 5, slots: 16 },
+  { level: 5, sales: 80, day: 7, slots: 20 },
+] as const;
+
+export function playerLevel(state: DeepReadonly<SimState>): number {
+  if (state.upgrades.includes('warehouse-5') && state.upgrades.includes('storefront-5')) return 5;
+  return MILESTONES.reduce((level, milestone) =>
+    state.stats.sales >= milestone.sales && state.day >= milestone.day ? milestone.level : level, 1);
+}
+
+export function facilityLevel(state: DeepReadonly<SimState>, facility: 'warehouse' | 'storefront' | 'wide-shelf'): number {
+  return 1 + state.upgrades.filter((id) => id === facility || id.startsWith(`${facility}-`)).length;
+}
+
+export function productLevel(id: ProductId): number {
+  return Math.floor(PRODUCT_IDS.indexOf(id) / 4) + 1;
+}
+
+export function isProductUnlocked(state: DeepReadonly<SimState>, id: ProductId): boolean {
+  const level = productLevel(id);
+  return level <= playerLevel(state) && level <= facilityLevel(state, 'warehouse') && level <= facilityLevel(state, 'storefront');
+}
+
+export function unlockedProducts(state: DeepReadonly<SimState>): ProductId[] {
+  return PRODUCT_IDS.filter((id) => isProductUnlocked(state, id));
+}
+
+/** Một mặt hàng thay đổi mỗi ngày; không dùng RNG nên save/replay luôn khớp. */
+export function trendingProduct(state: DeepReadonly<SimState>): ProductId {
+  const visible = unlockedProducts(state);
+  return visible[(state.day * 3 + Math.floor(state.day / 3)) % visible.length]!;
+}
+
+export function isTrending(state: DeepReadonly<SimState>, id: ProductId): boolean {
+  return trendingProduct(state) === id;
+}
+
+export function stockUnitCost(state: DeepReadonly<SimState>, id: ProductId): number {
+  return isTrending(state, id) ? Math.ceil(PRODUCTS[id].cost * 1.2) : PRODUCTS[id].cost;
+}
+
+export function suggestedPrice(state: DeepReadonly<SimState>, id: ProductId): number {
+  return isTrending(state, id) ? Math.ceil(PRODUCTS[id].referencePrice * 1.2) : PRODUCTS[id].referencePrice;
+}

@@ -2,7 +2,7 @@ import type { ComplaintResponse } from './content/reviews';
 import type { ArchetypeId, ProductId, ReasonCode, RequestKind, StaffLook, StaffRole, TraitId } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export interface ReputationConfig {
   /** Điểm sao "mặc định" khi còn ít đánh giá (làm mượt kiểu Bayes). */

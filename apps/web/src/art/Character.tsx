@@ -28,11 +28,10 @@ function Tear() {
   return <path d="M21,-86 Q16,-77 21,-76 Q26,-77 21,-86Z" fill="#95BFCA" stroke={INK} strokeWidth={1} />;
 }
 
-function Body({ shirt, pants, skin, variant = 0, children }: { shirt: string; pants: string; skin: string; variant?: number; children?: React.ReactNode }) {
+function Body({ shirt, pants, skin, variant = 0, seated = false, children }: { shirt: string; pants: string; skin: string; variant?: number; seated?: boolean; children?: React.ReactNode }) {
   return <g>
     <ellipse cy={-1} rx={24} ry={5} fill={INK} opacity={0.12} />
-    <path d="M-15,-26 L-13,-6 Q-13,-3 -20,-2 L-21,1 H-2 L-3,-27Z M3,-27 L2,-2 H21 L20,-5 Q14,-8 15,-26Z" fill={pants} stroke={INK} strokeWidth={2} strokeLinejoin="round" />
-    <path d="M-21,-2 H-2 M2,-2 H21" {...line} strokeWidth={2.5} />
+    {seated ? <><path d="M-18,-25 Q-29,-19 -28,-8 L-11,-7 L-4,-20 M4,-20 L12,-7 L29,-8 Q30,-18 18,-25Z" fill={pants} stroke={INK} strokeWidth={2} strokeLinejoin="round" /><path d="M-30,-7 H-10 M10,-7 H30" {...line} strokeWidth={2.5} /></> : <><path d="M-15,-26 L-13,-6 Q-13,-3 -20,-2 L-21,1 H-2 L-3,-27Z M3,-27 L2,-2 H21 L20,-5 Q14,-8 15,-26Z" fill={pants} stroke={INK} strokeWidth={2} strokeLinejoin="round" /><path d="M-21,-2 H-2 M2,-2 H21" {...line} strokeWidth={2.5} /></>}
     <path d="M-17,-53 Q-24,-53 -28,-44 L-27,-27 Q-23,-23 -20,-29 L-18,-39 L-20,-23 Q0,-17 20,-23 L18,-39 L20,-29 Q23,-23 27,-27 L28,-44 Q24,-53 17,-53Z" fill={shirt} stroke={INK} strokeWidth={2} strokeLinejoin="round" />
     <path d="M-25,-28 Q-23,-24 -20,-27 M20,-27 Q23,-24 25,-28" fill="none" stroke={skin} strokeWidth={7} strokeLinecap="round" />
     <path d="M-17,-49 Q0,-54 17,-49" fill="none" stroke="#FFFFFF" strokeOpacity={0.34} strokeWidth={2.5} strokeLinecap="round" />
@@ -76,13 +75,13 @@ function CustomerAccessory({ variant }: { variant: number }) {
   }
 }
 
-export function CustomerFigure({ look, expression }: { look: CustomerLook; expression: FaceExpression }) {
+export function CustomerFigure({ look, expression, seated = false }: { look: CustomerLook; expression: FaceExpression; seated?: boolean }) {
   const skin = pick(SKIN, look.skin);
   const shirt = pick(OUTFIT, look.outfit);
   const hair = pick(HAIR, look.hair);
   return <g>
     <BackHair hair={hair} style={look.hairStyle} />
-    <Body shirt={shirt} pants={pick(PANTS, look.outfit)} skin={skin} variant={look.outfit}><CustomerAccessory variant={look.outfit} /></Body>
+    <Body shirt={shirt} pants={pick(PANTS, look.outfit)} skin={skin} variant={look.outfit} seated={seated}><CustomerAccessory variant={look.outfit} /></Body>
     <Head skin={skin} hair={hair} style={look.hairStyle} cap={shirt} />
     <Face expression={expression} />
   </g>;

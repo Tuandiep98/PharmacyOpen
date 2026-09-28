@@ -1,4 +1,4 @@
-import { nextExpiry, priceBounds, PRODUCTS, type DeepReadonly, type ProductId, type SimState } from '@pharmacy/simulation';
+import { nextExpiry, priceBounds, PRODUCTS, isTrending, productLevel, stockUnitCost, suggestedPrice, type DeepReadonly, type ProductId, type SimState } from '@pharmacy/simulation';
 import { useState } from 'react';
 import { BRAND } from '../../brand';
 import { BoxIcon, WarningIcon } from '../../art/Icons';
@@ -17,10 +17,10 @@ const CATEGORY: Record<string, string> = {
 export function RestockButton({ state, productId, compact = false }: { state: DeepReadonly<SimState>; productId: ProductId; compact?: boolean }) {
   const bridge = useBridge();
   const [error, setError] = useState<string | null>(null);
-  const p = PRODUCTS[productId];
   const missing = state.stock[productId].capacity - state.stock[productId].shelf;
-  const affordable = Math.min(missing, Math.floor(state.money / p.cost));
-  const label = missing === 0 ? 'Kệ đầy' : affordable === 0 ? 'Không đủ xu' : `Nhập +${affordable} · ${affordable * p.cost} ${BRAND.currency}`;
+  const unitCost = stockUnitCost(state, productId);
+  const affordable = Math.min(missing, Math.floor(state.money / unitCost));
+  const label = missing === 0 ? 'Kệ đầy' : affordable === 0 ? 'Không đủ xu' : `Nhập +${affordable} · ${affordable * unitCost} ${BRAND.currency}`;
   return (
     <div className={compact ? '' : 'stack'}>
       <GameButton
@@ -57,11 +57,12 @@ export function ProductSheet({ state, productId }: { state: DeepReadonly<SimStat
         </div>
         <div className="service-who">
           <strong>{p.name}</strong>
+          <span className="small">Mặt hàng cấp {productLevel(productId)} {isTrending(state, productId) && <span className="trend-tag">Bán chạy hôm nay</span>}</span>
           <span className="muted small">
             Nhãn hư cấu “{p.brand}” · {CATEGORY[p.category]}
           </span>
           <span className="small">
-            Giá bán <b>{state.prices[productId]}</b> · Giá vốn {p.cost} {BRAND.currency}
+            Giá bán <b>{state.prices[productId]}</b> · Giá nhập hôm nay {stockUnitCost(state, productId)} {BRAND.currency}
           </span>
         </div>
       </div>
@@ -78,6 +79,7 @@ export function ProductSheet({ state, productId }: { state: DeepReadonly<SimStat
       </div>
       <p className="small muted">Lô gần nhất: {expiry === null ? 'chưa có hàng' : `còn ${Math.max(0, Math.ceil((expiry - state.timeMs) / state.config.dayMs))} ngày trong game`}. Hàng hết hạn sẽ tự rời kệ.</p>
       <RestockButton state={state} productId={productId} />
+      {isTrending(state, productId) && <p className="small trend-note">Khách hỏi món này nhiều hơn hôm nay. Giá nhập tăng 20%; giá bán gợi ý {suggestedPrice(state, productId)} xu. Bạn có thể chỉnh giá bên dưới.</p>}
       <PriceControl state={state} productId={productId} />
     </div>
   );
@@ -110,7 +112,7 @@ export function PriceControl({ state, productId }: { state: DeepReadonly<SimStat
         </GameButton>
       </div>
       <span className="small muted">
-        Giá tham khảo {ref} · lãi {price - p.cost} {BRAND.currency}/món · cho phép {min}–{max}
+        Giá tham khảo {ref} · lãi {price - stockUnitCost(state, productId)} {BRAND.currency}/món nhập hôm nay · cho phép {min}–{max}
       </span>
       {diff > 0 ? (
         <span className="small warn-text">Cao hơn giá tham khảo {diff}%: khách nhạy giá dễ chê đắt, sao cửa hàng có thể giảm.</span>

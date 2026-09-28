@@ -92,6 +92,7 @@ export interface StaffCandidateDef {
 }
 
 export type UpgradeEffect =
+  | { type: 'catalog'; facility: 'warehouse' | 'storefront'; add: number }
   | { type: 'scale'; key: 'checkoutMs' | 'retrieveMs'; factor: number }
   | { type: 'shelfCapacity'; add: number }
   | { type: 'queue'; addMax: number; patienceFactor: number }

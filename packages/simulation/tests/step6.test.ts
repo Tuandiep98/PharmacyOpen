@@ -22,7 +22,7 @@ describe('kho theo lô', () => {
     for (const entry of Object.values(s.stock)) for (const batch of entry.batches) batch.expiresAtMs = 1000;
     const sim = new Simulation(s);
     runFor(sim, 1000);
-    expect(sim.snapshot.stats.expiredStock).toBe(Object.values(PRODUCTS).reduce((sum, p) => sum + p.shelfCapacity, 0));
+    expect(sim.snapshot.stats.expiredStock).toBe(Object.values(PRODUCTS).slice(0, 4).reduce((sum, p) => sum + p.shelfCapacity, 0));
     expect(Object.values(sim.snapshot.stock).every((e) => e.shelf === 0 && e.batches.length === 0)).toBe(true);
     expect(sim.drainEvents().some((e) => e.type === 'stockExpired')).toBe(true);
   });
