@@ -1,4 +1,4 @@
-import { PRODUCT_IDS, PRODUCTS, type DeepReadonly, type SimState } from '@pharmacy/simulation';
+import { nextExpiry, PRODUCT_IDS, PRODUCTS, type DeepReadonly, type SimState } from '@pharmacy/simulation';
 import { ProductIcon } from '../../art/Products';
 import { BRAND } from '../../brand';
 import { useUi } from '../../ui/uiStore';
@@ -19,6 +19,8 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
         {PRODUCT_IDS.map((id) => {
           const p = PRODUCTS[id];
           const shelf = state.stock[id].shelf;
+          const expiry = nextExpiry(state, id);
+          const daysLeft = expiry === null ? null : Math.max(0, Math.ceil((expiry - state.timeMs) / state.config.dayMs));
           return (
             <li key={id} className={shelf === 0 ? 'empty' : shelf <= 1 ? 'low' : ''}>
               <ProductIcon id={id} size={36} />
@@ -33,6 +35,7 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
                 <span className="muted small">
                   {shelf}/{state.stock[id].capacity} trên kệ · giá {state.prices[id]} · lãi {state.prices[id] - p.cost} {BRAND.currency}/món
                   {state.prices[id] > p.referencePrice && <span className="warn-text"> · cao hơn tham khảo</span>}
+                  {daysLeft !== null && <span className={daysLeft <= 2 ? 'warn-text' : ''}> · lô gần nhất còn {daysLeft} ngày</span>}
                 </span>
               </button>
               <RestockButton state={state} productId={id} compact />

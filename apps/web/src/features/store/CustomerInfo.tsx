@@ -25,6 +25,7 @@ export function CustomerInfo({ state, customerId }: { state: DeepReadonly<SimSta
         <Portrait customer={customer} />
         <div className="service-who">
           <strong>{archetype.name}</strong>
+          {customer.loyaltyId && <span className="small good-text">Khách quen · lần ghé {((state.loyalty.find((p) => p.id === customer.loyaltyId)?.visits) ?? 0) + 1}</span>}
           <span className="muted small">{archetype.description}</span>
           <span className="patience" aria-label={`Kiên nhẫn ${Math.round(ratio * 100)}%`}>
             <ClockIcon size={16} />

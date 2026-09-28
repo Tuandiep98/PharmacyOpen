@@ -30,6 +30,7 @@ function withCustomerAtCounter(requestId: string, patienceMs = 30000) {
     orderId: null,
     outcome: null,
     leaveAtMs: 0,
+    loyaltyId: null,
   };
   state.counters[0]!.customerId = 'c1';
   const sim = new Simulation(state);

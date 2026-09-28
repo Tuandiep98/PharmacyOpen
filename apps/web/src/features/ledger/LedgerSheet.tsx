@@ -50,6 +50,9 @@ export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
         <Row label="Lương cuối ngày (dự kiến)" value={-(wages + owed)} muted />
         <Row label="Lãi/lỗ đến giờ" value={today.profit} strong />
       </dl>
+      {(today.expiredStock > 0 || today.returningCustomers > 0) && (
+        <p className="muted small">{today.returningCustomers} khách quen quay lại · {today.expiredStock} món hết hạn. Tiền hàng hết hạn đã nằm trong chi phí nhập hàng.</p>
+      )}
 
       {owed > 0 && (
         <div className="notice bad" role="alert">
@@ -106,6 +109,8 @@ export function DayReportCard({ report }: { report: DeepReadonly<DayReport> }) {
         {report.customers} khách · {report.sales} lượt bán · {report.referrals} lần khuyên đi khám
         {report.leftAngry + report.turnedAway > 0 && ` · ${report.leftAngry + report.turnedAway} khách bỏ về`}
         {report.avgStars !== null && ` · ${formatRating(report.avgStars)}★ (${report.reviews} đánh giá)`}
+        {report.returningCustomers > 0 && ` · ${report.returningCustomers} khách quen`}
+        {report.expiredStock > 0 && ` · ${report.expiredStock} món hết hạn`}
       </span>
       {report.wagesOwed > 0 && <span className="small neg">Còn nợ lương {report.wagesOwed} {BRAND.currency}</span>}
     </div>

@@ -56,6 +56,8 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     leftAngry: now.leftAngry - start.stats.leftAngry,
     turnedAway: now.turnedAway - start.stats.turnedAway,
     reviews,
+    expiredStock: now.expiredStock - start.stats.expiredStock,
+    returningCustomers: now.returningCustomers - start.stats.returningCustomers,
     // Phản hồi khiếu nại có thể nâng sao của đánh giá cũ; đó vẫn là thay đổi trong ngày nên giữ nguyên cách tính.
     avgStars: reviews > 0 ? starsSum / reviews : null,
   };
@@ -72,6 +74,13 @@ export function dayProgress(state: DeepReadonly<SimState>): number {
  */
 export function endDayIfDue(state: SimState, emit: Emit): void {
   if (state.timeMs - state.dayStartedAtMs < state.config.dayMs) return;
+
+  // Khiếu nại cũ tự đóng sau 2 ngày game; đánh giá và số sao vẫn giữ nguyên.
+  for (const complaint of state.complaints) {
+    if (complaint.status === 'open' && state.timeMs - complaint.atMs >= 2 * state.config.dayMs) {
+      complaint.status = 'closed';
+    }
+  }
 
   let paidTotal = 0;
   for (const worker of Object.values(state.workers)) {

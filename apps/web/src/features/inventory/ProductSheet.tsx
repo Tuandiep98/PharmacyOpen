@@ -1,4 +1,4 @@
-import { priceBounds, PRODUCTS, type DeepReadonly, type ProductId, type SimState } from '@pharmacy/simulation';
+import { nextExpiry, priceBounds, PRODUCTS, type DeepReadonly, type ProductId, type SimState } from '@pharmacy/simulation';
 import { useState } from 'react';
 import { BRAND } from '../../brand';
 import { BoxIcon, WarningIcon } from '../../art/Icons';
@@ -48,6 +48,7 @@ export function RestockButton({ state, productId, compact = false }: { state: De
 export function ProductSheet({ state, productId }: { state: DeepReadonly<SimState>; productId: ProductId }) {
   const p = PRODUCTS[productId];
   const { shelf, capacity } = state.stock[productId];
+  const expiry = nextExpiry(state, productId);
   return (
     <div className="product-sheet">
       <div className="service-head">
@@ -75,6 +76,7 @@ export function ProductSheet({ state, productId }: { state: DeepReadonly<SimStat
           {shelf}/{capacity}
         </b>
       </div>
+      <p className="small muted">Lô gần nhất: {expiry === null ? 'chưa có hàng' : `còn ${Math.max(0, Math.ceil((expiry - state.timeMs) / state.config.dayMs))} ngày trong game`}. Hàng hết hạn sẽ tự rời kệ.</p>
       <RestockButton state={state} productId={productId} />
       <PriceControl state={state} productId={productId} />
     </div>

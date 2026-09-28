@@ -33,6 +33,7 @@ function placeCustomer(state: SimState, id: string, archetypeId: 'hurried' | 'cu
     orderId: null,
     outcome: null,
     leaveAtMs: 0,
+    loyaltyId: null,
   };
   state.counters[0]!.customerId = id;
 }

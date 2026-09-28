@@ -4,10 +4,12 @@ import { ARCHETYPE_IDS, ARCHETYPES } from './content/archetypes';
 import { REQUESTS } from './content/requests';
 import type { Emit } from './events';
 import { LOOK_VARIANTS } from './looks';
+import { returningProfile } from './loyalty';
 import { endDayIfDue } from './economy';
 import { demandMultiplier } from './reputation';
 import { nextInt, pickWeighted } from './rng';
 import { dismissCustomer, newId, returnReservedStock } from './state';
+import { expireStock } from './stock';
 import type { Customer, Order, SimState } from './types';
 
 /** Tiến mô phỏng đúng một bước cố định `config.tickMs`. */
@@ -15,6 +17,8 @@ export function tick(state: SimState, emit: Emit): void {
   const dt = state.config.tickMs;
   state.tick += 1;
   state.timeMs += dt;
+
+  expireStock(state, emit);
 
   for (const order of Object.values(state.orders)) advanceOrder(state, order, dt, emit);
   for (const customer of Object.values(state.customers)) advanceCustomer(state, customer, dt, emit);
@@ -30,6 +34,16 @@ export function tick(state: SimState, emit: Emit): void {
 }
 
 function advanceOrder(state: SimState, order: Order, dt: number, emit: Emit): void {
+  if (order.productId && order.productExpiresAtMs !== null && order.productExpiresAtMs <= state.timeMs) {
+    const productId = order.productId;
+    state.stats.expiredStock += 1;
+    order.productId = null;
+    order.productExpiresAtMs = null;
+    order.state = 'deciding';
+    order.timerMs = order.timerTotalMs = 0;
+    emit({ type: 'stockExpired', productId, qty: 1 });
+    return;
+  }
   if (order.state !== 'retrieving' && order.state !== 'checkingOut' && order.state !== 'referring') return;
   order.timerMs = Math.max(0, order.timerMs - dt);
   if (order.timerMs > 0) return;
@@ -144,7 +158,10 @@ function maybeSpawn(state: SimState, emit: Emit): void {
   }
 
   const rng = state.rng.customer;
-  const archetype = ARCHETYPES[pickWeighted(rng, ARCHETYPE_IDS.map((id) => [id, ARCHETYPES[id].spawnWeight] as const))];
+  const returning = returningProfile(state);
+  const archetype = returning
+    ? ARCHETYPES[returning.archetypeId]
+    : ARCHETYPES[pickWeighted(rng, ARCHETYPE_IDS.map((id) => [id, ARCHETYPES[id].spawnWeight] as const))];
   const requestId = pickWeighted(
     rng,
     Object.entries(archetype.requestWeights).map(([id, w]) => [id, w ?? 0] as const),
@@ -155,7 +172,7 @@ function maybeSpawn(state: SimState, emit: Emit): void {
     id,
     archetypeId: archetype.id,
     requestId,
-    look: {
+    look: returning ? { ...returning.look } : {
       skin: nextInt(rng, 0, LOOK_VARIANTS.skin - 1),
       hair: nextInt(rng, 0, LOOK_VARIANTS.hair - 1),
       hairStyle: nextInt(rng, 0, LOOK_VARIANTS.hairStyle - 1),
@@ -171,8 +188,10 @@ function maybeSpawn(state: SimState, emit: Emit): void {
     orderId: null,
     outcome: null,
     leaveAtMs: 0,
+    loyaltyId: returning?.id ?? null,
   };
   state.queue.push(id);
   state.stats.customersArrived += 1;
+  if (returning) state.stats.returningCustomers += 1;
   emit({ type: 'customerArrived', customerId: id });
 }

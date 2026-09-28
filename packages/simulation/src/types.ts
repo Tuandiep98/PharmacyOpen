@@ -2,7 +2,7 @@ import type { ComplaintResponse } from './content/reviews';
 import type { ArchetypeId, ProductId, ReasonCode, RequestKind, StaffLook, StaffRole, TraitId } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface ReputationConfig {
   /** Điểm sao "mặc định" khi còn ít đánh giá (làm mượt kiểu Bayes). */
@@ -47,6 +47,10 @@ export interface SimConfig {
   offlineCapMs: number;
   /** Số bản tổng kết ngày giữ lại. */
   keepDayReports: number;
+  /** Tuổi thọ một lô hàng, tính theo thời gian mô phỏng. */
+  stockShelfLifeMs: number;
+  /** Xác suất ưu tiên khách quen đã đủ thời gian quay lại. */
+  returningCustomerChance: number;
   /** Số khách tối đa đang xếp hàng (không tính khách ở quầy). */
   maxQueue: number;
   retrieveMs: number;
@@ -98,6 +102,7 @@ export interface Customer {
   orderId: string | null;
   outcome: CustomerOutcome | null;
   leaveAtMs: number;
+  loyaltyId: string | null;
 }
 
 export type OrderState =
@@ -126,6 +131,8 @@ export interface Order {
   state: OrderState;
   /** Sản phẩm đã lấy khỏi kệ (đã trừ kho). */
   productId: ProductId | null;
+  /** Hạn của món đã lấy khỏi kệ; trả về đúng lô nếu khách từ chối. */
+  productExpiresAtMs: number | null;
   timerMs: number;
   timerTotalMs: number;
   facts: InteractionFact[];
@@ -211,7 +218,7 @@ export interface Review {
 export interface Complaint {
   id: string;
   reviewId: string;
-  status: 'open' | 'resolved';
+  status: 'open' | 'resolved' | 'closed';
   response: ComplaintResponse | null;
   improved: boolean;
   atMs: number;
@@ -234,6 +241,22 @@ export interface Counter {
 export interface StockEntry {
   shelf: number;
   capacity: number;
+  batches: StockBatch[];
+}
+
+export interface StockBatch {
+  qty: number;
+  expiresAtMs: number;
+}
+
+export interface LoyaltyProfile {
+  id: string;
+  archetypeId: ArchetypeId;
+  look: CustomerLook;
+  visits: number;
+  goodVisits: number;
+  lastOutcome: CustomerOutcome;
+  nextEligibleAtMs: number;
 }
 
 export interface SimStats {
@@ -251,6 +274,8 @@ export interface SimStats {
   spentOnWages: number;
   /** Khách tới nhưng hàng chờ đầy nên bỏ đi ngay. */
   turnedAway: number;
+  expiredStock: number;
+  returningCustomers: number;
 }
 
 /** Tổng kết một ngày: chênh lệch sổ sách giữa đầu và cuối ngày. */
@@ -271,6 +296,8 @@ export interface DayReport {
   leftAngry: number;
   turnedAway: number;
   reviews: number;
+  expiredStock: number;
+  returningCustomers: number;
   /** Trung bình sao của các đánh giá mới trong ngày (null nếu không có). */
   avgStars: number | null;
 }
@@ -299,6 +326,7 @@ export interface SimState {
   workers: Record<string, Worker>;
   orders: Record<string, Order>;
   stock: Record<ProductId, StockEntry>;
+  loyalty: LoyaltyProfile[];
   /** Giá bán đang áp dụng; người chơi chỉnh bằng lệnh setPrice. */
   prices: Record<ProductId, number>;
   /** Ngày hiện tại (bắt đầu từ 1) và thời điểm ngày bắt đầu. */

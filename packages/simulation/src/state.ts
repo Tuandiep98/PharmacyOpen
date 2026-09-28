@@ -3,6 +3,7 @@ import { PRODUCT_IDS, PRODUCTS } from './content/products';
 import type { ProductId, StaffCandidateDef } from './content/types';
 import type { Emit } from './events';
 import { recordInteraction } from './reputation';
+import { recordVisit } from './loyalty';
 import { createStream } from './rng';
 import {
   SAVE_VERSION,
@@ -19,7 +20,11 @@ export const PLAYER_WORKER_ID = 'w-player';
 
 export function createInitialState(seed: number, config: SimConfig = DEFAULT_CONFIG): SimState {
   const stock = {} as Record<ProductId, StockEntry>;
-  for (const id of PRODUCT_IDS) stock[id] = { shelf: PRODUCTS[id].shelfCapacity, capacity: PRODUCTS[id].shelfCapacity };
+  for (const id of PRODUCT_IDS) stock[id] = {
+    shelf: PRODUCTS[id].shelfCapacity,
+    capacity: PRODUCTS[id].shelfCapacity,
+    batches: [{ qty: PRODUCTS[id].shelfCapacity, expiresAtMs: config.stockShelfLifeMs }],
+  };
 
   const player: Worker = {
     id: PLAYER_WORKER_ID,
@@ -63,6 +68,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     spentOnVouchers: 0,
     spentOnWages: 0,
     turnedAway: 0,
+    expiredStock: 0,
+    returningCustomers: 0,
   };
 
   const ownConfig = cloneConfig(config);
@@ -87,6 +94,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     workers: { [PLAYER_WORKER_ID]: player },
     orders: {},
     stock,
+    loyalty: [],
     prices,
     day: 1,
     dayStartedAtMs: 0,
@@ -135,8 +143,18 @@ export function newId(state: SimState, prefix: string): string {
 export function returnReservedStock(state: SimState, orderId: string): void {
   const order = state.orders[orderId];
   if (!order?.productId) return;
-  state.stock[order.productId].shelf += 1;
+  if (order.productExpiresAtMs !== null && order.productExpiresAtMs > state.timeMs && state.stock[order.productId].shelf < state.stock[order.productId].capacity) {
+    const entry = state.stock[order.productId];
+    entry.shelf += 1;
+    const existing = entry.batches.find((batch) => batch.expiresAtMs === order.productExpiresAtMs);
+    if (existing) existing.qty += 1;
+    else entry.batches.push({ qty: 1, expiresAtMs: order.productExpiresAtMs });
+    entry.batches.sort((a, b) => a.expiresAtMs - b.expiresAtMs);
+  } else {
+    state.stats.expiredStock += 1;
+  }
   order.productId = null;
+  order.productExpiresAtMs = null;
 }
 
 /**
@@ -145,6 +163,7 @@ export function returnReservedStock(state: SimState, orderId: string): void {
  */
 export function dismissCustomer(state: SimState, customer: Customer, outcome: CustomerOutcome, emit: Emit): void {
   recordInteraction(state, customer, customer.orderId ? state.orders[customer.orderId] : undefined, outcome, emit);
+  recordVisit(state, customer, outcome);
   if (customer.orderId) {
     const order = state.orders[customer.orderId];
     if (order) {

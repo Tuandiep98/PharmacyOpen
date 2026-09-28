@@ -16,7 +16,7 @@
 | RNG | seeded | mulberry32, **mỗi hệ thống một luồng riêng** (`spawn`, `customer`, sau này thêm `review`…) | Thêm random ở hệ này không làm lệch hệ khác |
 | Vòng lặp | fixed timestep | Tick 100 ms. UI đọc lại khoảng 10 Hz. Mỗi khung hình chạy bù tối đa 10 tick. Tab ẩn thì dừng hẳn | Không bao giờ có vòng lặp đuổi kịp vô hạn |
 | Lưu trữ (bước 5) | Dexie | **localStorage + 2 ô luân phiên** + kiểm tra cấu trúc khi tải + migration theo phiên bản | Save chỉ vài chục KB (lịch sử đã cắt gọn) nên không cần IndexedDB; ô còn lại phòng khi lần ghi mới nhất hỏng |
-| Offline (bước 5) | giờ server | Dùng giờ client, chặn thời gian âm, **trần 1 giờ, chạy đúng mô phỏng thật** (không có công thức ước lượng). Người chơi tự đứng quầy thì tiệm đóng cửa khi vắng | Game chơi đơn, chưa có tài nguyên trả phí. Offline không thể lời hơn online vì dùng cùng mô phỏng |
+| Offline (bước 5) | giờ server | Dùng giờ client, chặn thời gian âm, **trần hiện tại 10 phút, chạy đúng mô phỏng thật** (không có công thức ước lượng). Người chơi tự đứng quầy thì tiệm đóng cửa khi vắng | Game chơi đơn, chưa có tài nguyên trả phí. Offline không thể lời hơn online vì dùng cùng mô phỏng |
 | Chỉ số nhân viên | 11 | **4**: `knowledge`, `speed`, `communication`, `morale`, cộng thêm trait | Người chơi đọc hiểu được |
 | Danh tiếng | 3 tầng | MVP: **sao công khai + hiệu suất nội bộ + danh tiếng cửa hàng**. Tầng thương hiệu và chi nhánh để sau | Chưa có chi nhánh |
 | Thuốc kê đơn | có kịch bản | **Không có trong MVP** | An toàn nội dung |
@@ -58,7 +58,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 3 | Tự động hoá: tuyển 1–2 NPC, FSM + chọn việc bằng utility, nâng cấp đơn giản, cảnh báo mất khách khi hàng chờ đầy | ✅ |
 | 4 | Đánh giá sao, hiệu suất nội bộ tách riêng, danh tiếng cửa hàng, khiếu nại | ✅ |
 | 5 | Kinh tế idle: ngày + lương, giá bán, sổ sách, lưu/tải có phiên bản, tiến trình offline có giới hạn, PWA service worker | ✅ (hạn dùng dời sang bước 6) |
-| 6 | Hạn dùng, khách quen, balance simulator | ⏭ tiếp theo |
+| 6 | Hạn dùng, khách quen, balance simulator | ✅ |
 | 7 | Nội dung (~20 sản phẩm, ~5 archetype), âm thanh, onboarding | |
 | 8 | Online (tuỳ chọn) | |
 
@@ -129,14 +129,17 @@ Cổng kiểm duyệt nội dung chặn thêm lời bình nói về kết quả 
 - **Cho nghỉ việc** (`dismissStaff`): phải trả hết nợ lương, không nghỉ được khi đang phục vụ dở; quầy trả về người chơi.
 - **Lưu game** (`save.ts`): file có `format` + `version`; save cũ được nâng cấp tuần tự (`MIGRATIONS`), config mới lấy giá trị mặc định. Save hỏng, không phải save, hoặc từ phiên bản mới hơn đều bị từ chối. Test xác nhận: lưu → tải → chạy tiếp cho kết quả trùng khớp tuyệt đối với không dừng.
   - Web: tự lưu mỗi 10 giây, khi ẩn tab và khi đóng trang; 2 ô luân phiên; save hỏng được cất riêng thay vì bị ghi đè. Có xuất/nhập file JSON và "Chơi lại từ đầu" (chạm hai lần).
-- **Vắng mặt** (`offline.ts#runOffline`): chạy đúng mô phỏng (cùng NPC, luật, seed) cho thời gian đã trôi, trần 1 giờ. Áp dụng cả khi mở lại game lẫn khi quay lại tab. Nếu người chơi tự đứng quầy thì tiệm đóng cửa: thời gian không trôi, không mất khách, không trả lương. Hộp thoại "Chào mừng trở lại" tóm tắt trung thực, kể cả khách bỏ về và khiếu nại.
+- **Vắng mặt** (`offline.ts#runOffline`): chạy đúng mô phỏng (cùng NPC, luật, seed) cho thời gian đã trôi; trần hiện tại **10 phút** sau cân bằng bước 6. Áp dụng cả khi mở lại game lẫn khi quay lại tab. Nếu người chơi tự đứng quầy thì tiệm đóng cửa: thời gian không trôi, không mất khách, không trả lương. Hộp thoại "Chào mừng trở lại" tóm tắt trung thực, kể cả khách bỏ về và khiếu nại.
 - **PWA:** `public/sw.js` tự viết (không thêm thư viện). Trang ưu tiên mạng, tài nguyên có hash dùng cache trước. Chỉ đăng ký ở bản build.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 
-- Cân bằng: một nhân viên giỏi tự chạy lãi khoảng 120–200 xu/ngày, nên 35 phút vắng mặt ≈ +2000 xu — quá hào phóng so với giá nâng cấp. Cần balance simulator để chỉnh lương/giá/trần offline.
-- Khi vắng mặt lâu, khiếu nại dồn nhiều (giữ tối đa 20). Có thể cần "phản hồi hàng loạt" hoặc để khiếu nại cũ tự đóng.
-- Hạn dùng sản phẩm chưa làm (cần kho theo lô, dời sang bước 6).
+- Bước 6 đã thêm kho theo lô: mỗi lô có số lượng và hạn theo thời gian game; lấy hàng theo hạn gần nhất trước, hàng hết hạn rời kệ. Món đã cầm mà hết hạn trước lúc thanh toán cũng bị loại và nhân viên phải chọn lại. Save v2 được nâng lên v3; hàng cũ nhận hạn mới, không bị mất.
+- Khách từng được phục vụ có hồ sơ giữ diện mạo và số lần ghé. Khách hài lòng có thể quay lại sau ít nhất 1 ngày game; xác suất quay lại mặc định 30%, lấy từ luồng RNG khách nên replay vẫn tất định. Kho hồ sơ giữ tối đa 40 người.
+- `npm run balance` chạy 3 kịch bản nhân viên qua nhiều seed (mặc định 12 seed × 12 ngày), báo lợi nhuận, lượt bán, khách bỏ về, hàng hết hạn, khiếu nại và khách quen. Có thể chỉnh bằng biến `BALANCE_SEEDS` và `BALANCE_DAYS`.
+- Đo 12 seed × 12 ngày: Bình 167,1; Chi 170,6; Dũng 161,5 xu/ngày. Trần vắng mặt giảm từ 1 giờ xuống **10 phút**, nên lượt 35 phút dự kiến khoảng 540–570 xu thay vì ~2000 xu. Save cũ dùng trần mặc định 1 giờ được chuyển sang mức mới. Kết quả thật phụ thuộc tồn kho và danh tiếng từng ván.
+- Khiếu nại chưa xử lý tự đóng sau 2 ngày game, không xóa hay sửa đánh giá. Hộp thoại vắng mặt báo số khiếu nại còn mở.
+- Cần tiếp tục đo trên nhiều cấu hình giá bán, nâng cấp và các seed bất lợi để cân bằng sâu hơn. Hạn dùng hiện là một thời hạn chung cho mọi sản phẩm, có thể tách riêng theo mặt hàng ở bước nội dung.
 - `commandLog` chỉ giữ 5000 lệnh gần nhất: `replay` dùng cho debug phiên ngắn, không cho cả ván dài.
 - Khách quen và khách quay lại (`loyalty`) chưa có.
 - Chưa có balance simulator. `tests/helpers.ts#autoPlay` là nền để dựng công cụ đó.

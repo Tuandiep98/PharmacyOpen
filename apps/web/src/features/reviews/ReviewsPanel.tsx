@@ -109,6 +109,7 @@ export function ReviewsPanel({ state }: { state: State }) {
       <h3>
         Khiếu nại cần phản hồi <span className="muted small">({open.length})</span>
       </h3>
+      <p className="muted small">Khiếu nại chưa xử lý tự đóng sau 2 ngày trong game; đánh giá vẫn được giữ lại.</p>
       {open.length === 0 ? (
         <EmptyState icon={<StarIcon />} title="Hộp thư đã gọn">Chưa có khiếu nại cần phản hồi.</EmptyState>
       ) : (

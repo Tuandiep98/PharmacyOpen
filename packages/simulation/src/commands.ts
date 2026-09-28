@@ -8,6 +8,7 @@ import { effectiveSpeed, priceBounds } from './economy';
 import { resolveComplaint } from './reputation';
 import type { Emit } from './events';
 import { dismissCustomer, newId, PLAYER_WORKER_ID, workerFromCandidate } from './state';
+import { addStock, takeStock } from './stock';
 import type { Order, SimState } from './types';
 
 /**
@@ -112,6 +113,7 @@ function startService(state: SimState, workerId: string, customerId: string, emi
     requestId: customer.requestId,
     state: 'deciding',
     productId: null,
+    productExpiresAtMs: null,
     timerMs: 0,
     timerTotalMs: 0,
     facts: [],
@@ -151,8 +153,10 @@ function pickProduct(state: SimState, workerId: string, orderId: string, product
   const entry = state.stock[productId];
   if (entry.shelf <= 0) return reject('out-of-stock');
 
-  entry.shelf -= 1;
+  const expiresAtMs = takeStock(entry);
+  if (expiresAtMs === null) return reject('out-of-stock');
   order.productId = productId;
+  order.productExpiresAtMs = expiresAtMs;
   order.state = 'retrieving';
   order.timerTotalMs = order.timerMs = Math.round(state.config.retrieveMs / workerSpeed(state, order.workerId));
   emit({ type: 'productPicked', orderId, productId });
@@ -172,6 +176,7 @@ function checkout(state: SimState, workerId: string, orderId: string): CommandRe
   const order = ownedOrder(state, workerId, orderId);
   if (typeof order === 'string') return reject(order);
   if (order.state !== 'ready' || !order.productId) return reject('invalid-order-state');
+  if (order.productExpiresAtMs !== null && order.productExpiresAtMs <= state.timeMs) return reject('out-of-stock');
   if (!REQUESTS[order.requestId]?.acceptable.includes(order.productId)) return reject('invalid-order-state');
   order.state = 'checkingOut';
   order.timerTotalMs = order.timerMs = Math.round(state.config.checkoutMs / workerSpeed(state, order.workerId));
@@ -189,7 +194,7 @@ function restock(state: SimState, productId: ProductId, workerId: string | null,
   if (qty <= 0) return reject('insufficient-funds');
   const cost = qty * product.cost;
   state.money -= cost;
-  entry.shelf += qty;
+  addStock(entry, qty, state.timeMs + state.config.stockShelfLifeMs);
   state.stats.spentOnStock += cost;
   emit({ type: 'restocked', productId, qty, cost, workerId });
   return OK;

@@ -29,8 +29,9 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
             <dl className="ledger-rows offline-rows">
               <div>
                 <dt>Khách ghé</dt>
-                <dd>{summary.customers}</dd>
+                <dd>{summary.customers}{summary.returningCustomers > 0 ? ` · ${summary.returningCustomers} khách quen` : ''}</dd>
               </div>
+              {summary.expiredStock > 0 && <div><dt>Hàng hết hạn</dt><dd className="neg">{summary.expiredStock} món</dd></div>}
               <div>
                 <dt>Lượt bán · khuyên đi khám</dt>
                 <dd>
@@ -70,8 +71,8 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
                 </div>
               )}
             </dl>
-            {summary.complaints > 0 && (
-              <p className="notice warn">Có {summary.complaints} khiếu nại mới — xem ở tab Đánh giá.</p>
+            {summary.openComplaints > 0 && (
+              <p className="notice warn">Có {summary.openComplaints} khiếu nại cần phản hồi — xem ở tab Đánh giá.</p>
             )}
           </>
         )}

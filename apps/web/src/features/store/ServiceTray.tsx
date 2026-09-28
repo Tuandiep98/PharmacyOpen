@@ -118,7 +118,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
               </span>
             </div>
             <div className="tray-speech">
-              <span className="tray-who">{ARCHETYPES[customer.archetypeId].name}</span>
+              <span className="tray-who">{ARCHETYPES[customer.archetypeId].name}{customer.loyaltyId ? ' · Khách quen' : ''}</span>
               <p>
                 {order?.state === 'referring' ? REFERRAL_MESSAGE : `“${REQUESTS[customer.requestId]?.text ?? ''}”`}
               </p>

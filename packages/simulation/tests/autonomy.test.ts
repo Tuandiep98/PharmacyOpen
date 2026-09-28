@@ -43,6 +43,7 @@ function placeCustomer(state: SimState, requestId: string, patienceMs = 60000) {
     orderId: null,
     outcome: null,
     leaveAtMs: 0,
+    loyaltyId: null,
   };
   state.counters[0]!.customerId = 'c1';
 }

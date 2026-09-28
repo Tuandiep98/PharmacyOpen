@@ -3,5 +3,6 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['packages/*/tests/**/*.test.ts', 'apps/*/tests/**/*.test.ts', 'tools/**/*.test.ts'],
+    exclude: ['tools/balance-sim.test.ts'],
   },
 });

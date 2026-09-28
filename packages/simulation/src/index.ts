@@ -30,3 +30,4 @@ export {
 } from './economy';
 export { createSave, loadSave, SAVE_FORMAT, type LoadError, type LoadResult, type SaveFile } from './save';
 export { runOffline, type OfflineSummary } from './offline';
+export { nextExpiry } from './stock';

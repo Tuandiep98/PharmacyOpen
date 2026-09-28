@@ -83,6 +83,46 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       for (const order of Object.values(state.orders)) if (isObject(order)) order.price = null;
     }
   },
+  2: (state) => {
+    // v3: tồn kho theo lô và hồ sơ khách quay lại. Hàng cũ nhận một hạn mới để không mất dữ liệu.
+    const timeMs = isNum(state.timeMs) ? state.timeMs : 0;
+    const life = DEFAULT_CONFIG.stockShelfLifeMs;
+    if (isObject(state.config) && state.config.offlineCapMs === 60 * 60_000) {
+      state.config.offlineCapMs = DEFAULT_CONFIG.offlineCapMs;
+    }
+    if (isObject(state.stock)) {
+      for (const entry of Object.values(state.stock)) {
+        if (isObject(entry) && isNum(entry.shelf)) {
+          entry.batches = entry.shelf > 0 ? [{ qty: entry.shelf, expiresAtMs: timeMs + life }] : [];
+        }
+      }
+    }
+    if (isObject(state.orders)) {
+      for (const order of Object.values(state.orders)) {
+        if (isObject(order)) order.productExpiresAtMs = order.productId ? timeMs + life : null;
+      }
+    }
+    if (isObject(state.customers)) {
+      for (const customer of Object.values(state.customers)) if (isObject(customer)) customer.loyaltyId = null;
+    }
+    state.loyalty = [];
+    if (Array.isArray(state.dayReports)) {
+      for (const report of state.dayReports) {
+        if (isObject(report)) {
+          report.expiredStock = 0;
+          report.returningCustomers = 0;
+        }
+      }
+    }
+    if (isObject(state.stats)) {
+      state.stats.expiredStock = 0;
+      state.stats.returningCustomers = 0;
+    }
+    if (isObject(state.dayStart) && isObject(state.dayStart.stats)) {
+      state.dayStart.stats.expiredStock = 0;
+      state.dayStart.stats.returningCustomers = 0;
+    }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -105,12 +145,22 @@ function isValidState(state: Loose): state is SimState & Loose {
   if (!isObject(s.stock) || !isObject(s.prices)) return false;
   for (const id of PRODUCT_IDS) {
     const entry = s.stock[id];
-    if (!isObject(entry) || !isNum(entry.shelf) || !isNum(entry.capacity) || entry.shelf < 0) return false;
+    if (!isObject(entry) || !isNum(entry.shelf) || !isNum(entry.capacity) || !Number.isInteger(entry.shelf) || !Number.isInteger(entry.capacity) || entry.capacity < 0 || entry.shelf < 0 || entry.shelf > entry.capacity) return false;
+    if (!Array.isArray(entry.batches) || !entry.batches.every((b: unknown) => isObject(b) && isNum(b.qty) && Number.isInteger(b.qty) && b.qty > 0 && isNum(b.expiresAtMs))) return false;
+    if (entry.batches.reduce((sum: number, b: { qty: number }) => sum + b.qty, 0) !== entry.shelf) return false;
     if (!isNum(s.prices[id])) return false;
   }
   if (!isObject(s.workers) || !isObject(s.customers) || !isObject(s.orders)) return false;
+  if (!Array.isArray(s.loyalty) || !s.loyalty.every((p: unknown) => isObject(p) && typeof p.id === 'string' && isNum(p.visits) && isNum(p.goodVisits) && p.goodVisits <= p.visits && isNum(p.nextEligibleAtMs) && isObject(p.look))) return false;
+  if (!isObject(s.stats) || !isNum(s.stats.expiredStock) || !isNum(s.stats.returningCustomers)) return false;
   for (const worker of Object.values(s.workers)) {
     if (!isObject(worker) || typeof worker.id !== 'string' || !isNum(worker.speed) || !isNum(worker.wage) || !isNum(worker.wageOwed)) return false;
+  }
+  for (const customer of Object.values(s.customers)) {
+    if (!isObject(customer) || typeof customer.id !== 'string' || !(customer.loyaltyId === null || typeof customer.loyaltyId === 'string')) return false;
+  }
+  for (const order of Object.values(s.orders)) {
+    if (!isObject(order) || typeof order.id !== 'string' || !(order.productExpiresAtMs === null || isNum(order.productExpiresAtMs))) return false;
   }
   const workers = s.workers;
   if (!Array.isArray(s.counters) || s.counters.length === 0) return false;

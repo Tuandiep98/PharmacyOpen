@@ -14,6 +14,7 @@ export type SimEvent = { at: number } & (
   | { type: 'customerLeft'; customerId: string; reason: 'angry' | 'unserved' }
   | { type: 'customerTurnedAway' }
   | { type: 'restocked'; productId: ProductId; qty: number; cost: number; workerId: string | null }
+  | { type: 'stockExpired'; productId: ProductId; qty: number }
   | { type: 'restockStarted'; productId: ProductId; workerId: string }
   | { type: 'staffHired'; workerId: string; cost: number }
   | { type: 'counterAssigned'; counterId: string; workerId: string }

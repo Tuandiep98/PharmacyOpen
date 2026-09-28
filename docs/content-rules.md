@@ -45,7 +45,7 @@
 ## 5. Quyền riêng tư
 
 - [x] MVP không thu thập dữ liệu cá nhân, không có analytics, không gọi mạng. Font được đóng gói sẵn, không tải từ Google Fonts.
-- [x] `localStorage` chỉ lưu cờ "đã xem lời chào". Mọi lần đọc/ghi đều bọc try/catch.
+- [x] `localStorage` lưu cờ "đã xem lời chào" và hai ô save game hư cấu. Không có dữ liệu cá nhân thật; mọi lần đọc/ghi đều bọc try/catch.
 - [ ] Khi có cloud save hoặc analytics: cần chính sách quyền riêng tư, khai báo Data safety (Google Play) và App Privacy (Apple), và chỉ dùng telemetry tổng hợp.
 
 ## 6. Phát hành tại Việt Nam ⚖️

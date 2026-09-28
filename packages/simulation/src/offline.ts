@@ -26,8 +26,11 @@ export interface OfflineSummary {
   reviews: number;
   avgStars: number | null;
   complaints: number;
+  openComplaints: number;
   daysEnded: number;
   moneyDelta: number;
+  expiredStock: number;
+  returningCustomers: number;
 }
 
 /** Số tick tối đa chạy trước khi dọn hàng đợi sự kiện, tránh giữ hàng chục nghìn sự kiện trong bộ nhớ. */
@@ -69,7 +72,10 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
     reviews,
     avgStars: reviews > 0 ? (after.reputation.starsSum - before.reputation.starsSum) / reviews : null,
     complaints,
+    openComplaints: after.complaints.filter((c) => c.status === 'open').length,
     daysEnded: after.day - before.day,
     moneyDelta: after.money - before.money,
+    expiredStock: after.stats.expiredStock - before.stats.expiredStock,
+    returningCustomers: after.stats.returningCustomers - before.stats.returningCustomers,
   };
 }
