@@ -60,6 +60,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 5 | Kinh tế idle: ngày + lương, giá bán, sổ sách, lưu/tải có phiên bản, tiến trình offline có giới hạn, PWA service worker | ✅ (hạn dùng dời sang bước 6) |
 | 6 | Hạn dùng, khách quen, balance simulator | ✅ |
 | 7 | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding | ✅ |
+| 7b | Ca làm, mở/đóng cửa, chấm công, tổng kết ngày, xếp hạng sao | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
 ## 3b. Tự động hoá (bước 3)
@@ -140,6 +141,20 @@ Cổng kiểm duyệt nội dung chặn thêm lời bình nói về kết quả 
 - Lần đầu mở game có hướng dẫn 4 bước: giới thiệu/lưu ý nội dung, đọc yêu cầu, phục vụ/chăm kệ, khuyên đi khám và giao quầy. Nút thông tin mở lại hướng dẫn; người chơi có thể bỏ qua và truy cập bản lưu nhanh.
 - Save v3 tự nâng lên v4: giữ nguyên tiền, hàng cũ, giá cũ và thêm hàng mẫu/giá mặc định cho 15 món mới. Cổng kiểm duyệt nội dung và test đảm bảo cả 20 món đều có yêu cầu xuất hiện được.
 - Balance simulator 12 seed × 12 ngày với danh mục mới: lợi nhuận trung bình khoảng 174–178 xu/ngày theo nhân viên; trần offline 10 phút vẫn giữ phần thưởng dự kiến dưới 650 xu.
+
+## 3f. Ca làm, mở/đóng cửa và tổng kết ngày
+
+Lấy cảm hứng từ quy trình mở ca, giao ca và kết ca của nhà thuốc bán lẻ (không dùng tên chuỗi thật). Logic nằm ở `packages/simulation/src/shift.ts`.
+
+- **Nhịp ngày** (`dayMs` = 4 phút, đồng hồ hiển thị 07:00–22:00): chuẩn bị (`prepMs` 15 s) → mở cửa → ca sáng → giao ca giữa ngày → ca chiều → đóng cửa (`closingMs` 15 s, không nhận khách mới, phục vụ nốt) → chốt sổ. Pha và ca suy ra từ thời gian trong ngày nên save/offline vẫn tất định. Ngày khai trương mở cửa ngay (không có pha chuẩn bị).
+- **Chuẩn bị mở cửa:** 4 việc (nhận két, ghi nhiệt độ/độ ẩm, rà hàng cận hạn, bày kệ) bằng lệnh `completePrep`; `openStore` mở sớm. Hết giờ chuẩn bị thì tự mở. NPC đang đứng quầy tự làm lần lượt các việc. Làm đủ 4 việc: khách hao kiên nhẫn chậm hơn (`prepPatienceFactor` 0,9) trong ngày.
+- **Ca và chấm công:** mỗi NPC có lịch ca (`setShifts`, ít nhất một ca); vào ca được ghi vào `shiftsToday`. Lương cuối ngày = lương trọn ngày × số ca đã vào / 2 (làm đủ hai ca bằng lương cũ). Ngoài ca thì làm nốt việc dở rồi nghỉ, không nhận quầy (`worker-off-duty`); lúc giao ca, quầy tự bàn giao cho NPC đang trong ca hoặc người chơi. Người chơi (quản lý) luôn có mặt.
+- **Tổng kết ngày:** thêm giá vốn hàng bán, hàng hết hạn theo giá vốn, phiếu giảm giá, **lãi ròng** = doanh thu − giá vốn − lương − phiếu − hàng hết hạn (nhập hàng là dòng tiền, không phải lỗ); `profit` giữ nghĩa dòng tiền. Có thời gian chờ trung bình, số việc chuẩn bị, số liệu từng ca, điểm tiệm lúc chốt.
+- **Xếp hạng ngày 1–3★** (`dayGoals`): lãi ròng dương; phục vụ đúng ≥ 85% khách; đánh giá trong ngày (hoặc điểm tiệm nếu chưa có) ≥ 4★. **Mốc sao cửa hàng** 4,0 / 4,3 / 4,6 (cần ≥ 10 đánh giá) chúc mừng một lần. Không có thưởng tiền, không có lệch két ngẫu nhiên.
+- Web: đồng hồ + pha trên HUD, bảng chuẩn bị trong cảnh, dải "đóng cửa", hộp thoại tổng kết ngày (tạm dừng mô phỏng), sổ sách lãi ròng/biên lãi, nút lịch ca ở tab Nhân sự.
+- Save v4 → v5: ngày đang dở coi như đã mở; nhân viên làm đủ hai ca; `dayMs` 3 phút cũ đổi sang 4 phút; báo cáo cũ để trống số liệu ca và hiển thị như dòng tiền.
+- Balance 12 seed × 12 ngày: Bình 203,8; Chi 209,8; Dũng 208,2 xu/ngày (ngày 4 phút); vắng 35 phút ước tính 510–525 xu.
+- **Chưa làm:** mệt mỏi khi làm ca kép (`morale`), thưởng theo xếp hạng ngày.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

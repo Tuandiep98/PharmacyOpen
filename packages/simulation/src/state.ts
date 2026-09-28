@@ -7,6 +7,7 @@ import { recordVisit } from './loyalty';
 import { createStream } from './rng';
 import {
   SAVE_VERSION,
+  SHIFT_IDS,
   type Customer,
   type CustomerOutcome,
   type SimConfig,
@@ -39,6 +40,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     look: { skin: 1, hair: 0, hairStyle: 0 },
     wage: 0,
     wageOwed: 0,
+    shifts: [...SHIFT_IDS],
+    shiftsToday: ['morning'],
     orderId: null,
     task: null,
     thinkUntilMs: 0,
@@ -70,6 +73,10 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     turnedAway: 0,
     expiredStock: 0,
     returningCustomers: 0,
+    costOfSales: 0,
+    expiredCost: 0,
+    waitMsSum: 0,
+    servedCount: 0,
   };
 
   const ownConfig = cloneConfig(config);
@@ -99,6 +106,11 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     day: 1,
     dayStartedAtMs: 0,
     dayReports: [],
+    // Ngày khai trương: tiệm đã chuẩn bị sẵn và mở cửa ngay; từ ngày 2 mới có pha chuẩn bị.
+    prep: { required: false, openedAtMs: 0, done: [] },
+    shiftMark: { shift: 'morning', stats: { ...stats } },
+    shiftSummaries: [],
+    ratingMilestones: [],
     upgrades: [],
     interactions: [],
     reviews: [],
@@ -122,6 +134,9 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     look: { ...candidate.look },
     wage: candidate.wage,
     wageOwed: 0,
+    // Mặc định làm cả hai ca; chấm công khi được tuyển (xem hire).
+    shifts: [...SHIFT_IDS],
+    shiftsToday: [],
     orderId: null,
     task: null,
     thinkUntilMs: 0,
@@ -152,6 +167,7 @@ export function returnReservedStock(state: SimState, orderId: string): void {
     entry.batches.sort((a, b) => a.expiresAtMs - b.expiresAtMs);
   } else {
     state.stats.expiredStock += 1;
+    state.stats.expiredCost += PRODUCTS[order.productId].cost;
   }
   order.productId = null;
   order.productExpiresAtMs = null;

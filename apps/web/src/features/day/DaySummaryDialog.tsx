@@ -1,0 +1,140 @@
+import { dayGoals, PREP_TASK_IDS, serviceRate, type DayReport, type DeepReadonly } from '@pharmacy/simulation';
+import { CheckIcon, CrossMarkIcon, StarIcon } from '../../art/Icons';
+import { BRAND } from '../../brand';
+import { formatRating } from '../../ui/Stars';
+import { GameButton } from '../../ui/primitives';
+import { GOAL_LABEL, percent, SHIFT_LABEL, signed } from './dayText';
+import './day.css';
+
+/** Tổng kết cuối ngày: xếp hạng theo mục tiêu, lãi lỗ theo hoạt động, chỉ số vận hành và từng ca. */
+export function DaySummaryDialog({ report, onClose }: { report: DeepReadonly<DayReport>; onClose: () => void }) {
+  return (
+    <div className="modal-backdrop">
+      <div className="modal day-summary" role="dialog" aria-modal="true" aria-labelledby="day-summary-title">
+        <h1 id="day-summary-title">Kết thúc ngày {report.day}</h1>
+        <DayGrade report={report} />
+        <DayGoalList report={report} />
+        <ProfitTable report={report} />
+        <DayMetrics report={report} />
+        {report.shifts.length > 0 && <ShiftTable report={report} />}
+        <GameButton tone="primary" size="large" onClick={onClose} autoFocus>
+          Sang ngày {report.day + 1}
+        </GameButton>
+      </div>
+    </div>
+  );
+}
+
+export function DayGrade({ report, size = 30 }: { report: DeepReadonly<DayReport>; size?: number }) {
+  const total = dayGoals(report).length;
+  return (
+    <span className="day-grade" role="img" aria-label={`Xếp hạng ngày: ${report.grade} trên ${total} sao`}>
+      {Array.from({ length: total }, (_, i) => (
+        <span key={i} className={i < report.grade ? 'on' : 'off'} aria-hidden>
+          <StarIcon size={size} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function DayGoalList({ report }: { report: DeepReadonly<DayReport> }) {
+  return (
+    <ul className="goal-list">
+      {dayGoals(report).map((goal) => (
+        <li key={goal.id} className={goal.met ? 'met' : 'missed'}>
+          {goal.met ? <CheckIcon size={18} /> : <CrossMarkIcon size={18} />}
+          <span>{GOAL_LABEL[goal.id]}</span>
+          <span className="sr-only">{goal.met ? 'đạt' : 'chưa đạt'}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Lãi lỗ theo hoạt động; nhập hàng và đầu tư chỉ là dòng tiền nên tách riêng bên dưới. */
+export function ProfitTable({ report }: { report: DeepReadonly<DayReport> }) {
+  const gross = report.revenue - report.costOfSales;
+  const margin = (value: number) => (report.revenue > 0 ? ` (${percent(value / report.revenue)})` : '');
+  return (
+    <dl className="ledger-rows">
+      <Row label="Doanh thu" value={report.revenue} />
+      <Row label="Giá vốn hàng đã bán" value={-report.costOfSales} />
+      <Row label={`Lãi gộp${margin(gross)}`} value={gross} strong />
+      {report.wages > 0 && <Row label="Lương nhân viên" value={-report.wages} />}
+      {report.vouchers > 0 && <Row label="Phiếu giảm giá" value={-report.vouchers} />}
+      {report.expiredCost > 0 && <Row label={`Hàng hết hạn (${report.expiredStock} món)`} value={-report.expiredCost} />}
+      <Row label={`Lãi ròng${margin(report.netProfit)}`} value={report.netProfit} strong />
+      <Row label="Dòng tiền trong ngày" value={report.profit} muted />
+    </dl>
+  );
+}
+
+function DayMetrics({ report }: { report: DeepReadonly<DayReport> }) {
+  const rate = serviceRate(report);
+  const lost = report.leftAngry + report.turnedAway;
+  const rows: [string, string][] = [
+    ['Khách ghé', `${report.customers}${report.returningCustomers > 0 ? ` · ${report.returningCustomers} khách quen` : ''}`],
+    ['Tỉ lệ phục vụ', rate === null ? '—' : `${percent(rate)} (${report.sales} bán · ${report.referrals} khuyên đi khám)`],
+    ['Khách bỏ về', report.customers > 0 ? `${lost} (${percent(lost / report.customers)})` : String(lost)],
+    ['Giá trị trung bình đơn', report.sales > 0 ? `${Math.round(report.revenue / report.sales)} ${BRAND.currency}` : '—'],
+    ['Chờ trung bình', report.avgWaitMs === null ? '—' : `${Math.round(report.avgWaitMs / 1000)} giây`],
+    [
+      'Đánh giá',
+      report.avgStars === null
+        ? `chưa có mới · tiệm ${formatRating(report.storeRating)}★`
+        : `${formatRating(report.avgStars)}★ (${report.reviews}) · tiệm ${formatRating(report.storeRating)}★`,
+    ],
+  ];
+  if (report.prepDone !== null) rows.push(['Chuẩn bị mở cửa', `${report.prepDone}/${PREP_TASK_IDS.length} việc`]);
+  return (
+    <dl className="ledger-rows day-metrics">
+      {rows.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function ShiftTable({ report }: { report: DeepReadonly<DayReport> }) {
+  return (
+    <table className="shift-table">
+      <caption>Theo ca</caption>
+      <thead>
+        <tr>
+          <th scope="col">Ca</th>
+          <th scope="col">Khách</th>
+          <th scope="col">Bán</th>
+          <th scope="col">Bỏ về</th>
+          <th scope="col">Thu</th>
+        </tr>
+      </thead>
+      <tbody>
+        {report.shifts.map((s) => (
+          <tr key={s.shift}>
+            <th scope="row">
+              {SHIFT_LABEL[s.shift]}
+              <span className="small muted">{s.staff.join(', ')}</span>
+            </th>
+            <td>{s.customers}</td>
+            <td>{s.sales}</td>
+            <td>{s.lost}</td>
+            <td>{s.revenue}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function Row({ label, value, strong, muted }: { label: string; value: number; strong?: boolean; muted?: boolean }) {
+  return (
+    <div className={`${strong ? 'strong' : ''} ${muted ? 'muted' : ''}`}>
+      <dt>{label}</dt>
+      <dd className={value > 0 ? 'pos' : value < 0 ? 'neg' : ''}>{signed(value)}</dd>
+    </div>
+  );
+}

@@ -29,6 +29,9 @@ import { ReviewsPanel } from './features/reviews/ReviewsPanel';
 import { LedgerSheet } from './features/ledger/LedgerSheet';
 import { OfflineDialog } from './features/ledger/OfflineDialog';
 import { OnboardingDialog } from './features/onboarding/OnboardingDialog';
+import { DaySummaryDialog } from './features/day/DaySummaryDialog';
+import { OpeningPanel } from './features/day/OpeningPanel';
+import { clockLabel, phaseLabel, SHIFT_LABEL } from './features/day/dayText';
 import { formatRating, starText } from './ui/Stars';
 import { useBridge, useGameEvents, useGameState } from './game/useGame';
 import { useUi, type Tab, type Toast } from './ui/uiStore';
@@ -64,8 +67,10 @@ export function App() {
   const [showInfo, setShowInfo] = useState(firstVisit);
   const offline = useUi((s) => s.offline);
   const setOffline = useUi((s) => s.setOffline);
+  const daySummary = useUi((s) => s.daySummary);
+  const setDaySummary = useUi((s) => s.setDaySummary);
   // Hộp thoại che màn hình thì tạm dừng mô phỏng.
-  const paused = showInfo || offline !== null;
+  const paused = showInfo || offline !== null || daySummary !== null;
 
   useEffect(() => {
     bridge.setRunning(!paused);
@@ -80,6 +85,7 @@ export function App() {
       <main className="stage">
         <div className="scene-wrap">
           <StoreScene state={state} />
+          <OpeningPanel state={state} />
           <Toasts />
         </div>
         <div className="side">
@@ -90,6 +96,7 @@ export function App() {
       <BottomNav state={state} />
       <DragGhost />
       {offline && !showInfo && <OfflineDialog summary={offline} onClose={() => setOffline(null)} />}
+      {daySummary && !offline && !showInfo && <DaySummaryDialog report={daySummary} onClose={() => setDaySummary(null)} />}
       {showInfo && (
         <OnboardingDialog
           seed={state.seed}
@@ -108,6 +115,7 @@ function useEventFeedback() {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
   const pushFloater = useUi((s) => s.pushFloater);
+  const setDaySummary = useUi((s) => s.setDaySummary);
   const lastTurnedAwayToast = useRef(-Infinity);
   const lastExpiryToast = useRef(-Infinity);
   const handler = useCallback(
@@ -219,14 +227,29 @@ function useEventFeedback() {
           case 'dayEnded': {
             const r = e.report;
             playSfx('milestone');
-            pushToast(
-              r.wagesOwed > 0 ? 'warn' : r.profit >= 0 ? 'good' : 'info',
-              r.wagesOwed > 0
-                ? `Hết ngày ${r.day}: thiếu xu trả lương, còn nợ ${r.wagesOwed} ${BRAND.currency}. Chạm vào số xu để xem sổ sách.`
-                : `Hết ngày ${r.day}: ${r.profit >= 0 ? 'lãi' : 'lỗ'} ${Math.abs(r.profit)} ${BRAND.currency}. Chạm vào số xu để xem sổ sách.`,
-            );
+            // Hộp thoại tổng kết ngày (tạm dừng mô phỏng tới khi người chơi sang ngày mới).
+            setDaySummary(r);
+            if (r.grade === 3) celebrate();
+            if (r.wagesOwed > 0) {
+              pushToast('warn', `Thiếu xu trả lương, còn nợ ${r.wagesOwed} ${BRAND.currency}. Nhân viên bị nợ lương làm chậm hơn.`);
+            }
             break;
           }
+          case 'storeOpened':
+            playSfx('arrive');
+            pushToast('info', e.auto ? `Tới giờ mở cửa — tiệm tự mở (${e.prepDone}/4 việc chuẩn bị).` : 'Tiệm đã mở cửa, chào đón khách!');
+            break;
+          case 'shiftChanged':
+            pushToast(
+              'info',
+              `Giao ca: ${SHIFT_LABEL[e.previous.shift]} bán ${e.previous.sales} đơn, thu ${e.previous.revenue} ${BRAND.currency}. Bắt đầu ${SHIFT_LABEL[e.shift].toLowerCase()}.`,
+            );
+            break;
+          case 'ratingMilestone':
+            playSfx('milestone');
+            celebrate();
+            pushToast('good', `Cột mốc: điểm tiệm đạt ${formatRating(e.stars)}★! Khách truyền tai nhau ghé tiệm.`);
+            break;
           case 'staffDismissed':
             pushToast('info', `${e.name} đã nghỉ việc. Có thể tuyển lại ở tab Nhân sự.`);
             break;
@@ -241,7 +264,7 @@ function useEventFeedback() {
         }
       }
     },
-    [bridge, pushToast, pushFloater],
+    [bridge, pushToast, pushFloater, setDaySummary],
   );
   useGameEvents(handler);
 }
@@ -276,6 +299,10 @@ function Hud({ state, onInfo }: { state: DeepReadonly<SimState>; onInfo: () => v
             <i style={{ width: `${progress * 100}%` }} />
           </span>
         </button>
+        <span className="chip hud-clock" aria-label={`${clockLabel(state)}, ${phaseLabel(state)}`}>
+          <b>{clockLabel(state)}</b>
+          <small>{phaseLabel(state)}</small>
+        </span>
         <span className="chip" aria-label={`Đánh giá cửa hàng ${formatRating(storeRating(state))} trên 5 sao`}>
           <StarIcon size={20} />
           <b>{formatRating(storeRating(state))}</b>
@@ -405,7 +432,15 @@ function ToastItem({ toast }: { toast: Toast }) {
     return () => window.clearTimeout(id);
   }, [dismiss, toast.id]);
   const icon =
-    toast.tone === 'good' ? <CheckIcon size={20} /> : toast.tone === 'info' ? <InfoIcon size={20} /> : toast.tone === 'warn' ? <WarningIcon size={20} /> : <CrossMarkIcon size={20} />;
+    toast.tone === 'good' ? (
+      <CheckIcon size={20} />
+    ) : toast.tone === 'info' ? (
+      <InfoIcon size={20} />
+    ) : toast.tone === 'warn' ? (
+      <WarningIcon size={20} />
+    ) : (
+      <CrossMarkIcon size={20} />
+    );
   return (
     <div className={`toast ${toast.tone}`} onClick={() => dismiss(toast.id)}>
       {icon}

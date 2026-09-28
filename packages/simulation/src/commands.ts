@@ -8,8 +8,9 @@ import { effectiveSpeed, priceBounds } from './economy';
 import { resolveComplaint } from './reputation';
 import type { Emit } from './events';
 import { dismissCustomer, newId, PLAYER_WORKER_ID, workerFromCandidate } from './state';
+import { checkIn, handOverCounters, isOnDuty, markPrepDone, openStore } from './shift';
 import { addStock, takeStock } from './stock';
-import type { Order, SimState } from './types';
+import { PREP_TASK_IDS, SHIFT_IDS, type Order, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /**
  * Lệnh là cách DUY NHẤT để thay đổi state từ bên ngoài. Người chơi và NPC gửi cùng loại lệnh
@@ -26,7 +27,10 @@ export type Command =
   | { type: 'buyUpgrade'; upgradeId: string }
   | { type: 'respondComplaint'; complaintId: string; response: ComplaintResponse }
   | { type: 'setPrice'; productId: ProductId; price: number }
-  | { type: 'dismissStaff'; workerId: string };
+  | { type: 'dismissStaff'; workerId: string }
+  | { type: 'completePrep'; taskId: PrepTaskId; workerId: string }
+  | { type: 'openStore' }
+  | { type: 'setShifts'; workerId: string; shifts: ShiftId[] };
 
 export type RejectReason =
   | 'unknown-worker'
@@ -52,7 +56,13 @@ export type RejectReason =
   | 'unknown-complaint'
   | 'complaint-closed'
   | 'price-out-of-range'
-  | 'cannot-dismiss-player';
+  | 'cannot-dismiss-player'
+  | 'worker-off-duty'
+  | 'store-already-open'
+  | 'unknown-prep-task'
+  | 'prep-already-done'
+  | 'invalid-shifts'
+  | 'cannot-schedule-player';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
 
@@ -83,6 +93,12 @@ export function applyCommand(state: SimState, command: Command, emit: Emit): Com
       return setPrice(state, command.productId, command.price, emit);
     case 'dismissStaff':
       return dismissStaff(state, command.workerId, emit);
+    case 'completePrep':
+      return completePrep(state, command.taskId, command.workerId, emit);
+    case 'openStore':
+      return openStoreCommand(state, emit);
+    case 'setShifts':
+      return setShifts(state, command.workerId, command.shifts, emit);
   }
 }
 
@@ -98,6 +114,7 @@ function startService(state: SimState, workerId: string, customerId: string, emi
   const worker = state.workers[workerId];
   if (!worker) return reject('unknown-worker');
   if (worker.orderId || worker.task) return reject('worker-busy');
+  if (!isOnDuty(state, worker)) return reject('worker-off-duty');
   const customer = state.customers[customerId];
   if (!customer) return reject('unknown-customer');
   const counter = state.counters.find((c) => c.customerId === customerId);
@@ -123,7 +140,11 @@ function startService(state: SimState, workerId: string, customerId: string, emi
   worker.orderId = orderId;
   worker.thinkUntilMs = 0;
   customer.orderId = orderId;
-  customer.servedAtMs ??= state.timeMs;
+  if (customer.servedAtMs === null) {
+    customer.servedAtMs = state.timeMs;
+    state.stats.waitMsSum += state.timeMs - customer.arrivedAtMs;
+    state.stats.servedCount += 1;
+  }
   emit({ type: 'serviceStarted', orderId, workerId, customerId });
   return OK;
 }
@@ -211,6 +232,8 @@ function hire(state: SimState, candidateId: string, emit: Emit): CommandResult {
   state.money -= candidate.hireCost;
   state.stats.spentOnStaff += candidate.hireCost;
   state.workers[worker.id] = worker;
+  // Vào làm ngay trong ca hiện tại (được tính lương ca này).
+  checkIn(state, worker);
   emit({ type: 'staffHired', workerId: worker.id, cost: candidate.hireCost });
   return OK;
 }
@@ -218,7 +241,9 @@ function hire(state: SimState, candidateId: string, emit: Emit): CommandResult {
 function assignCounter(state: SimState, counterId: string, workerId: string, emit: Emit): CommandResult {
   const counter = state.counters.find((c) => c.id === counterId);
   if (!counter) return reject('unknown-counter');
-  if (!state.workers[workerId]) return reject('unknown-worker');
+  const worker = state.workers[workerId];
+  if (!worker) return reject('unknown-worker');
+  if (!isOnDuty(state, worker)) return reject('worker-off-duty');
   // Đơn đang làm dở vẫn do người cũ hoàn tất; người mới nhận từ khách tiếp theo.
   counter.operatorId = workerId;
   emit({ type: 'counterAssigned', counterId, workerId });
@@ -286,6 +311,42 @@ function dismissStaff(state: SimState, workerId: string, emit: Emit): CommandRes
   return OK;
 }
 
+/** Việc chuẩn bị đầu ngày: chỉ làm được trước khi mở cửa, mỗi việc một lần, người làm phải đang trong ca. */
+function completePrep(state: SimState, taskId: PrepTaskId, workerId: string, emit: Emit): CommandResult {
+  if (!PREP_TASK_IDS.includes(taskId)) return reject('unknown-prep-task');
+  const worker = state.workers[workerId];
+  if (!worker) return reject('unknown-worker');
+  if (!isOnDuty(state, worker)) return reject('worker-off-duty');
+  if (state.prep.openedAtMs !== null) return reject('store-already-open');
+  if (state.prep.done.includes(taskId)) return reject('prep-already-done');
+  markPrepDone(state, taskId, workerId, emit);
+  return OK;
+}
+
+/** Mở cửa sớm (không cần làm đủ việc chuẩn bị; việc bỏ qua được ghi vào tổng kết ngày). */
+function openStoreCommand(state: SimState, emit: Emit): CommandResult {
+  if (state.prep.openedAtMs !== null) return reject('store-already-open');
+  openStore(state, false, emit);
+  return OK;
+}
+
+/**
+ * Xếp lịch ca cho NPC. Thêm ca đang diễn ra thì người đó vào ca ngay (được tính lương ca này);
+ * bỏ ca đang diễn ra thì người đó tan ca sau khi xong việc dở, ca đã chấm công vẫn được trả lương.
+ */
+function setShifts(state: SimState, workerId: string, shifts: ShiftId[], emit: Emit): CommandResult {
+  const worker = state.workers[workerId];
+  if (!worker) return reject('unknown-worker');
+  if (worker.controller === 'player') return reject('cannot-schedule-player');
+  const next = SHIFT_IDS.filter((id) => shifts.includes(id));
+  if (next.length === 0 || next.length !== new Set(shifts).size) return reject('invalid-shifts');
+  worker.shifts = next;
+  checkIn(state, worker);
+  handOverCounters(state, emit);
+  emit({ type: 'staffScheduled', workerId, shifts: [...next] });
+  return OK;
+}
+
 function workerSpeed(state: SimState, workerId: string): number {
   const worker = state.workers[workerId];
   return worker ? effectiveSpeed(worker, state.config.owedWageSpeedFactor) : 1;
@@ -325,6 +386,7 @@ export function completeSale(state: SimState, orderId: string, emit: Emit): void
   state.money += amount;
   state.stats.sales += 1;
   state.stats.revenue += amount;
+  state.stats.costOfSales += PRODUCTS[productId].cost;
   order.state = 'done';
   order.facts.push('correct-item');
   const worker = state.workers[order.workerId];

@@ -22,8 +22,11 @@ export const DEFAULT_CONFIG: SimConfig = {
     keepReviews: 60,
     keepComplaints: 20,
   },
-  // Một ngày trong game = 3 phút chơi thật.
-  dayMs: 180_000,
+  // Một ngày trong game = 4 phút chơi thật (07:00–22:00): chuẩn bị, hai ca, đóng cửa.
+  dayMs: 240_000,
+  prepMs: 15_000,
+  closingMs: 15_000,
+  prepPatienceFactor: 0.9,
   priceMaxFactor: 1.5,
   owedWageSpeedFactor: 0.8,
   offlineCapMs: 10 * 60_000,

@@ -1,4 +1,4 @@
-import { PRODUCTS, type DeepReadonly, type SimState, type Worker } from '@pharmacy/simulation';
+import { isOnDuty, PRODUCTS, type DeepReadonly, type SimState, type Worker } from '@pharmacy/simulation';
 
 export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): string {
   if (worker.task) return `Đang bổ sung ${PRODUCTS[worker.task.productId].name.toLowerCase()}`;
@@ -12,6 +12,7 @@ export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly
       case 'referring': return 'Đang khuyên khách đi khám';
     }
   }
+  if (!isOnDuty(state, worker)) return 'Ngoài ca, đang nghỉ';
   if (state.counters[0]?.operatorId === worker.id) return state.counters[0]?.customerId ? 'Đang nghe khách' : 'Đang chờ khách ở quầy';
   return worker.controller === 'ai' ? 'Rảnh, sẽ tự bổ sung hàng khi kệ vơi' : 'Đang nghỉ';
 }

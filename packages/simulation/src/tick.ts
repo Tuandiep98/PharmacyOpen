@@ -9,6 +9,8 @@ import { endDayIfDue } from './economy';
 import { demandMultiplier } from './reputation';
 import { nextInt, pickWeighted } from './rng';
 import { dismissCustomer, newId, returnReservedStock } from './state';
+import { PRODUCTS } from './content/products';
+import { dayPhase, prepComplete, shiftTick } from './shift';
 import { expireStock } from './stock';
 import type { Customer, Order, SimState } from './types';
 
@@ -23,8 +25,11 @@ export function tick(state: SimState, emit: Emit): void {
   for (const order of Object.values(state.orders)) advanceOrder(state, order, dt, emit);
   for (const customer of Object.values(state.customers)) advanceCustomer(state, customer, dt, emit);
   fillCounters(state, emit);
+  shiftTick(state, emit);
   aiTick(state, emit);
-  maybeSpawn(state, emit);
+  // Chỉ đón khách khi tiệm đang mở; lúc chuẩn bị/đóng cửa, khách đầu tiên tới sau khi mở cửa.
+  if (dayPhase(state) === 'open') maybeSpawn(state, emit);
+  else state.nextSpawnAtMs = Math.max(state.nextSpawnAtMs, state.timeMs + state.config.firstSpawnMs);
 
   for (const worker of Object.values(state.workers)) {
     if (state.timeMs >= worker.emoteUntilMs) worker.expression = worker.orderId || worker.task ? 'focused' : 'neutral';
@@ -37,6 +42,7 @@ function advanceOrder(state: SimState, order: Order, dt: number, emit: Emit): vo
   if (order.productId && order.productExpiresAtMs !== null && order.productExpiresAtMs <= state.timeMs) {
     const productId = order.productId;
     state.stats.expiredStock += 1;
+    state.stats.expiredCost += PRODUCTS[productId].cost;
     order.productId = null;
     order.productExpiresAtMs = null;
     order.state = 'deciding';
@@ -107,7 +113,9 @@ function advanceCustomer(state: SimState, customer: Customer, dt: number, emit: 
         : patienceRate.deciding;
   // Nhân viên giao tiếp tốt giúp khách đang được phục vụ bớt sốt ruột (0.75×–1.25×).
   const server = order ? state.workers[order.workerId] : undefined;
-  const rate = server ? baseRate * (1.25 - 0.5 * server.communication) : baseRate;
+  const served = server ? baseRate * (1.25 - 0.5 * server.communication) : baseRate;
+  // Chuẩn bị đầu ngày đầy đủ (kệ gọn, hàng cận hạn đã rà) giúp khách bớt sốt ruột.
+  const rate = prepComplete(state) ? served * state.config.prepPatienceFactor : served;
   customer.patienceMs = Math.max(0, customer.patienceMs - dt * rate);
 
   if (customer.patienceMs <= 0) {

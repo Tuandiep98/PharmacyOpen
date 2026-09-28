@@ -4,17 +4,19 @@ import {
   dayProgress,
   dayReport,
   totalWagesOwed,
+  wagesDueToday,
   type DayReport,
   type DeepReadonly,
   type SimState,
 } from '@pharmacy/simulation';
-import { WarningIcon } from '../../art/Icons';
+import { ClockIcon, WarningIcon } from '../../art/Icons';
 import { BRAND } from '../../brand';
 import { formatRating } from '../../ui/Stars';
 import { EmptyState, PanelHeading } from '../../ui/primitives';
-import { ClockIcon } from '../../art/Icons';
+import { DayGrade, ProfitTable } from '../day/DaySummaryDialog';
+import { percent, signed } from '../day/dayText';
 
-export const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)} ${BRAND.currency}`;
+export { signed };
 
 export function formatDuration(ms: number): string {
   const minutes = Math.round(ms / 60_000);
@@ -29,6 +31,7 @@ export function formatDuration(ms: number): string {
 export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
   const today = dayReport(state);
   const wages = dailyWages(state);
+  const dueToday = wagesDueToday(state);
   const owed = totalWagesOwed(state);
   const progress = dayProgress(state);
   const secondsLeft = Math.ceil(((1 - progress) * state.config.dayMs) / 1000);
@@ -36,23 +39,29 @@ export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
 
   return (
     <div className="panel ledger">
-      <PanelHeading description="Theo dõi thu, chi và tiền lương của tiệm.">Sổ sách · Ngày {state.day}</PanelHeading>
-      <div className="day-progress" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)} aria-label="Tiến độ ngày">
+      <PanelHeading description="Lãi lỗ theo hoạt động, dòng tiền và lương theo ca.">Sổ sách · Ngày {state.day}</PanelHeading>
+      <div
+        className="day-progress"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress * 100)}
+        aria-label="Tiến độ ngày"
+      >
         <span style={{ width: `${progress * 100}%` }} />
       </div>
-      <p className="muted small">Còn khoảng {secondsLeft} giây tới cuối ngày. Cuối ngày tiệm trả lương và chốt sổ.</p>
+      <p className="muted small">Còn khoảng {secondsLeft} giây tới cuối ngày. Cuối ngày tiệm trả lương theo số ca đã làm và chốt sổ.</p>
 
       <h3>Hôm nay (tạm tính)</h3>
+      <ProfitTable report={today} />
       <dl className="ledger-rows">
-        <Row label="Doanh thu" value={today.revenue} />
-        <Row label="Nhập hàng" value={-today.stockCost} />
-        {today.investments > 0 && <Row label="Tuyển người, nâng cấp, phiếu giảm giá" value={-today.investments} />}
-        <Row label="Lương cuối ngày (dự kiến)" value={-(wages + owed)} muted />
-        <Row label="Lãi/lỗ đến giờ" value={today.profit} strong />
+        {dueToday + owed > 0 && <Row label="Lương cuối ngày (dự kiến)" value={-(dueToday + owed)} muted />}
+        <Row label="Nhập hàng (thành hàng tồn)" value={-today.stockCost} muted />
+        {today.investments - today.vouchers > 0 && (
+          <Row label="Tuyển người, nâng cấp" value={-(today.investments - today.vouchers)} muted />
+        )}
       </dl>
-      {(today.expiredStock > 0 || today.returningCustomers > 0) && (
-        <p className="muted small">{today.returningCustomers} khách quen quay lại · {today.expiredStock} món hết hạn. Tiền hàng hết hạn đã nằm trong chi phí nhập hàng.</p>
-      )}
+      {today.returningCustomers > 0 && <p className="muted small">{today.returningCustomers} khách quen quay lại hôm nay.</p>}
 
       {owed > 0 && (
         <div className="notice bad" role="alert">
@@ -63,8 +72,8 @@ export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
       {wages > 0 && !canRunUnattended(state) && (
         <p className="notice warn">
           <WarningIcon size={18} />
-          Bạn đang tự đứng quầy: khi rời game, tiệm đóng cửa. Giao quầy cho nhân viên để tiệm tự bán khi bạn vắng mặt
-          (tính tối đa {formatDuration(state.config.offlineCapMs)}).
+          Bạn đang tự đứng quầy: khi rời game, tiệm đóng cửa. Giao quầy cho nhân viên để tiệm tự bán khi bạn vắng mặt (tính tối đa{' '}
+          {formatDuration(state.config.offlineCapMs)}).
         </p>
       )}
 
@@ -94,16 +103,21 @@ function Row({ label, value, strong, muted }: { label: string; value: number; st
 }
 
 export function DayReportCard({ report }: { report: DeepReadonly<DayReport> }) {
-  const spent = report.stockCost + report.wages + report.investments;
+  // Báo cáo từ save cũ (trước khi có ca làm) không có giá vốn: chỉ hiện dòng tiền.
+  const legacy = report.shifts.length === 0;
+  const value = legacy ? report.profit : report.netProfit;
   return (
     <div className="day-card">
       <div className="day-card-head">
         <strong>Ngày {report.day}</strong>
-        <b className={report.profit >= 0 ? 'pos' : 'neg'}>{signed(report.profit)}</b>
+        {!legacy && <DayGrade report={report} size={16} />}
+        <b className={value >= 0 ? 'pos' : 'neg'}>{signed(value)}</b>
       </div>
       <span className="small">
-        Thu {report.revenue} · Chi {spent} {BRAND.currency}
-        {report.wages > 0 && ` (lương ${report.wages})`}
+        {legacy
+          ? `Dòng tiền · thu ${report.revenue} ${BRAND.currency}`
+          : `Lãi ròng · thu ${report.revenue} ${BRAND.currency}${report.revenue > 0 ? `, biên ${percent(report.netProfit / report.revenue)}` : ''}`}
+        {report.wages > 0 && ` · lương ${report.wages}`}
       </span>
       <span className="small muted">
         {report.customers} khách · {report.sales} lượt bán · {report.referrals} lần khuyên đi khám
@@ -112,7 +126,11 @@ export function DayReportCard({ report }: { report: DeepReadonly<DayReport> }) {
         {report.returningCustomers > 0 && ` · ${report.returningCustomers} khách quen`}
         {report.expiredStock > 0 && ` · ${report.expiredStock} món hết hạn`}
       </span>
-      {report.wagesOwed > 0 && <span className="small neg">Còn nợ lương {report.wagesOwed} {BRAND.currency}</span>}
+      {report.wagesOwed > 0 && (
+        <span className="small neg">
+          Còn nợ lương {report.wagesOwed} {BRAND.currency}
+        </span>
+      )}
     </div>
   );
 }

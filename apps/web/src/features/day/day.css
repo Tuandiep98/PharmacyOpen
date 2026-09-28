@@ -1,0 +1,218 @@
+/* Nhịp ngày: chuẩn bị mở cửa, dải đóng cửa, tổng kết cuối ngày. Dùng token trong ui/theme.css. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.hud-clock {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.05;
+  padding: 0 8px;
+}
+.hud-clock small {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--ink-soft);
+}
+
+.opening-panel {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, calc(100% - 24px));
+  max-height: calc(100% - 20px);
+  overflow-y: auto;
+  z-index: 5;
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.opening-panel header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+.opening-panel p {
+  margin: 0;
+}
+
+.prep-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.prep-item {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  text-align: left;
+  background: var(--surface-soft);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+.prep-item:hover:not(:disabled) {
+  background: var(--surface-tint);
+}
+.prep-item:disabled {
+  cursor: default;
+  background: var(--good-soft);
+}
+.prep-check {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--primary);
+  border-radius: 7px;
+  background: var(--panel);
+}
+.prep-text {
+  display: grid;
+}
+
+.day-banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 6px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--warn-soft);
+  border: 1.5px solid var(--sun);
+  border-radius: 999px;
+}
+
+.day-summary {
+  display: grid;
+  gap: 10px;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+}
+.day-summary h1 {
+  margin: 0;
+  text-align: center;
+}
+.day-grade {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+}
+.day-grade .off {
+  opacity: 0.25;
+  filter: grayscale(1);
+}
+.day-card-head .day-grade {
+  margin-left: auto;
+  margin-right: 8px;
+}
+
+.goal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.goal-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+.goal-list .met {
+  background: var(--good-soft);
+}
+.goal-list .missed {
+  background: var(--danger-soft);
+}
+
+.day-metrics dd {
+  text-align: right;
+}
+
+.shift-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.shift-table caption {
+  text-align: left;
+  font-weight: 800;
+  padding-bottom: 4px;
+}
+.shift-table th,
+.shift-table td {
+  padding: 6px 4px;
+  border-top: 1px solid var(--line);
+  text-align: right;
+}
+.shift-table th[scope='row'],
+.shift-table th:first-child {
+  text-align: left;
+}
+.shift-table th[scope='row'] span {
+  display: block;
+  font-weight: 600;
+}
+
+.shift-toggle {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.shift-toggle button {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  font-weight: 700;
+  cursor: pointer;
+}
+.shift-toggle button[aria-pressed='true'] {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.tag.off-duty {
+  background: var(--surface-soft);
+  color: var(--ink-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prep-item {
+    transition: none;
+  }
+}

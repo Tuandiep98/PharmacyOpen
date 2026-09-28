@@ -2,7 +2,18 @@ import type { ComplaintResponse } from './content/reviews';
 import type { ArchetypeId, ProductId, ReasonCode, RequestKind, StaffLook, StaffRole, TraitId } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
+
+/** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
+export type ShiftId = 'morning' | 'afternoon';
+export const SHIFT_IDS: readonly ShiftId[] = ['morning', 'afternoon'];
+
+/** Chuẩn bị (chưa mở cửa) → mở cửa đón khách → đóng cửa (không nhận khách mới, phục vụ nốt). */
+export type DayPhase = 'prep' | 'open' | 'closing';
+
+/** Việc chuẩn bị đầu ngày, lấy cảm hứng từ quy trình mở ca của nhà thuốc bán lẻ. */
+export type PrepTaskId = 'cash' | 'climate' | 'expiry' | 'shelves';
+export const PREP_TASK_IDS: readonly PrepTaskId[] = ['cash', 'climate', 'expiry', 'shelves'];
 
 export interface ReputationConfig {
   /** Điểm sao "mặc định" khi còn ít đánh giá (làm mượt kiểu Bayes). */
@@ -39,6 +50,12 @@ export interface SimConfig {
   reputation: ReputationConfig;
   /** Độ dài một ngày trong game; cuối ngày trả lương và chốt sổ. */
   dayMs: number;
+  /** Đầu ngày có chừng này thời gian chuẩn bị; hết thời gian thì tiệm tự mở cửa. */
+  prepMs: number;
+  /** Cuối ngày ngừng nhận khách mới trong khoảng này để phục vụ nốt rồi chốt sổ. */
+  closingMs: number;
+  /** Hoàn tất đủ việc chuẩn bị thì khách hao kiên nhẫn chậm hơn theo hệ số này trong ngày. */
+  prepPatienceFactor: number;
   /** Giá bán tối đa = giá tham khảo × hệ số này (giá tối thiểu = giá vốn + 1). */
   priceMaxFactor: number;
   /** Nhân viên đang bị nợ lương làm việc chậm hơn theo hệ số này. */
@@ -116,12 +133,7 @@ export type OrderState =
 
 /** Sự kiện khách quan của một lượt phục vụ, dùng cho hiệu suất nội bộ (bước 4). */
 export type InteractionFact =
-  | 'correct-item'
-  | 'wrong-item'
-  | 'safety-warning'
-  | 'appropriate-referral'
-  | 'unnecessary-referral'
-  | 'customer-left';
+  'correct-item' | 'wrong-item' | 'safety-warning' | 'appropriate-referral' | 'unnecessary-referral' | 'customer-left';
 
 export interface Order {
   id: string;
@@ -158,9 +170,13 @@ export interface Worker {
   communication: number;
   trait: TraitId | null;
   look: StaffLook;
-  /** Lương mỗi ngày (0 với người chơi) và phần lương chưa trả được do thiếu xu. */
+  /** Lương trọn ngày (hai ca; 0 với người chơi) và phần lương chưa trả được do thiếu xu. */
   wage: number;
   wageOwed: number;
+  /** Lịch ca của người này; chỉ làm việc mới khi đang trong ca của mình. */
+  shifts: ShiftId[];
+  /** Các ca đã vào làm hôm nay (chấm công); lương cuối ngày tính theo số ca này. */
+  shiftsToday: ShiftId[];
   orderId: string | null;
   task: WorkerTask | null;
   /** NPC đang suy nghĩ cho đơn hiện tại tới thời điểm này (0 = chưa bắt đầu). */
@@ -276,6 +292,38 @@ export interface SimStats {
   turnedAway: number;
   expiredStock: number;
   returningCustomers: number;
+  /** Giá vốn của hàng đã bán và của hàng bị huỷ vì hết hạn. */
+  costOfSales: number;
+  expiredCost: number;
+  /** Tổng thời gian chờ tới lúc được phục vụ, và số khách đã được phục vụ. */
+  waitMsSum: number;
+  servedCount: number;
+}
+
+/** Tổng kết một ca: chênh lệch sổ sách giữa lúc vào ca và lúc giao ca. */
+export interface ShiftSummary {
+  shift: ShiftId;
+  revenue: number;
+  customers: number;
+  sales: number;
+  referrals: number;
+  /** Khách bỏ về và khách không vào được vì hàng chờ đầy. */
+  lost: number;
+  /** Tên những người đã vào ca này. */
+  staff: string[];
+}
+
+/** Mốc sổ sách lúc bắt đầu ca hiện tại. */
+export interface ShiftMark {
+  shift: ShiftId;
+  stats: SimStats;
+}
+
+/** Chuẩn bị đầu ngày. `required = false` ở ngày khai trương (tiệm đã mở sẵn). */
+export interface PrepState {
+  required: boolean;
+  openedAtMs: number | null;
+  done: PrepTaskId[];
 }
 
 /** Tổng kết một ngày: chênh lệch sổ sách giữa đầu và cuối ngày. */
@@ -300,6 +348,20 @@ export interface DayReport {
   returningCustomers: number;
   /** Trung bình sao của các đánh giá mới trong ngày (null nếu không có). */
   avgStars: number | null;
+  /** Lãi lỗ theo hoạt động: doanh thu − giá vốn hàng bán − lương − phiếu giảm giá − hàng hết hạn. */
+  costOfSales: number;
+  expiredCost: number;
+  vouchers: number;
+  netProfit: number;
+  /** Thời gian chờ trung bình tới lúc được phục vụ (null nếu chưa phục vụ ai). */
+  avgWaitMs: number | null;
+  /** Số việc chuẩn bị đã làm (null nếu ngày không yêu cầu chuẩn bị). */
+  prepDone: number | null;
+  shifts: ShiftSummary[];
+  /** Điểm cửa hàng lúc chốt ngày. */
+  storeRating: number;
+  /** Số mục tiêu ngày đạt được (0–3), xem `dayGoals`. */
+  grade: number;
 }
 
 /** Mốc sổ sách lúc bắt đầu ngày, để tính tổng kết. */
@@ -334,6 +396,12 @@ export interface SimState {
   dayStartedAtMs: number;
   dayStart: DayStart;
   dayReports: DayReport[];
+  prep: PrepState;
+  shiftMark: ShiftMark;
+  /** Các ca đã chốt trong ngày hiện tại. */
+  shiftSummaries: ShiftSummary[];
+  /** Mốc sao cửa hàng đã đạt (mỗi mốc chúc mừng một lần). */
+  ratingMilestones: number[];
   /** Id nâng cấp đã mua, theo thứ tự mua. */
   upgrades: string[];
   interactions: InteractionRecord[];

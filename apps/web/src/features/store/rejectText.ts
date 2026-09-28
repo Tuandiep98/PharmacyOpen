@@ -25,4 +25,10 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   'complaint-closed': 'Khiếu nại này đã được phản hồi.',
   'price-out-of-range': 'Giá phải cao hơn giá vốn và không vượt quá 1,5 lần giá tham khảo.',
   'cannot-dismiss-player': 'Bạn là chủ tiệm, không thể tự cho mình nghỉ.',
+  'worker-off-duty': 'Người này đang ngoài ca làm — xếp thêm ca ở tab Nhân sự.',
+  'store-already-open': 'Tiệm đã mở cửa rồi.',
+  'unknown-prep-task': 'Không có việc chuẩn bị này.',
+  'prep-already-done': 'Việc này đã làm xong.',
+  'invalid-shifts': 'Mỗi nhân viên cần ít nhất một ca.',
+  'cannot-schedule-player': 'Bạn là quản lý, luôn có mặt ở tiệm.',
 };

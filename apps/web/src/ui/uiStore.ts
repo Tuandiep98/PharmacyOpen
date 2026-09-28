@@ -1,13 +1,9 @@
-import type { OfflineSummary, ProductId } from '@pharmacy/simulation';
+import type { DayReport, OfflineSummary, ProductId } from '@pharmacy/simulation';
 import { create } from 'zustand';
 import type { CatalogCategory } from './catalog';
 
 export type Selection =
-  | { kind: 'customer'; id: string }
-  | { kind: 'product'; id: ProductId }
-  | { kind: 'worker'; id: string }
-  | { kind: 'ledger' }
-  | null;
+  { kind: 'customer'; id: string } | { kind: 'product'; id: ProductId } | { kind: 'worker'; id: string } | { kind: 'ledger' } | null;
 
 export type Tab = 'store' | 'staff' | 'inventory' | 'reviews' | 'expansion';
 export type ToastTone = 'good' | 'bad' | 'warn' | 'info';
@@ -41,6 +37,9 @@ interface UiState {
   floaters: Floater[];
   /** Tổng kết lần vắng mặt gần nhất, hiện thành hộp thoại "Chào mừng trở lại". */
   offline: OfflineSummary | null;
+  /** Báo cáo ngày vừa chốt, hiện thành hộp thoại tổng kết cuối ngày. */
+  daySummary: DayReport | null;
+  setDaySummary: (report: DayReport | null) => void;
   catalogCategory: CatalogCategory;
   catalogPage: number;
   setCatalogCategory: (category: CatalogCategory) => void;
@@ -66,6 +65,8 @@ export const useUi = create<UiState>((set) => ({
   toasts: [],
   floaters: [],
   offline: null,
+  daySummary: null,
+  setDaySummary: (daySummary) => set({ daySummary }),
   catalogCategory: 'all',
   catalogPage: 0,
   setCatalogCategory: (catalogCategory) => set({ catalogCategory, catalogPage: 0 }),

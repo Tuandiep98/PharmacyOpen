@@ -1,10 +1,12 @@
 import { PRODUCTS } from './content/products';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
-import type { DayReport, DeepReadonly, SimState, Worker } from './types';
+import { shiftPay, shiftSummary, startDay } from './shift';
+import { storeRating } from './reputation';
+import type { DayReport, DeepReadonly, SimState, SimStats, Worker } from './types';
 
 /*
- * Kinh tế idle (spec §3d): ngày trong game, lương, giá bán do người chơi đặt, tổng kết ngày.
+ * Kinh tế idle (spec §3d): ngày trong game, lương theo ca, giá bán do người chơi đặt, tổng kết ngày.
  * Mọi khoản thu/chi vẫn đi qua state.money (số nguyên, không bao giờ âm).
  */
 
@@ -19,10 +21,17 @@ export function priceBounds(state: DeepReadonly<SimState>, productId: ProductId)
   return { min: product.cost + 1, max: Math.ceil(product.referencePrice * state.config.priceMaxFactor) };
 }
 
-/** Tổng lương phải trả mỗi ngày cho đội hiện tại. */
+/** Tổng lương mỗi ngày theo lịch ca hiện tại của đội. */
 export function dailyWages(state: DeepReadonly<SimState>): number {
   let total = 0;
-  for (const worker of Object.values(state.workers)) total += worker.wage;
+  for (const worker of Object.values(state.workers)) total += shiftPay(worker.wage, worker.shifts.length);
+  return total;
+}
+
+/** Lương cuối ngày hôm nay theo số ca mỗi người đã thực sự vào làm. */
+export function wagesDueToday(state: DeepReadonly<SimState>): number {
+  let total = 0;
+  for (const worker of Object.values(state.workers)) total += shiftPay(worker.wage, worker.shiftsToday.length);
   return total;
 }
 
@@ -32,35 +41,73 @@ export function totalWagesOwed(state: DeepReadonly<SimState>): number {
   return total;
 }
 
+export type DayGoalId = 'profit' | 'service' | 'rating';
+
+/** Ngưỡng mục tiêu ngày; mỗi mục đạt được là một sao xếp hạng ngày. */
+export const DAY_GOALS = { serviceRate: 0.85, rating: 4 } as const;
+
+/** Tỉ lệ khách được phục vụ đúng (bán đúng món hoặc khuyên đi khám đúng), null nếu chưa có khách. */
+export function serviceRate(report: Pick<DayReport, 'customers' | 'sales' | 'referrals'>): number | null {
+  return report.customers > 0 ? Math.min(1, (report.sales + report.referrals) / report.customers) : null;
+}
+
+/** Ba mục tiêu ngày: có lãi theo hoạt động, phục vụ tốt, khách hài lòng. */
+export function dayGoals(
+  report: Pick<DayReport, 'netProfit' | 'customers' | 'sales' | 'referrals' | 'avgStars' | 'storeRating'>,
+): { id: DayGoalId; met: boolean }[] {
+  const rate = serviceRate(report);
+  return [
+    { id: 'profit', met: report.netProfit > 0 },
+    { id: 'service', met: rate !== null && rate >= DAY_GOALS.serviceRate },
+    // Chưa có đánh giá mới trong ngày thì xét điểm cửa hàng.
+    { id: 'rating', met: (report.avgStars ?? report.storeRating) >= DAY_GOALS.rating },
+  ];
+}
+
 /** Sổ sách từ đầu ngày tới hiện tại (dùng cho cả tổng kết cuối ngày lẫn màn hình "hôm nay"). */
 export function dayReport(state: DeepReadonly<SimState>): DayReport {
   const start = state.dayStart;
   const now = state.stats;
+  const diff = (key: keyof SimStats) => now[key] - start.stats[key];
   const reviews = state.reputation.count - start.reviewCount;
   const starsSum = state.reputation.starsSum - start.starsSum;
-  return {
+  const revenue = diff('revenue');
+  const wages = diff('spentOnWages');
+  const vouchers = diff('spentOnVouchers');
+  const costOfSales = diff('costOfSales');
+  const expiredCost = diff('expiredCost');
+  const served = diff('servedCount');
+  const report: DayReport = {
     day: state.day,
-    revenue: now.revenue - start.stats.revenue,
-    stockCost: now.spentOnStock - start.stats.spentOnStock,
-    wages: now.spentOnWages - start.stats.spentOnWages,
+    revenue,
+    stockCost: diff('spentOnStock'),
+    wages,
     wagesOwed: totalWagesOwed(state),
-    investments:
-      now.spentOnStaff -
-      start.stats.spentOnStaff +
-      (now.spentOnUpgrades - start.stats.spentOnUpgrades) +
-      (now.spentOnVouchers - start.stats.spentOnVouchers),
+    investments: diff('spentOnStaff') + diff('spentOnUpgrades') + vouchers,
     profit: state.money - start.money,
-    customers: now.customersArrived - start.stats.customersArrived,
-    sales: now.sales - start.stats.sales,
-    referrals: now.referrals - start.stats.referrals,
-    leftAngry: now.leftAngry - start.stats.leftAngry,
-    turnedAway: now.turnedAway - start.stats.turnedAway,
+    customers: diff('customersArrived'),
+    sales: diff('sales'),
+    referrals: diff('referrals'),
+    leftAngry: diff('leftAngry'),
+    turnedAway: diff('turnedAway'),
     reviews,
-    expiredStock: now.expiredStock - start.stats.expiredStock,
-    returningCustomers: now.returningCustomers - start.stats.returningCustomers,
+    expiredStock: diff('expiredStock'),
+    returningCustomers: diff('returningCustomers'),
     // Phản hồi khiếu nại có thể nâng sao của đánh giá cũ; đó vẫn là thay đổi trong ngày nên giữ nguyên cách tính.
     avgStars: reviews > 0 ? starsSum / reviews : null,
+    costOfSales,
+    expiredCost,
+    vouchers,
+    // Nhập hàng là chuyển tiền thành hàng tồn, không phải lỗ; chỉ giá vốn của hàng đã bán/đã huỷ mới là chi phí.
+    netProfit: revenue - costOfSales - wages - vouchers - expiredCost,
+    avgWaitMs: served > 0 ? diff('waitMsSum') / served : null,
+    prepDone: state.prep.required ? state.prep.done.length : null,
+    shifts: [...state.shiftSummaries.map((s) => ({ ...s, staff: [...s.staff] })), shiftSummary(state)],
+    storeRating: storeRating(state),
+    grade: 0,
   };
+  report.grade = dayGoals(report).filter((g) => g.met).length;
+  return report;
 }
 
 /** Tiến độ ngày hiện tại, 0..1. */
@@ -69,8 +116,8 @@ export function dayProgress(state: DeepReadonly<SimState>): number {
 }
 
 /**
- * Cuối ngày: trả lương (nợ cũ trước, lương mới sau; thiếu xu thì ghi nợ), chốt tổng kết,
- * bắt đầu ngày mới. Gọi mỗi tick.
+ * Cuối ngày: trả lương theo số ca đã vào làm (nợ cũ trước, lương mới sau; thiếu xu thì ghi nợ),
+ * chốt tổng kết, bắt đầu ngày mới ở pha chuẩn bị. Gọi mỗi tick.
  */
 export function endDayIfDue(state: SimState, emit: Emit): void {
   if (state.timeMs - state.dayStartedAtMs < state.config.dayMs) return;
@@ -84,7 +131,7 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
 
   let paidTotal = 0;
   for (const worker of Object.values(state.workers)) {
-    const due = worker.wageOwed + worker.wage;
+    const due = worker.wageOwed + shiftPay(worker.wage, worker.shiftsToday.length);
     if (due <= 0) continue;
     const paid = Math.min(state.money, due);
     state.money -= paid;
@@ -112,6 +159,7 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
     starsSum: state.reputation.starsSum,
     reviewCount: state.reputation.count,
   };
+  startDay(state, emit);
 }
 
 /**

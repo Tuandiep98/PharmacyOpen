@@ -52,6 +52,9 @@ describe('khách quen và lưu game v3', () => {
     const s = createInitialState(12);
     s.config.returningCustomerChance = 1;
     s.config.dayMs = 5000;
+    // Ngày rút ngắn thì giờ chuẩn bị/đóng cửa cũng rút theo, để tiệm vẫn có giờ mở cửa.
+    s.config.prepMs = 500;
+    s.config.closingMs = 500;
     s.money = 500;
     s.dayStart.money = 500;
     const sim = new Simulation(s);

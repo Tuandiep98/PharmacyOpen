@@ -1,4 +1,5 @@
 import {
+  isOnDuty,
   PRODUCTS,
   REQUESTS,
   type Customer,
@@ -40,7 +41,8 @@ const SHELF_SPOT: Spot = { x: 100, y: 296, scale: 0.85 };
 
 function assignWorkerSpots(state: State): { worker: DeepReadonly<Worker>; spot: Spot }[] {
   const operatorId = state.counters[0]!.operatorId;
-  const others = Object.values(state.workers).filter((w) => w.id !== operatorId);
+  // Người ngoài ca chỉ còn trong cảnh khi đang làm nốt việc dở.
+  const others = Object.values(state.workers).filter((w) => w.id !== operatorId && (isOnDuty(state, w) || !!w.orderId || !!w.task));
   // Người đang bổ sung kệ đứng ở kệ; người rảnh đứng sau quầy, người thứ hai đứng cạnh kệ.
   others.sort((a, b) => Number(!!b.task) - Number(!!a.task));
   const free = others[0]?.task ? [SHELF_SPOT, BEHIND_SPOT] : [BEHIND_SPOT, SHELF_SPOT];
@@ -105,8 +107,7 @@ export function StoreScene({ state }: { state: State }) {
   };
 
   // Vẽ khách xa quầy trước, khách ở quầy sau cùng để không bị che.
-  const depth = (c: DeepReadonly<Customer>) =>
-    c.phase === 'leaving' ? 0 : c.phase === 'counter' ? 100 : 50 - state.queue.indexOf(c.id);
+  const depth = (c: DeepReadonly<Customer>) => (c.phase === 'leaving' ? 0 : c.phase === 'counter' ? 100 : 50 - state.queue.indexOf(c.id));
   const customers = Object.values(state.customers).sort((a, b) => depth(a) - depth(b));
   const overflow = Math.max(0, state.queue.length - QUEUE_SPOTS.length);
 

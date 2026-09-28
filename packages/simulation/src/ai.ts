@@ -5,7 +5,8 @@ import { REQUESTS } from './content/requests';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
 import { nextFloat, nextInt } from './rng';
-import type { Order, SimState, Worker } from './types';
+import { dayElapsed, isOnDuty } from './shift';
+import { PREP_TASK_IDS, type Order, type SimState, type Worker } from './types';
 
 /**
  * "Bộ não" của nhân viên NPC. Không có đường tắt nào: mọi hành động đều gửi đúng các Command
@@ -18,10 +19,29 @@ import type { Order, SimState, Worker } from './types';
 export function aiTick(state: SimState, emit: Emit): void {
   for (const worker of Object.values(state.workers)) {
     if (worker.controller !== 'ai') continue;
+    // Hết ca vẫn làm nốt việc dở, nhưng không nhận việc mới.
     if (worker.task) progressTask(state, worker, emit);
     else if (worker.orderId) handleOrder(state, worker, emit);
+    else if (!isOnDuty(state, worker)) continue;
+    else if (state.prep.openedAtMs === null) prepare(state, worker, emit);
     else chooseTask(state, worker, emit);
   }
+}
+
+/**
+ * Trước giờ mở cửa, NPC đang đứng quầy lần lượt làm các việc chuẩn bị, rải đều trong thời gian
+ * chuẩn bị (suy ra từ đồng hồ trong ngày nên không cần lưu thêm trạng thái). Người khác bổ sung kệ.
+ */
+function prepare(state: SimState, worker: Worker, emit: Emit): void {
+  if (!state.counters.some((c) => c.operatorId === worker.id)) {
+    chooseTask(state, worker, emit);
+    return;
+  }
+  const next = PREP_TASK_IDS.find((id) => !state.prep.done.includes(id));
+  if (!next) return;
+  const step = state.config.prepMs / (PREP_TASK_IDS.length + 1);
+  if (dayElapsed(state) < step * (state.prep.done.length + 1)) return;
+  applyCommand(state, { type: 'completePrep', taskId: next, workerId: worker.id }, emit);
 }
 
 function progressTask(state: SimState, worker: Worker, emit: Emit): void {

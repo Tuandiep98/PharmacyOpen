@@ -1,4 +1,4 @@
-import { PRODUCT_IDS } from './content/products';
+import { PRODUCT_IDS, PRODUCTS } from './content/products';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
 import type { DeepReadonly, SimState, StockEntry } from './types';
@@ -34,6 +34,7 @@ export function expireStock(state: SimState, emit: Emit): void {
     if (expired > 0) {
       entry.shelf -= expired;
       state.stats.expiredStock += expired;
+      state.stats.expiredCost += expired * PRODUCTS[id].cost;
       emit({ type: 'stockExpired', productId: id, qty: expired });
     }
   }

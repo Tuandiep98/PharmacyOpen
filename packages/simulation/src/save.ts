@@ -1,7 +1,7 @@
 import { cloneConfig, DEFAULT_CONFIG } from './config';
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
 import { STAFF_CANDIDATES } from './content/staff';
-import { SAVE_VERSION, type DeepReadonly, type SimState } from './types';
+import { PREP_TASK_IDS, SAVE_VERSION, SHIFT_IDS, type DeepReadonly, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /*
  * Định dạng save có phiên bản. Save cũ được nâng cấp tuần tự (v1 → v2 → …) rồi kiểm tra cấu trúc;
@@ -140,6 +140,55 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     state.stock = stock;
     state.prices = prices;
   },
+  4: (state) => {
+    // v5: ca làm, chuẩn bị mở cửa, chấm công, lãi lỗ theo hoạt động. Ngày đang dở coi như đã mở cửa.
+    const config = isObject(state.config) ? state.config : {};
+    if (config.dayMs === 180_000) config.dayMs = DEFAULT_CONFIG.dayMs;
+    const dayMs = isNum(config.dayMs) ? config.dayMs : DEFAULT_CONFIG.dayMs;
+    const elapsed = (isNum(state.timeMs) ? state.timeMs : 0) - (isNum(state.dayStartedAtMs) ? state.dayStartedAtMs : 0);
+    const shift = elapsed < dayMs / 2 ? 'morning' : 'afternoon';
+    const newStats = { costOfSales: 0, expiredCost: 0, waitMsSum: 0, servedCount: 0 };
+    const fillStats = (stats: unknown) => {
+      if (!isObject(stats)) return;
+      for (const [key, value] of Object.entries(newStats)) if (!isNum(stats[key])) stats[key] = value;
+    };
+    fillStats(state.stats);
+    if (isObject(state.dayStart)) fillStats(state.dayStart.stats);
+    if (!isObject(state.prep)) {
+      state.prep = { required: false, openedAtMs: isNum(state.dayStartedAtMs) ? state.dayStartedAtMs : 0, done: [] };
+    }
+    if (!isObject(state.shiftMark)) {
+      const base = isObject(state.dayStart) && isObject(state.dayStart.stats) ? state.dayStart.stats : state.stats;
+      state.shiftMark = { shift, stats: { ...(isObject(base) ? base : {}) } };
+    }
+    if (!Array.isArray(state.shiftSummaries)) state.shiftSummaries = [];
+    if (!Array.isArray(state.ratingMilestones)) state.ratingMilestones = [];
+    if (isObject(state.workers)) {
+      for (const worker of Object.values(state.workers)) {
+        if (!isObject(worker)) continue;
+        if (!Array.isArray(worker.shifts)) worker.shifts = ['morning', 'afternoon'];
+        // Người đã làm từ đầu ngày được tính đủ ca như cách trả lương theo ngày trước đây.
+        if (!Array.isArray(worker.shiftsToday)) worker.shiftsToday = shift === 'morning' ? ['morning'] : ['morning', 'afternoon'];
+      }
+    }
+    // Báo cáo cũ không có số liệu ca/giá vốn: để trống (shifts rỗng) để giao diện không chấm sao sai.
+    if (Array.isArray(state.dayReports)) {
+      for (const report of state.dayReports) {
+        if (!isObject(report) || Array.isArray(report.shifts)) continue;
+        Object.assign(report, {
+          costOfSales: 0,
+          expiredCost: 0,
+          vouchers: 0,
+          netProfit: isNum(report.profit) ? report.profit : 0,
+          avgWaitMs: null,
+          prepDone: null,
+          shifts: [],
+          storeRating: 0,
+          grade: 0,
+        });
+      }
+    }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -153,6 +202,8 @@ function mergeConfig(state: Loose): void {
     patienceRate: { ...defaults.patienceRate, ...(isObject(saved.patienceRate) ? saved.patienceRate : {}) },
   };
 }
+
+const isShiftList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => SHIFT_IDS.includes(id as ShiftId));
 
 function isValidState(state: Loose): state is SimState & Loose {
   const s = state as Partial<Record<keyof SimState, unknown>>;
@@ -171,8 +222,34 @@ function isValidState(state: Loose): state is SimState & Loose {
   if (!Array.isArray(s.loyalty) || !s.loyalty.every((p: unknown) => isObject(p) && typeof p.id === 'string' && isNum(p.visits) && isNum(p.goodVisits) && p.goodVisits <= p.visits && isNum(p.nextEligibleAtMs) && isObject(p.look))) return false;
   if (!isObject(s.stats) || !isNum(s.stats.expiredStock) || !isNum(s.stats.returningCustomers)) return false;
   for (const worker of Object.values(s.workers)) {
-    if (!isObject(worker) || typeof worker.id !== 'string' || !isNum(worker.speed) || !isNum(worker.wage) || !isNum(worker.wageOwed)) return false;
+    if (
+      !isObject(worker) ||
+      typeof worker.id !== 'string' ||
+      !isNum(worker.speed) ||
+      !isNum(worker.wage) ||
+      !isNum(worker.wageOwed) ||
+      !isShiftList(worker.shifts) ||
+      !isShiftList(worker.shiftsToday)
+    )
+      return false;
   }
+  if (
+    !isObject(s.prep) ||
+    typeof s.prep.required !== 'boolean' ||
+    !(s.prep.openedAtMs === null || isNum(s.prep.openedAtMs)) ||
+    !Array.isArray(s.prep.done) ||
+    !s.prep.done.every((id: unknown) => PREP_TASK_IDS.includes(id as PrepTaskId))
+  )
+    return false;
+  if (
+    !isObject(s.shiftMark) ||
+    !SHIFT_IDS.includes(s.shiftMark.shift as ShiftId) ||
+    !isObject(s.shiftMark.stats) ||
+    !Array.isArray(s.shiftSummaries) ||
+    !Array.isArray(s.ratingMilestones)
+  )
+    return false;
+  if (!isNum(s.stats.costOfSales) || !isNum(s.stats.expiredCost) || !isNum(s.stats.waitMsSum) || !isNum(s.stats.servedCount)) return false;
   for (const customer of Object.values(s.customers)) {
     if (!isObject(customer) || typeof customer.id !== 'string' || !(customer.loyaltyId === null || typeof customer.loyaltyId === 'string')) return false;
   }

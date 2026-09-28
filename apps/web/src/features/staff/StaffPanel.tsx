@@ -1,15 +1,21 @@
 import {
+  currentShift,
   dailyWages,
+  isOnDuty,
   PLAYER_WORKER_ID,
+  SHIFT_IDS,
+  shiftPay,
   STAFF_CANDIDATE_IDS,
   STAFF_CANDIDATES,
   TRAITS,
   type TraitId,
   type DeepReadonly,
+  type ShiftId,
   type SimState,
   type StaffCandidateDef,
   type Worker,
 } from '@pharmacy/simulation';
+import { SHIFT_LABEL } from '../day/dayText';
 import { StaffFigure } from '../../art/Character';
 import { WorkerPortrait } from '../../art/WorkerFigure';
 import { BRAND } from '../../brand';
@@ -74,7 +80,7 @@ export function WageLine({ worker }: { worker: DeepReadonly<Worker> }) {
   if (worker.controller !== 'ai') return null;
   return (
     <span className="small">
-      Lương {worker.wage} {BRAND.currency}/ngày
+      Lương {shiftPay(worker.wage, 1)} {BRAND.currency}/ca · {shiftPay(worker.wage, worker.shifts.length)} {BRAND.currency}/ngày theo lịch
       {worker.wageOwed > 0 && <b className="neg"> · đang nợ {worker.wageOwed} — làm chậm hơn</b>}
     </span>
   );
@@ -128,15 +134,24 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
                 <span className="small muted">{ROLE[w.role]}</span>
               </div>
               {operatorId === w.id && <span className="tag mint">Đứng quầy</span>}
+              {!isOnDuty(state, w) && <span className="tag off-duty">Ngoài ca</span>}
             </div>
             <p className="team-card-status"><span className="status-dot" aria-hidden />{workerStatus(state, w)}</p>
             <div className="team-card-metrics" aria-label={`Thống kê của ${w.name}`}>
-              <span>Đã bán <b>{w.served}</b></span>
-              <span>Nghiệp vụ <b>{w.perfCount ? `${Math.round(w.perfSum / w.perfCount)}/100` : '—'}</b></span>
-              <span>Đánh giá <b>{w.repCount ? `${(w.repStarsSum / w.repCount).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}★` : '—'}</b></span>
+              <span>
+                Đã bán <b>{w.served}</b>
+              </span>
+              <span>
+                Nghiệp vụ <b>{w.perfCount ? `${Math.round(w.perfSum / w.perfCount)}/100` : '—'}</b>
+              </span>
+              <span>
+                Đánh giá{' '}
+                <b>{w.repCount ? `${(w.repStarsSum / w.repCount).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}★` : '—'}</b>
+              </span>
             </div>
+            {w.controller === 'ai' && <ShiftToggle state={state} worker={w} />}
             <div className="team-card-actions">
-              {operatorId !== w.id && (
+              {operatorId !== w.id && isOnDuty(state, w) && (
                 <GameButton size="small" onClick={() => assignCounter(w.id)}>
                   Giao quầy
                 </GameButton>
@@ -155,10 +170,21 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
         ))}
       </ul>
 
-      {staffCount > 0 && <p className="staff-pay-note">Tổng lương <b>{dailyWages(state)} {BRAND.currency}/ngày</b>, thanh toán vào cuối ngày.</p>}
+      {staffCount > 0 && (
+        <p className="staff-pay-note">
+          Tổng lương theo lịch{' '}
+          <b>
+            {dailyWages(state)} {BRAND.currency}/ngày
+          </b>
+          . Cuối ngày trả theo số ca mỗi người đã vào làm.
+        </p>
+      )}
 
       <h3>
-        Tuyển thêm <span className="muted small">({staffCount}/{state.config.maxStaff} chỗ)</span>
+        Tuyển thêm{' '}
+        <span className="muted small">
+          ({staffCount}/{state.config.maxStaff} chỗ)
+        </span>
       </h3>
       {candidates.length === 0 ? (
         <EmptyState icon={<StaffIcon />} title="Đội ngũ đã đủ người">Hiện chưa có thêm ứng viên để tuyển.</EmptyState>
@@ -169,6 +195,34 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+/** Lịch ca của một NPC: bật/tắt từng ca, luôn giữ ít nhất một ca. */
+function ShiftToggle({ state, worker }: { state: DeepReadonly<SimState>; worker: DeepReadonly<Worker> }) {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
+  const toggle = (shift: ShiftId) => {
+    const has = worker.shifts.includes(shift);
+    const next = has ? worker.shifts.filter((s) => s !== shift) : [...worker.shifts, shift];
+    const r = bridge.dispatch({ type: 'setShifts', workerId: worker.id, shifts: next });
+    if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+  };
+  return (
+    <div className="shift-toggle" role="group" aria-label={`Lịch ca của ${worker.name}`}>
+      <span className="small muted">Lịch ca:</span>
+      {SHIFT_IDS.map((shift) => (
+        <button
+          key={shift}
+          aria-pressed={worker.shifts.includes(shift)}
+          disabled={worker.shifts.length === 1 && worker.shifts.includes(shift)}
+          onClick={() => toggle(shift)}
+        >
+          {SHIFT_LABEL[shift]}
+          {currentShift(state) === shift && worker.shiftsToday.includes(shift) ? ' ✓' : ''}
+        </button>
+      ))}
     </div>
   );
 }
@@ -190,7 +244,9 @@ function CandidateCard({ state, candidate, full }: { state: DeepReadonly<SimStat
         <span className="muted small">
           {ROLE[candidate.role]} · {candidate.blurb}
         </span>
-        <span className="small">Lương {candidate.wage} {BRAND.currency}/ngày</span>
+        <span className="small">
+          Lương {shiftPay(candidate.wage, 1)} {BRAND.currency}/ca · {candidate.wage} {BRAND.currency} nếu làm cả ngày
+        </span>
       </div>
       <GameButton
         tone="primary"

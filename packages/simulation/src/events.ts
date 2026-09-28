@@ -1,5 +1,5 @@
 import type { ProductId } from './content/types';
-import type { DayReport } from './types';
+import type { DayReport, PrepTaskId, ShiftId, ShiftSummary } from './types';
 
 export type SimEvent = { at: number } & (
   | { type: 'customerArrived'; customerId: string }
@@ -25,6 +25,11 @@ export type SimEvent = { at: number } & (
   | { type: 'priceChanged'; productId: ProductId; price: number }
   | { type: 'staffDismissed'; workerId: string; name: string }
   | { type: 'dayEnded'; report: DayReport }
+  | { type: 'prepTaskDone'; taskId: PrepTaskId; workerId: string }
+  | { type: 'storeOpened'; auto: boolean; prepDone: number }
+  | { type: 'shiftChanged'; shift: ShiftId; previous: ShiftSummary }
+  | { type: 'staffScheduled'; workerId: string; shifts: ShiftId[] }
+  | { type: 'ratingMilestone'; stars: number }
 );
 
 export type SimEventType = SimEvent['type'];
