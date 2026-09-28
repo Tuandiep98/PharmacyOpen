@@ -66,6 +66,13 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7e | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được) | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
+### Điều chỉnh sau bước 7: nhịp mở danh mục và nâng cấp
+
+- Ván mới có 4 món; 20 món chia 5 cấp, mỗi cấp thêm 4 món. Cấp tiệm dựa đồng thời trên số món đã bán và ngày: cấp 2 (8 món/ngày 2), cấp 3 (22/ngày 3), cấp 4 (45/ngày 5), cấp 5 (80/ngày 7). Khách chỉ hỏi món đã mở; yêu cầu triệu chứng vẫn có thể xuất hiện ở mọi cấp.
+- Nhóm hàng mới cần cấp tiệm tương ứng và nâng **cả Kho lẫn Cửa hàng**. Món mới lên kệ với số lượng 0, phải tự nhập lần đầu. Save v4 giữ đủ 20 món và quyền nhập/trưng bày để không mất tiến trình.
+- Kệ cấp 1–4 hiển thị 4/6/8/10 ô trên một trang, thay số ngăn, chiều rộng và màu trang trí. Sắp kệ theo nhóm gom món cùng loại, thêm 2 ô mỗi trang (tối đa 12). Vật dụng khác có nhiều cấp với giá tăng và thay đổi trong cảnh. Món bán chạy đổi theo ngày: khách hỏi nhiều hơn 2,2 lần; giá nhập tăng 20%, giá bán do người chơi chỉnh trong giới hạn hiện hành. UI gợi ý giá bán, không tự thay giá đã đặt.
+- Giá mở Kho và Cửa hàng theo cấp 2–5 lần lượt 65/145/270/430 xu cho mỗi hạng mục. Giá vật dụng tăng theo cấp để phản ánh hiệu quả cộng dồn. Cần đo thêm tỷ lệ người chơi đạt các mốc với phong cách tự phục vụ và NPC để tinh chỉnh.
+
 ## 3b. Tự động hoá (bước 3)
 
 - **Nhân viên:** có 3 ứng viên hư cấu (Bình, Chi, Dũng), tối đa 2 NPC. Mỗi người có 3 chỉ số:
@@ -155,7 +162,7 @@ Lấy cảm hứng từ quy trình mở ca, giao ca và kết ca của nhà thu�
 - **Tổng kết ngày:** thêm giá vốn hàng bán, hàng hết hạn theo giá vốn, phiếu giảm giá, **lãi ròng** = doanh thu − giá vốn − lương − phiếu − hàng hết hạn (nhập hàng là dòng tiền, không phải lỗ); `profit` giữ nghĩa dòng tiền. Có thời gian chờ trung bình, số việc chuẩn bị, số liệu từng ca, điểm tiệm lúc chốt.
 - **Xếp hạng ngày 1–3★** (`dayGoals`): lãi ròng dương; phục vụ đúng ≥ 85% khách; đánh giá trong ngày (hoặc điểm tiệm nếu chưa có) ≥ 4★. **Mốc sao cửa hàng** 4,0 / 4,3 / 4,6 (cần ≥ 10 đánh giá) chúc mừng một lần. Không có thưởng tiền, không có lệch két ngẫu nhiên.
 - Web: đồng hồ + pha trên HUD, bảng chuẩn bị trong cảnh, dải "đóng cửa", hộp thoại tổng kết ngày (tạm dừng mô phỏng), sổ sách lãi ròng/biên lãi, nút lịch ca ở tab Nhân sự.
-- Save v4 → v5: ngày đang dở coi như đã mở; nhân viên làm đủ hai ca; `dayMs` 3 phút cũ đổi sang 4 phút; báo cáo cũ để trống số liệu ca và hiển thị như dòng tiền.
+- Save v5 → v6: ngày đang dở coi như đã mở; nhân viên làm đủ hai ca; `dayMs` 3 phút cũ đổi sang 4 phút; báo cáo cũ để trống số liệu ca và hiển thị như dòng tiền.
 - Balance 12 seed × 12 ngày: Bình 203,8; Chi 209,8; Dũng 208,2 xu/ngày (ngày 4 phút); vắng 35 phút ước tính 510–525 xu.
 - **Chưa làm:** mệt mỏi khi làm ca kép (`morale`), thưởng theo xếp hạng ngày.
 
@@ -174,8 +181,8 @@ Logic nằm ở `packages/simulation/src/recruit.ts` (sinh ứng viên, cấp đ
 - **Phỏng vấn (7d):** `interviewRecruit` tốn 10 xu, lộ đặc điểm ẩn của ứng viên trước khi tuyển; giá tuyển không đổi.
 - **Giữ quầy khi đổi ca (7d):** `setCounterPolicy` bật thì đầu ca quầy người chơi đang giữ không tự giao cho nhân viên (mặc định tắt để tiệm tự chạy được khi vắng mặt).
 - Balance có xếp nghỉ (ai làm liên tục 5 ngày thì nghỉ ngày sau, mỗi ngày tối đa một người): 187–190 xu/ngày trong 12 ngày, 172–174 xu/ngày trong 24 ngày; không ván nào mất nhân viên. Ngày có người nghỉ bị trống một ca: lý do để thuê người thứ ba/tư thay ca.
-- Save v6 → v7: `streak` = 0, không có lịch nghỉ, tắt giữ quầy.
-- Save v5 → v6: một đặc điểm cũ thành danh sách; lương trọn ngày chia đôi thành lương ca (tổng mỗi ngày không đổi); kinh nghiệm bằng số lượt đã bán; sinh danh sách ứng viên khi tải.
+- Save v7 → v8: `streak` = 0, không có lịch nghỉ, tắt giữ quầy.
+- Save v6 → v7: một đặc điểm cũ thành danh sách; lương trọn ngày chia đôi thành lương ca (tổng mỗi ngày không đổi); kinh nghiệm bằng số lượt đã bán; sinh danh sách ứng viên khi tải.
 - Balance 12 seed × 12 ngày, một người ca sáng + một người ca chiều: 205–211 xu/ngày, vắng 35 phút ước tính 513–526 xu; nhân viên đạt khoảng cấp 7 sau 12 ngày.
 
 ## 3h. Vị trí làm việc (bước 7e)
@@ -186,8 +193,9 @@ Danh mục ở `packages/simulation/src/content/stations.ts`, hành vi AI ở `S
 - **Kho & nhập hàng** (`stock`, tối đa 2): bổ sung kệ khi còn dưới `stockStationThreshold` (60%) thay vì 34%, nhanh hơn (`stockStationTimeFactor` 0,75), không phải chờ người khác nhập xong (chỉ tránh món đang có người nhập), không bị gọi ra quầy khi đổi ca.
 - **Hỗ trợ** (`support`, không giới hạn): hành vi cũ; đầu ca được ưu tiên nhận quầy. Người chơi luôn là "Hỗ trợ" khi không đứng quầy.
 - Vị trí ngoài quầy lưu ở `worker.station`; `stationOf()` trả về vị trí thực tế (đang đứng quầy thì là quầy bán). Lệnh chung `assignStation`; chọn quầy bán dùng đúng luật giao quầy. Chuyển người đứng quầy sang vị trí khác thì quầy giao cho người hỗ trợ trong ca, không có thì người chơi.
+- **Gộp với tiến trình mở khoá sản phẩm (075f7f9):** migration v4 → v5 của tiến trình chạy trước, các migration ca làm/nhân viên/ngày nghỉ/vị trí thành v5 → v6 … v8 → v9. NPC chỉ nhập món đã mở khoá, theo giá nhập xu hướng. Balance 12 seed × 12 ngày sau khi gộp (simulator không mua nâng cấp, chỉ bán 4 món đầu): 101–110 xu/ngày; bản tiến trình trước khi gộp đo được 88–104 xu/ngày.
 - **Thêm vị trí mới:** thêm id vào `StationId`, một mục trong `STATIONS` (tên, mô tả, số chỗ) và một hàm trong `STATION_BEHAVIOR` trả về các việc có thể làm kèm điểm. Giao diện (nút chọn vị trí, dòng đếm người) tự đọc theo danh mục.
-- Save v7 → v8: mọi nhân viên hiện có vào "Hỗ trợ" nên hành vi không đổi; balance mặc định giữ nguyên số liệu.
+- Save v8 → v9: mọi nhân viên hiện có vào "Hỗ trợ" nên hành vi không đổi; balance mặc định giữ nguyên số liệu.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

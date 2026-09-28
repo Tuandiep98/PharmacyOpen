@@ -180,7 +180,8 @@ describe('tổng kết ngày', () => {
 describe('lưu game v5', () => {
   it('nâng save v4: ngày đang dở coi như đã mở, nhân viên làm đủ hai ca, ngày dài theo cấu hình mới', () => {
     const state = createInitialState(10);
-    state.money = 400;
+    // Đủ vốn nhập hàng mà vẫn trả đủ lương (ván mới chỉ mở 4 món, phải nhập thêm).
+    state.money = 1000;
     const sim = new Simulation(state);
     sim.dispatch({ type: 'hire', candidateId: 'dung' });
     runFor(sim, 5000);

@@ -1,8 +1,8 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
-// base tương đối để build tĩnh chạy được ở GitHub Pages hoặc thư mục con bất kỳ.
+// GitHub Pages đặt project site dưới /PharmacyOpen/; bản local vẫn dùng đường dẫn tương đối.
 export default defineConfig({
-  base: './',
+  base: process.env.GITHUB_PAGES === 'true' ? '/PharmacyOpen/' : './',
   plugins: [react()],
 });

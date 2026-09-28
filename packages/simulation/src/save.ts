@@ -146,7 +146,18 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     state.prices = prices;
   },
   4: (state) => {
-    // v5: ca làm, chuẩn bị mở cửa, chấm công, lãi lỗ theo hoạt động. Ngày đang dở coi như đã mở cửa.
+    // Người chơi v4 đã có cả 20 món, nên giữ quyền nhập và trưng bày toàn bộ.
+    const upgrades = Array.isArray(state.upgrades) ? state.upgrades : [];
+    for (let level = 2; level <= 5; level++) {
+      for (const facility of ['warehouse', 'storefront']) {
+        const id = `${facility}-${level}`;
+        if (!upgrades.includes(id)) upgrades.push(id);
+      }
+    }
+    state.upgrades = upgrades;
+  },
+  5: (state) => {
+    // v6: ca làm, chuẩn bị mở cửa, chấm công, lãi lỗ theo hoạt động. Ngày đang dở coi như đã mở cửa.
     const config = isObject(state.config) ? state.config : {};
     if (config.dayMs === 180_000) config.dayMs = DEFAULT_CONFIG.dayMs;
     const dayMs = isNum(config.dayMs) ? config.dayMs : DEFAULT_CONFIG.dayMs;
@@ -194,8 +205,8 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       }
     }
   },
-  5: (state) => {
-    // v6: nhân viên mới — nhiều đặc điểm, độ hiếm, giới tính, tay nghề, mệt mỏi; lương tính theo ca;
+  6: (state) => {
+    // v7: nhân viên mới — nhiều đặc điểm, độ hiếm, giới tính, tay nghề, mệt mỏi; lương tính theo ca;
     // danh sách ứng viên hằng ngày (sinh sau khi tải, xem loadSave).
     if (isObject(state.rng)) state.rng.staff = createStream(isNum(state.seed) ? state.seed : 0, 'staff');
     const config = isObject(state.config) ? state.config : {};
@@ -237,8 +248,8 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     if (!Array.isArray(state.recruits)) state.recruits = [];
     if (!isNum(state.recruitRerollDay)) state.recruitRerollDay = 0;
   },
-  6: (state) => {
-    // v7: ngày làm liên tục, lịch nghỉ, tuỳ chọn giữ quầy khi đổi ca.
+  7: (state) => {
+    // v8: ngày làm liên tục, lịch nghỉ, tuỳ chọn giữ quầy khi đổi ca.
     if (isObject(state.workers)) {
       for (const worker of Object.values(state.workers)) {
         if (!isObject(worker)) continue;
@@ -248,8 +259,8 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     }
     if (typeof state.keepCounterOnShiftChange !== 'boolean') state.keepCounterOnShiftChange = false;
   },
-  7: (state) => {
-    // v8: vị trí làm việc (quầy / kho / hỗ trợ). Mọi người đang làm được xếp vào "Hỗ trợ" như hành vi cũ.
+  8: (state) => {
+    // v9: vị trí làm việc (quầy / kho / hỗ trợ). Mọi người đang làm được xếp vào "Hỗ trợ" như hành vi cũ.
     if (isObject(state.workers)) {
       for (const worker of Object.values(state.workers))
         if (isObject(worker) && typeof worker.station !== 'string') worker.station = 'support';

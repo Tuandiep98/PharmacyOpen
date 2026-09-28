@@ -1,6 +1,6 @@
 import { applyCommand } from './commands';
 import { effectiveSpeed } from './economy';
-import { PRODUCT_IDS, PRODUCTS } from './content/products';
+import { PRODUCT_IDS } from './content/products';
 import { REQUESTS } from './content/requests';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
@@ -9,6 +9,7 @@ import { effectiveKnowledge, hasTrait } from './recruit';
 import type { StationId } from './content/stations';
 import { dayElapsed, isPresent, stationOf } from './shift';
 import { PREP_TASK_IDS, type Order, type SimState, type Worker } from './types';
+import { isProductUnlocked, stockUnitCost, unlockedProducts } from './progression';
 
 /**
  * "Bộ não" của nhân viên NPC. Không có đường tắt nào: mọi hành động đều gửi đúng các Command
@@ -91,13 +92,14 @@ function decide(state: SimState, worker: Worker, order: Order, emit: Emit): void
     if (recognized) {
       applyCommand(state, { type: 'refer', workerId: worker.id, orderId: order.id }, emit);
     } else {
-      const guess = PRODUCT_IDS[nextInt(rng, 0, PRODUCT_IDS.length - 1)]!;
+      const available = unlockedProducts(state);
+      const guess = available[nextInt(rng, 0, available.length - 1)]!;
       applyCommand(state, { type: 'pickProduct', workerId: worker.id, orderId: order.id, productId: guess }, emit);
     }
     return;
   }
 
-  const untried = PRODUCT_IDS.filter((id) => !order.rejectedProductIds.includes(id));
+  const untried = unlockedProducts(state).filter((id) => !order.rejectedProductIds.includes(id));
   const correct = request.acceptable.find((id) => !order.rejectedProductIds.includes(id));
   const knows = request.kind === 'named' || nextFloat(rng) < effectiveKnowledge(worker);
   const wrongOptions = untried.filter((id) => !request.acceptable.includes(id));
@@ -171,10 +173,11 @@ function restockOptions(state: SimState, worker: Worker, emit: Emit, mode: 'shar
   const busy = new Set(workers.map((w) => (w.task?.kind === 'restock' ? w.task.productId : null)));
   const threshold = mode === 'dedicated' ? state.config.stockStationThreshold : state.config.aiRestockThreshold;
   const options: Candidate[] = [];
-  for (const id of PRODUCT_IDS) {
+  // Chỉ nhập món đã mở khoá; giá nhập theo xu hướng (progression.ts).
+  for (const id of PRODUCT_IDS.filter((productId) => isProductUnlocked(state, productId))) {
     const entry = state.stock[id];
     const ratio = entry.shelf / entry.capacity;
-    if (ratio > threshold || busy.has(id) || state.money < PRODUCTS[id].cost * 2) continue;
+    if (ratio > threshold || busy.has(id) || state.money < stockUnitCost(state, id) * 2) continue;
     options.push({
       score: (mode === 'dedicated' ? 0.5 : 0.3) + (1 - ratio) * 0.6,
       run: () => {

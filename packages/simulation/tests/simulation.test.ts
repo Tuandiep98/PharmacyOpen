@@ -130,10 +130,10 @@ describe('quy tắc phục vụ', () => {
   it('đưa nhầm hàng: trả về kệ, quay lại bước chọn và trừ kiên nhẫn', () => {
     const { sim, orderId } = withCustomerAtCounter('need-beach');
     const state = sim.snapshot as SimState;
-    sim.dispatch({ type: 'pickProduct', workerId: 'w-player', orderId, productId: 'lipbalm' });
+    sim.dispatch({ type: 'pickProduct', workerId: 'w-player', orderId, productId: 'bandage' });
     runFor(sim, state.config.retrieveMs);
     expect(state.orders[orderId]!.state).toBe('deciding');
-    expect(state.stock.lipbalm.shelf).toBe(PRODUCTS.lipbalm.shelfCapacity);
+    expect(state.stock.bandage.shelf).toBe(PRODUCTS.bandage.shelfCapacity);
     expect(state.customers.c1!.patienceMs).toBeLessThan(30000 * 0.8);
     expect(sim.drainEvents().some((e) => e.type === 'wrongProduct')).toBe(true);
   });
@@ -146,7 +146,7 @@ describe('quy tắc phục vụ', () => {
         ok: false,
         reason: 'safety-referral-required',
       });
-      expect(state.stock[productId].shelf).toBe(PRODUCTS[productId].shelfCapacity);
+      expect(state.stock[productId].shelf).toBe(PRODUCT_IDS.indexOf(productId) < 4 ? PRODUCTS[productId].shelfCapacity : 0);
     }
     expect(sim.drainEvents().filter((e) => e.type === 'safetyWarning')).toHaveLength(PRODUCT_IDS.length);
 

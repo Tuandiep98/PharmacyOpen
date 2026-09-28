@@ -22,11 +22,12 @@ export function DandelionLogo({ x = 0, y = 0, r = 14 }: { x?: number; y?: number
   );
 }
 
-export function StoreSign({ name }: { name: string }) {
+export function StoreSign({ name, level = 0 }: { name: string; level?: number }) {
   return (
     <g>
       <path d="M110,4 V12 M250,4 V12" stroke={INK} strokeWidth={2} />
       <rect x={52} y={10} width={256} height={40} rx={10} fill={ART.leaf} {...S} />
+      {level > 0 && <path d="M58,11 H302" stroke={level >= 2 ? '#FFD56F' : ART.honey} strokeWidth={level >= 2 ? 5 : 3} strokeLinecap="round" />}
       <rect x={58} y={15} width={244} height={30} rx={6} fill="none" stroke={ART.leafLight} strokeWidth={1.4} strokeDasharray="3 3" />
       <DandelionLogo x={80} y={30} r={13} />
       <text x={200} y={36} textAnchor="middle" fontSize={16} fontWeight={900} fill="#FFFFFF" letterSpacing={0.3}>
@@ -34,6 +35,35 @@ export function StoreSign({ name }: { name: string }) {
       </text>
     </g>
   );
+}
+
+export function WaitingBench({ level }: { level: number }) {
+  if (level < 1) return null;
+  return <g aria-label="Ghế chờ">
+    <rect x={8} y={304} width={level >= 2 ? 146 : 116} height={24} rx={7} fill={level >= 3 ? '#77BBA6' : ART.woodLight} {...S} />
+    <rect x={8} y={331} width={level >= 2 ? 146 : 116} height={9} rx={4} fill={level >= 3 ? ART.honey : ART.wood} {...S} />
+    <path d={`M20,340 V365 M${level >= 2 ? 144 : 114},340 V365`} fill="none" {...S} />
+    {level >= 2 && <path d="M27,314 H135" stroke={ART.paper} strokeWidth={3} strokeLinecap="round" />}
+  </g>;
+}
+
+export function CounterScanner({ level }: { level: number }) {
+  if (level < 1) return null;
+  return <g aria-label="Máy quét mã vạch">
+    <path d="M252,292 L256,277 L271,278 L276,292Z" fill={level >= 2 ? ART.sky : '#6C8B83'} {...S} />
+    <path d="M260,277 L264,263 L279,269 L274,283Z" fill={level >= 3 ? ART.honey : ART.leafLight} {...S} />
+    <path d="M264,269 L274,272" stroke={level >= 2 ? '#FFFFFF' : ART.honey} strokeWidth={2.5} />
+  </g>;
+}
+
+export function ExpandedStore({ warehouseLevel, storeLevel }: { warehouseLevel: number; storeLevel: number }) {
+  return <g pointerEvents="none">
+    {storeLevel >= 2 && <><path d="M0,256 H360" stroke={storeLevel >= 4 ? ART.honey : ART.leafLight} strokeWidth={storeLevel >= 4 ? 9 : 5} /><path d="M0,263 H360" stroke={INK} strokeOpacity={0.25} strokeWidth={1} /></>}
+    {storeLevel >= 3 && <><path d="M8,276 H188" stroke={ART.leaf} strokeOpacity={0.4} strokeWidth={2} /><path d="M190,276 H350" stroke={ART.leaf} strokeOpacity={0.4} strokeWidth={2} /></>}
+    {warehouseLevel >= 2 && <g transform="translate(8 230)"><rect x={0} y={12} width={29} height={25} rx={3} fill={ART.woodLight} {...S} /><path d="M0,19 H29 M14,13 V37" stroke={ART.wood} strokeWidth={2} /></g>}
+    {warehouseLevel >= 3 && <g transform="translate(30 225)"><rect x={0} y={8} width={25} height={29} rx={3} fill={ART.woodLight} {...S} /><path d="M0,17 H25 M12,8 V37" stroke={ART.wood} strokeWidth={2} /></g>}
+    {warehouseLevel >= 4 && <path d="M13,239 H53" stroke={ART.honey} strokeWidth={3} strokeLinecap="round" />}
+  </g>;
 }
 
 export function WallAndFloor() {
@@ -62,15 +92,21 @@ export function WallAndFloor() {
 }
 
 /** Tủ kệ gỗ treo tường, 2 tầng. Các ô sản phẩm được vẽ riêng bên trên. */
-export function ShelfUnit() {
+export function ShelfUnit({ level = 1, sorted = false }: { level?: number; sorted?: boolean }) {
+  const width = level === 1 ? 256 : level === 2 ? 314 : 332;
+  const x = 180 - width / 2;
+  const columns = Math.min(6, level + 1 + (sorted ? 1 : 0));
+  const wood = level >= 3 ? '#B77A4B' : ART.wood;
   return (
     <g>
-      <rect x={14} y={58} width={332} height={152} rx={8} fill={ART.wood} {...S} />
-      <rect x={22} y={64} width={316} height={66} rx={4} fill={ART.woodInner} stroke={INK} strokeWidth={1.4} />
-      <rect x={22} y={138} width={316} height={66} rx={4} fill={ART.woodInner} stroke={INK} strokeWidth={1.4} />
-      <rect x={18} y={126} width={324} height={9} rx={3} fill={ART.woodLight} {...S} />
-      <rect x={18} y={200} width={324} height={9} rx={3} fill={ART.woodLight} {...S} />
-      <path d="M126,64 V130 M234,64 V130 M126,138 V204 M234,138 V204" stroke="#DEC9A5" strokeWidth={2} />
+      <rect x={x} y={level >= 3 ? 50 : 58} width={width} height={level >= 3 ? 162 : 152} rx={8} fill={wood} {...S} />
+      <rect x={x + 8} y={64} width={width - 16} height={66} rx={4} fill={ART.woodInner} stroke={INK} strokeWidth={1.4} />
+      <rect x={x + 8} y={138} width={width - 16} height={66} rx={4} fill={ART.woodInner} stroke={INK} strokeWidth={1.4} />
+      <rect x={x + 4} y={126} width={width - 8} height={9} rx={3} fill={ART.woodLight} {...S} />
+      <rect x={x + 4} y={200} width={width - 8} height={9} rx={3} fill={ART.woodLight} {...S} />
+      {Array.from({ length: columns - 1 }, (_, i) => <path key={i} d={`M${x + width * (i + 1) / columns},64 V130 M${x + width * (i + 1) / columns},138 V204`} stroke="#DEC9A5" strokeWidth={2} />)}
+      {sorted && <><rect x={x + 8} y={54} width={width / 3} height={8} rx={4} fill={ART.sky} /><rect x={x + width / 3 + 8} y={54} width={width / 3} height={8} rx={4} fill={ART.honey} /><rect x={x + width * 2 / 3 + 8} y={54} width={width / 3 - 16} height={8} rx={4} fill={ART.coral} /></>}
+      {level >= 3 && <path d={`M${x + 6},54 H${x + width - 6}`} stroke={ART.honey} strokeWidth={3} strokeLinecap="round" />}
     </g>
   );
 }

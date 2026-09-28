@@ -12,9 +12,15 @@ npm install
 npm run dev        # http://localhost:5173
 npm run check      # typecheck + lint + test (gồm cổng kiểm duyệt nội dung)
 npm run content:check  # chỉ chạy kiểm duyệt nội dung (blocklist, triệu chứng → refer, tên thuốc/liều)
-npm run build      # build tĩnh vào apps/web/dist (base tương đối, chạy được trên GitHub Pages)
+npm run build      # build tĩnh vào apps/web/dist; base tương đối cho local
 npm run balance    # mô phỏng 3 kịch bản nhân viên qua nhiều seed để kiểm tra kinh tế
 ```
+
+## GitHub Pages
+
+Workflow [`.github/workflows/pages.yml`](.github/workflows/pages.yml) chạy `npm ci`, kiểm tra và build mỗi khi push lên `main`, rồi triển khai `apps/web/dist` bằng GitHub Actions. Bản Pages dùng base `/PharmacyOpen/`; URL dự kiến: <https://tuandiep98.github.io/PharmacyOpen/>. Có thể chạy lại bằng **Actions → Deploy GitHub Pages → Run workflow**.
+
+Trong **Settings → Pages → Build and deployment**, chọn **GitHub Actions** làm nguồn phát hành. Bản lưu game nằm trong `localStorage` của từng trình duyệt; mở ở domain Pages sẽ không tự mang theo bản lưu từ localhost hoặc domain khác. Hãy xuất bản lưu trước khi đổi địa chỉ nếu cần giữ tiến trình.
 
 ## Cấu trúc
 

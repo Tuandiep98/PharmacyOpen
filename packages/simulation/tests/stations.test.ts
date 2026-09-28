@@ -77,7 +77,7 @@ describe('vị trí làm việc', () => {
     runFor(sim, s.config.dayMs / 2 - 1000, () => {
       for (const e of sim.drainEvents()) if (e.type === 'restocked' && e.workerId) restockers.push(e.workerId);
     });
-    expect(s.workers['w-chi']!.served).toBeGreaterThan(5);
+    expect(s.workers['w-chi']!.served).toBeGreaterThan(2);
     expect(restockers.length).toBeGreaterThan(0);
     expect(restockers.filter((id) => id === 'w-binh').length).toBeGreaterThanOrEqual(restockers.length / 2);
   });

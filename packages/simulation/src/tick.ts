@@ -12,6 +12,7 @@ import { dismissCustomer, newId, returnReservedStock } from './state';
 import { PRODUCTS } from './content/products';
 import { dayPhase, prepComplete, shiftTick, tidyOnDuty } from './shift';
 import { expireStock } from './stock';
+import { isProductUnlocked, isTrending } from './progression';
 import type { Customer, Order, SimState } from './types';
 
 /** Tiến mô phỏng đúng một bước cố định `config.tickMs`. */
@@ -174,7 +175,12 @@ function maybeSpawn(state: SimState, emit: Emit): void {
     : ARCHETYPES[pickWeighted(rng, ARCHETYPE_IDS.map((id) => [id, ARCHETYPES[id].spawnWeight] as const))];
   const requestId = pickWeighted(
     rng,
-    Object.entries(archetype.requestWeights).map(([id, w]) => [id, w ?? 0] as const),
+    Object.entries(archetype.requestWeights)
+      .filter(([id]) => {
+        const request = REQUESTS[id];
+        return request?.kind === 'refer' || request?.acceptable.some((productId) => isProductUnlocked(state, productId));
+      })
+      .map(([id, w]) => [id, (w ?? 0) * (REQUESTS[id]?.acceptable.some((productId) => isTrending(state, productId)) ? 2.2 : 1)] as const),
   );
   const patience = nextInt(rng, archetype.patienceMs[0], archetype.patienceMs[1]);
   const id = newId(state, 'c');

@@ -206,7 +206,7 @@ describe('tuyển người, nâng cấp, giới hạn hàng chờ', () => {
     expect(state.config.checkoutMs).toBe(checkout / 2);
     expect(state.stock.mask.capacity).toBe(cap + 2);
     expect(state.config.maxQueue).toBe(maxQueue + 1);
-    const total = Object.values(UPGRADES).reduce((sum, u) => sum + u.cost, 0);
+    const total = ['scanner', 'wide-shelf', 'bench', 'signboard', 'sorted-shelf'].reduce((sum, id) => sum + UPGRADES[id]!.cost, 0);
     expect(state.stats.spentOnUpgrades).toBe(total);
     // Config mặc định không bị sửa theo (mỗi ván có bản riêng).
     expect(createInitialState(1).config.checkoutMs).toBe(checkout);

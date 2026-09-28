@@ -1,6 +1,8 @@
 import {
   isPresent,
   PRODUCTS,
+  isTrending,
+  facilityLevel,
   REQUESTS,
   type Customer,
   type DeepReadonly,
@@ -14,12 +16,12 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { BRAND } from '../../brand';
 import { CustomerFigure } from '../../art/Character';
 import { WorkerFigure } from '../../art/WorkerFigure';
-import { Counter, Plant, QueueLane, Register, ShelfUnit, StoreSign, WallAndFloor } from '../../art/Furniture';
+import { Counter, CounterScanner, ExpandedStore, Plant, QueueLane, Register, ShelfUnit, StoreSign, WaitingBench, WallAndFloor } from '../../art/Furniture';
 import { ART, INK } from '../../art/palette';
 import { ProductArt } from '../../art/Products';
 import { beginProductGesture } from '../../ui/drag';
 import { useUi } from '../../ui/uiStore';
-import { catalogPageProducts } from '../../ui/catalog';
+import { catalogPageProducts, catalogPageSize } from '../../ui/catalog';
 import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
 
 type State = DeepReadonly<SimState>;
@@ -58,14 +60,14 @@ interface SlotDef {
   x: number;
   base: number;
 }
-const SHELF_SLOTS: SlotDef[] = [
-  { x: 74, base: 126 },
-  { x: 180, base: 126 },
-  { x: 286, base: 126 },
-  { x: 74, base: 200 },
-  { x: 180, base: 200 },
-  { x: 286, base: 200 },
-];
+function shelfSlots(count: number): SlotDef[] {
+  const columns = count / 2;
+  const width = columns === 2 ? 256 : columns === 3 ? 314 : 332;
+  return Array.from({ length: count }, (_, index) => ({
+    x: 180 - width / 2 + width * ((index % columns) + 0.5) / columns,
+    base: index < columns ? 126 : 200,
+  }));
+}
 
 /** Khung cao hơn tỉ lệ cảnh thì nới phần tường lên trên, để quầy và khay luôn sát nhau. */
 function useSceneViewBox() {
@@ -91,7 +93,10 @@ export function StoreScene({ state }: { state: State }) {
   const drag = useUi((s) => s.drag);
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
-  const visibleProducts = catalogPageProducts(catalogCategory, catalogPage);
+  const visibleProducts = catalogPageProducts(catalogCategory, catalogPage, state);
+  const slots = shelfSlots(catalogPageSize(state));
+  const cellWidth = (slots.length === 4 ? 256 : slots.length === 6 ? 314 : 332) / (slots.length / 2);
+  const ownedLevel = (base: string) => state.upgrades.filter((id) => id === base || id.startsWith(`${base}-`)).length;
   const { give } = useServiceActions();
   const counter = state.counters[0]!;
   const counterCustomerId = counter.customerId;
@@ -104,8 +109,10 @@ export function StoreScene({ state }: { state: State }) {
     if (c.phase === 'counter') return { ...COUNTER_SPOT, scale: 1, hidden: false };
     if (c.phase === 'leaving') return { ...EXIT_SPOT, scale: 0.9, hidden: false };
     const index = state.queue.indexOf(c.id);
+    const benchLevel = ownedLevel('bench');
+    if (index >= 0 && index < Math.min(benchLevel, 2)) return { x: index === 0 ? 45 : 98, y: 354, scale: 0.72, hidden: false, seated: true };
     const spot = QUEUE_SPOTS[index];
-    return spot ? { ...spot, scale: 0.78, hidden: false } : { x: -40, y: 394, scale: 0.78, hidden: true };
+    return spot ? { ...spot, scale: 0.78, hidden: false, seated: false } : { x: -40, y: 394, scale: 0.78, hidden: true, seated: false };
   };
 
   // Vẽ khách xa quầy trước, khách ở quầy sau cùng để không bị che.
@@ -123,9 +130,10 @@ export function StoreScene({ state }: { state: State }) {
       aria-label="Cửa hàng"
     >
       <WallAndFloor />
-      <StoreSign name={BRAND.name} />
-      <ShelfUnit />
-      {SHELF_SLOTS.map((slot, index) => {
+      <ExpandedStore warehouseLevel={facilityLevel(state, 'warehouse')} storeLevel={facilityLevel(state, 'storefront')} />
+      <StoreSign name={BRAND.name} level={ownedLevel('signboard')} />
+      <ShelfUnit level={facilityLevel(state, 'wide-shelf')} sorted={state.upgrades.includes('sorted-shelf')} />
+      {slots.map((slot, index) => {
         const id = visibleProducts[index];
         return id ? (
           <ShelfSlot
@@ -133,8 +141,10 @@ export function StoreScene({ state }: { state: State }) {
             productId={id}
             x={slot.x}
             base={slot.base}
+            cellWidth={cellWidth}
             count={state.stock[id].shelf}
             capacity={state.stock[id].capacity}
+            trending={isTrending(state, id)}
             selected={selection?.kind === 'product' && selection.id === id}
             onPointerDown={(e) =>
               beginProductGesture(e, id, {
@@ -145,10 +155,11 @@ export function StoreScene({ state }: { state: State }) {
             }
           />
         ) : (
-          <EmptySlot key={`empty-${index}`} x={slot.x} base={slot.base} />
+          <EmptySlot key={`empty-${index}`} x={slot.x} base={slot.base} cellWidth={cellWidth} />
         );
       })}
       <Plant x={30} y={296} />
+      <WaitingBench level={ownedLevel('bench')} />
 
       {workerSpots.map(({ worker, spot }) => (
         <g
@@ -167,6 +178,7 @@ export function StoreScene({ state }: { state: State }) {
         </g>
       ))}
       <Counter />
+      <CounterScanner level={ownedLevel('scanner')} />
       <Register active={counterOrder?.state === 'checkingOut'} />
       {workerSpots.map(({ worker, spot }) => (
         <WorkerBubble
@@ -217,7 +229,7 @@ export function StoreScene({ state }: { state: State }) {
               )}
               {isSelected && <ellipse className="select-ring" cx={0} cy={0} rx={30} ry={8} fill="none" />}
               <g className="bob">
-                <CustomerFigure look={c.look} expression={c.expression} />
+                <CustomerFigure look={c.look} expression={c.expression} seated={'seated' in spot && spot.seated} />
               </g>
               {c.phase !== 'leaving' && <PatienceBar ratio={c.patienceMs / c.patienceMaxMs} />}
               <rect x={-36} y={-116} width={72} height={126} fill="transparent" />
@@ -262,35 +274,39 @@ function ShelfSlot(props: {
   productId: ProductId;
   x: number;
   base: number;
+  cellWidth: number;
   count: number;
   capacity: number;
+  trending: boolean;
   selected: boolean;
   onPointerDown: (e: React.PointerEvent) => void;
 }) {
-  const { productId, x, base, count, capacity, selected, onPointerDown } = props;
+  const { productId, x, base, cellWidth, count, capacity, selected, trending, onPointerDown } = props;
   const cap = capacity;
-  const shown = Math.min(count, 3);
-  const scale = 0.9;
+  const shown = Math.min(count, cellWidth < 88 ? 2 : 3);
+  const scale = cellWidth < 65 ? 0.65 : cellWidth < 88 ? 0.76 : 0.9;
+  const spacing = cellWidth < 65 ? 17 : cellWidth < 88 ? 22 : 28;
   const w = 40 * scale;
   const h = 48 * scale;
   const low = count > 0 && count <= 1;
   return (
     <g
-      className={`tappable shelf-slot ${count > 0 ? 'draggable' : ''}`}
+      className={`tappable shelf-slot ${count > 0 ? 'draggable' : ''} ${trending ? 'shelf-trending' : ''}`}
       onPointerDown={onPointerDown}
       role="button"
       aria-label={`${PRODUCTS[productId].name}: còn ${count}/${cap}. Kéo vào khách để đưa hàng, chạm để xem chi tiết.`}
     >
-      <rect x={x - 50} y={base - 60} width={100} height={62} rx={6} fill={selected ? 'rgba(126,214,181,0.35)' : 'transparent'} />
+      <rect x={x - cellWidth / 2 + 2} y={base - 60} width={cellWidth - 4} height={62} rx={6} fill={selected ? 'rgba(126,214,181,0.35)' : 'transparent'} />
+      {trending && <><rect x={x - cellWidth / 2 + 4} y={base - 56} width={cellWidth - 8} height={54} rx={7} fill="none" stroke="#C97A24" strokeWidth={2} /><text x={x - cellWidth / 2 + 4} y={base - 60} fontSize={cellWidth < 65 ? 6 : 8} fontWeight={900} fill="#A85C12">★ BÁN CHẠY</text></>}
       {count === 0 && (
         <g opacity={0.25}>
           <ProductArt id={productId} x={x - w / 2} y={base - h - 1} scale={scale} />
         </g>
       )}
       {Array.from({ length: shown }, (_, i) => (
-        <ProductArt key={i} id={productId} x={x - w / 2 + (i - (shown - 1) / 2) * 28} y={base - h - 1} scale={scale} />
+        <ProductArt key={i} id={productId} x={x - w / 2 + (i - (shown - 1) / 2) * spacing} y={base - h - 1} scale={scale} />
       ))}
-      <g transform={`translate(${x + 26} ${base - 58})`}>
+      <g transform={`translate(${x + cellWidth / 2 - 30} ${base - 58})`}>
         <rect
           x={0}
           y={0}
@@ -309,10 +325,10 @@ function ShelfSlot(props: {
   );
 }
 
-function EmptySlot({ x, base }: { x: number; base: number }) {
+function EmptySlot({ x, base, cellWidth }: { x: number; base: number; cellWidth: number }) {
   return (
     <g opacity={0.45}>
-      <rect x={x - 44} y={base - 58} width={88} height={40} rx={6} fill="none" stroke="#C9B49A" strokeWidth={1.6} strokeDasharray="5 4" />
+      <rect x={x - cellWidth / 2 + 4} y={base - 58} width={cellWidth - 8} height={40} rx={6} fill="none" stroke="#C9B49A" strokeWidth={1.6} strokeDasharray="5 4" />
       <text x={x} y={base - 25} textAnchor="middle" fontSize={9} fontWeight={800} fill="#8C7A66">
         TRỐNG
       </text>

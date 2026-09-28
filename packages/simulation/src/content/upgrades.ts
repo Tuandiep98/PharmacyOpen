@@ -13,7 +13,7 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   'sorted-shelf': {
     id: 'sorted-shelf',
     name: 'Sắp kệ theo nhóm hàng',
-    benefit: 'Lấy hàng nhanh hơn 25%.',
+    benefit: 'Gom hàng theo nhóm, thêm 2 ô trưng bày mỗi trang; lấy hàng nhanh hơn 25%.',
     tradeoff: 'Không giúp nếu kệ hết hàng.',
     cost: 140,
     effects: [{ type: 'scale', key: 'retrieveMs', factor: 0.75 }],
@@ -43,5 +43,50 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     effects: [{ type: 'spawnInterval', factor: 0.75 }],
   },
 };
+
+// Giá tăng nhanh hơn lợi ích tuyến tính để các mốc cao là lựa chọn quản lý, không phải mua ngay khi đủ xu.
+const facilityCosts = [0, 0, 65, 145, 270, 430];
+for (const facility of ['warehouse', 'storefront'] as const) {
+  for (let level = 2; level <= 5; level++) {
+    const id = `${facility}-${level}`;
+    UPGRADES[id] = {
+      id,
+      name: facility === 'warehouse' ? 'Kho hàng' : 'Cửa hàng',
+      benefit: facility === 'warehouse'
+        ? `Nhập được thêm 4 loại hàng (tổng ${level * 4}).`
+        : `Trưng bày thêm 4 loại hàng (tổng ${level * 4}).`,
+      tradeoff: 'Nhiều mặt hàng cần thêm vốn nhập và theo dõi hạn dùng.',
+      cost: facilityCosts[level]!,
+      effects: [{ type: 'catalog', facility, add: 4 }],
+    };
+  }
+}
+
+for (const [base, max, costs, effects] of [
+  ['scanner', 3, [90, 190, 330], [0.5, 0.72, 0.8]],
+  ['sorted-shelf', 3, [140, 260, 430], [0.75, 0.82, 0.88]],
+  ['wide-shelf', 4, [120, 240, 390, 560], [2, 2, 2, 2]],
+  ['bench', 3, [150, 300, 490], [0.7, 0.82, 0.9]],
+  ['signboard', 3, [200, 380, 600], [0.75, 0.83, 0.9]],
+] as const) {
+  for (let level = 2; level <= max; level++) {
+    const id = `${base}-${level}`;
+    const old = UPGRADES[base]!;
+    const value = effects[level - 1]!;
+    UPGRADES[id] = {
+      id, name: old.name,
+      benefit: base === 'wide-shelf' ? 'Mỗi ô kệ chứa thêm 2 món và kệ đổi hình dáng.' :
+        base === 'bench' ? 'Thêm 1 chỗ chờ; khách bớt sốt ruột.' :
+        base === 'signboard' ? 'Thu hút thêm khách tới cửa hàng.' :
+        base === 'scanner' ? 'Thanh toán nhanh hơn.' : 'Lấy hàng nhanh hơn; giữ cách trưng bày theo nhóm.',
+      tradeoff: old.tradeoff,
+      cost: costs[level - 1]!,
+      effects: base === 'wide-shelf' ? [{ type: 'shelfCapacity', add: value }] :
+        base === 'bench' ? [{ type: 'queue', addMax: 1, patienceFactor: value }] :
+        base === 'signboard' ? [{ type: 'spawnInterval', factor: value }] :
+        [{ type: 'scale', key: base === 'scanner' ? 'checkoutMs' : 'retrieveMs', factor: value }],
+    } as UpgradeDef;
+  }
+}
 
 export const UPGRADE_IDS = Object.keys(UPGRADES);

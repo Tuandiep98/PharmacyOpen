@@ -13,6 +13,7 @@ import { nextFloat, nextInt } from './rng';
 import { STATIONS, type StationId } from './content/stations';
 import { checkIn, currentShift, handOverCounters, isOnDuty, isPresent, markPrepDone, openStore, stationHeadcount } from './shift';
 import { addStock, takeStock } from './stock';
+import { facilityLevel, isProductUnlocked, playerLevel, stockUnitCost } from './progression';
 import { PREP_TASK_IDS, SHIFT_IDS, type DeepReadonly, type Order, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /**
@@ -63,6 +64,9 @@ export type RejectReason =
   | 'unknown-counter'
   | 'unknown-upgrade'
   | 'already-owned'
+  | 'level-locked'
+  | 'product-locked'
+  | 'previous-level-required'
   | 'unknown-complaint'
   | 'complaint-closed'
   | 'price-out-of-range'
@@ -205,6 +209,8 @@ function pickProduct(state: SimState, workerId: string, orderId: string, product
     return reject('safety-referral-required');
   }
 
+  if (!isProductUnlocked(state, productId)) return reject('product-locked');
+
   const entry = state.stock[productId];
   if (entry.shelf <= 0) return reject('out-of-stock');
 
@@ -241,13 +247,15 @@ function checkout(state: SimState, workerId: string, orderId: string): CommandRe
 function restock(state: SimState, productId: ProductId, workerId: string | null, emit: Emit): CommandResult {
   const product = PRODUCTS[productId];
   if (!product) return reject('unknown-product');
+  if (!isProductUnlocked(state, productId)) return reject('product-locked');
   const entry = state.stock[productId];
   const missing = entry.capacity - entry.shelf;
   if (missing <= 0) return reject('shelf-full');
   // Mua tối đa số lượng đủ tiền; tổng tài sản (tiền + hàng) không giảm nên không thể kẹt vốn.
-  const qty = Math.min(missing, Math.floor(state.money / product.cost));
+  const unitCost = stockUnitCost(state, productId);
+  const qty = Math.min(missing, Math.floor(state.money / unitCost));
   if (qty <= 0) return reject('insufficient-funds');
-  const cost = qty * product.cost;
+  const cost = qty * unitCost;
   state.money -= cost;
   addStock(entry, qty, state.timeMs + state.config.stockShelfLifeMs);
   state.stats.spentOnStock += cost;
@@ -386,6 +394,16 @@ function buyUpgrade(state: SimState, upgradeId: string, emit: Emit): CommandResu
   const upgrade = UPGRADES[upgradeId];
   if (!upgrade) return reject('unknown-upgrade');
   if (state.upgrades.includes(upgradeId)) return reject('already-owned');
+  const levelMatch = /^(warehouse|storefront|scanner|sorted-shelf|wide-shelf|bench|signboard)-(\d+)$/.exec(upgradeId);
+  if (levelMatch) {
+    const base = levelMatch[1]!;
+    const target = Number(levelMatch[2]);
+    const current = base === 'warehouse' || base === 'storefront'
+      ? facilityLevel(state, base)
+      : state.upgrades.filter((id) => id === base || id.startsWith(`${base}-`)).length;
+    if (current !== target - 1) return reject('previous-level-required');
+    if (playerLevel(state) < target) return reject('level-locked');
+  }
   if (state.money < upgrade.cost) return reject('insufficient-funds');
   state.money -= upgrade.cost;
   state.stats.spentOnUpgrades += upgrade.cost;
@@ -412,6 +430,7 @@ function respondComplaint(state: SimState, complaintId: string, response: Compla
 
 function setPrice(state: SimState, productId: ProductId, price: number, emit: Emit): CommandResult {
   if (!PRODUCTS[productId]) return reject('unknown-product');
+  if (!isProductUnlocked(state, productId)) return reject('product-locked');
   const { min, max } = priceBounds(state, productId);
   if (!Number.isInteger(price) || price < min || price > max) return reject('price-out-of-range');
   state.prices[productId] = price;
@@ -490,6 +509,9 @@ function workerSpeed(state: SimState, workerId: string): number {
 function applyEffect(state: SimState, effect: UpgradeEffect): void {
   const config = state.config;
   switch (effect.type) {
+    case 'catalog':
+      // Quyền nhập/trưng bày được tính từ danh sách nâng cấp trong progression.ts.
+      break;
     case 'scale':
       config[effect.key] = Math.round(config[effect.key] * effect.factor);
       break;

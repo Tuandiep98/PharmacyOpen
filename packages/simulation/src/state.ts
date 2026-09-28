@@ -22,10 +22,10 @@ export const PLAYER_WORKER_ID = 'w-player';
 
 export function createInitialState(seed: number, config: SimConfig = DEFAULT_CONFIG): SimState {
   const stock = {} as Record<ProductId, StockEntry>;
-  for (const id of PRODUCT_IDS) stock[id] = {
-    shelf: PRODUCTS[id].shelfCapacity,
+  for (const [index, id] of PRODUCT_IDS.entries()) stock[id] = {
+    shelf: index < 4 ? PRODUCTS[id].shelfCapacity : 0,
     capacity: PRODUCTS[id].shelfCapacity,
-    batches: [{ qty: PRODUCTS[id].shelfCapacity, expiresAtMs: config.stockShelfLifeMs }],
+    batches: index < 4 ? [{ qty: PRODUCTS[id].shelfCapacity, expiresAtMs: config.stockShelfLifeMs }] : [],
   };
 
   const player: Worker = {

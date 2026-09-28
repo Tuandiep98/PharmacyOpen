@@ -3,6 +3,8 @@ import {
   PRODUCTS,
   REFERRAL_MESSAGE,
   REQUESTS,
+  isTrending,
+  stockUnitCost,
   type DeepReadonly,
   type SimState,
 } from '@pharmacy/simulation';
@@ -35,7 +37,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const dragging = useUi((s) => s.drag?.productId ?? null);
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
-  const visibleProducts = catalogPageProducts(catalogCategory, catalogPage);
+  const visibleProducts = catalogPageProducts(catalogCategory, catalogPage, state);
   const counter = state.counters[0]!;
   const player = state.workers[PLAYER_WORKER_ID]!;
   const operator = state.workers[counter.operatorId] ?? player;
@@ -144,21 +146,21 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         </GameButton>
       </div>
 
-      <CatalogControls pages />
+      <CatalogControls pages state={state} />
       <ul className="tray-items">
         {visibleProducts.map((id) => {
           const p = PRODUCTS[id];
           const stock = state.stock[id].shelf;
           if (stock === 0) {
-            const affordable = Math.min(state.stock[id].capacity, Math.floor(state.money / p.cost));
+            const affordable = Math.min(state.stock[id].capacity, Math.floor(state.money / stockUnitCost(state, id)));
             return (
               <li key={id}>
-                <button className="item-chip empty" onClick={() => restock(id)} disabled={affordable === 0}>
+                <button className={`item-chip empty ${isTrending(state, id) ? 'trending-product' : ''}`} onClick={() => restock(id)} disabled={affordable === 0}>
                   <span className="item-icon faded">
                     <ProductIcon id={id} size={30} />
                   </span>
                   <span className="item-name">{p.name}</span>
-                  <span className="item-restock">{affordable ? `+ Nhập ${affordable * p.cost} ${BRAND.currency}` : 'Thiếu xu'}</span>
+                  <span className="item-restock">{affordable ? `+ Nhập ${affordable * stockUnitCost(state, id)} ${BRAND.currency}` : 'Thiếu xu'}</span>
                 </button>
               </li>
             );
@@ -166,7 +168,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
           return (
             <li key={id}>
               <button
-                className={`item-chip ${dragging === id ? 'lifted' : ''}`}
+                className={`item-chip ${dragging === id ? 'lifted' : ''} ${isTrending(state, id) ? 'trending-product' : ''}`}
                 disabled={!canServe}
                 onPointerDown={(e) => canServe && beginProductGesture(e, id, { onDrop: give, onTap: give })}
                 // Kích hoạt bằng bàn phím (Enter/Space) không có pointer event: detail = 0.
@@ -177,7 +179,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
                   <ProductIcon id={id} size={30} />
                   <span className="item-stock">{stock}</span>
                 </span>
-                <span className="item-name">{p.name}</span>
+                <span className="item-name">{p.name}{isTrending(state, id) && <small className="trend-tag">Bán chạy</small>}</span>
                 <span className="item-price">
                   {state.prices[id]} {BRAND.currency}
                 </span>
