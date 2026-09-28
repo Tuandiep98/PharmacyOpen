@@ -172,5 +172,5 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
  * thì tiệm "đóng cửa" khi vắng: thời gian không trôi, không trả lương, không mất khách.
  */
 export function canRunUnattended(state: DeepReadonly<SimState>): boolean {
-  return state.counters.some((c) => state.workers[c.operatorId]?.controller === 'ai');
+  return state.counters.some((c) => (c.operatorId ? state.workers[c.operatorId] : undefined)?.controller === 'ai');
 }

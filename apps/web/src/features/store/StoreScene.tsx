@@ -28,6 +28,7 @@ type State = DeepReadonly<SimState>;
 
 // Bố cục cố định của cảnh (đơn vị viewBox). Hàng chờ nằm ngang bên trái quầy để cảnh thấp, gọn.
 const SCENE_W = 360;
+export const SECOND_OFFSET = 240;
 const SCENE_H = 420;
 const COUNTER_SPOT = { x: 160, y: 392 };
 const QUEUE_SPOTS = [112, 68, 24].map((x) => ({ x, y: 394 }));
@@ -42,17 +43,18 @@ const BEHIND_SPOT: Spot = { x: 208, y: 336, scale: 0.92 };
 const SHELF_SPOT: Spot = { x: 100, y: 296, scale: 0.85 };
 
 function assignWorkerSpots(state: State): { worker: DeepReadonly<Worker>; spot: Spot }[] {
-  const operatorId = state.counters[0]!.operatorId;
-  // Người ngoài ca chỉ còn trong cảnh khi đang làm nốt việc dở.
-  // Người đi trễ chưa tới thì chưa xuất hiện.
-  const others = Object.values(state.workers).filter((w) => w.id !== operatorId && (isPresent(state, w) || !!w.orderId || !!w.task));
-  // Người đang bổ sung kệ hoặc ở vị trí kho đứng ở kệ; người rảnh đứng sau quầy, người thứ hai đứng cạnh kệ.
+  const operatorIds = state.counters.map((c) => c.operatorId).filter((id): id is string => id !== null);
+  const others = Object.values(state.workers).filter((w) => !operatorIds.includes(w.id) && (isPresent(state, w) || !!w.orderId || !!w.task));
   const atShelf = (w: DeepReadonly<Worker>) => !!w.task || w.station === 'stock';
   others.sort((a, b) => Number(atShelf(b)) - Number(atShelf(a)));
   const free = others[0] && atShelf(others[0]) ? [SHELF_SPOT, BEHIND_SPOT] : [BEHIND_SPOT, SHELF_SPOT];
   const result = others.map((worker, i) => ({ worker, spot: free[i] ?? SHELF_SPOT }));
-  const operator = state.workers[operatorId];
-  if (operator && (isPresent(state, operator) || operator.orderId)) result.push({ worker: operator, spot: SERVE_SPOT });
+  state.counters.forEach((counter, index) => {
+    const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
+    if (operator && (isPresent(state, operator) || operator.orderId)) {
+      result.push({ worker: operator, spot: { ...SERVE_SPOT, x: SERVE_SPOT.x + index * SECOND_OFFSET } });
+    }
+  });
   return result;
 }
 
@@ -70,7 +72,7 @@ function shelfSlots(count: number): SlotDef[] {
 }
 
 /** Khung cao hơn tỉ lệ cảnh thì nới phần tường lên trên, để quầy và khay luôn sát nhau. */
-function useSceneViewBox() {
+function useSceneViewBox(sceneWidth: number, activeCounterId: string) {
   const ref = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: SCENE_W, h: SCENE_H });
   useLayoutEffect(() => {
@@ -82,14 +84,19 @@ function useSceneViewBox() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const vh = Math.max(SCENE_H, size.w > 0 ? (SCENE_W * size.h) / size.w : SCENE_H);
-  return { ref, viewBox: `0 ${SCENE_H - vh} ${SCENE_W} ${vh}` };
+  const visibleWidth = sceneWidth > SCENE_W && size.w < 600 ? SCENE_W : sceneWidth;
+  const viewX = visibleWidth === SCENE_W && sceneWidth > SCENE_W && activeCounterId === 'counter-2' ? SECOND_OFFSET : 0;
+  const vh = Math.max(SCENE_H, size.w > 0 ? (visibleWidth * size.h) / size.w : SCENE_H);
+  return { ref, viewBox: `${viewX} ${SCENE_H - vh} ${visibleWidth} ${vh}` };
 }
 
 export function StoreScene({ state }: { state: State }) {
-  const { ref, viewBox } = useSceneViewBox();
+  const sceneWidth = state.counters.length > 1 ? SCENE_W + SECOND_OFFSET : SCENE_W;
+  const activeCounterId = useUi((s) => s.activeCounterId);
+  const { ref, viewBox } = useSceneViewBox(sceneWidth, activeCounterId);
   const selection = useUi((s) => s.selection);
   const select = useUi((s) => s.select);
+  const setActiveCounterId = useUi((s) => s.setActiveCounterId);
   const drag = useUi((s) => s.drag);
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
@@ -98,15 +105,15 @@ export function StoreScene({ state }: { state: State }) {
   const cellWidth = (slots.length === 4 ? 256 : slots.length === 6 ? 314 : 332) / (slots.length / 2);
   const ownedLevel = (base: string) => state.upgrades.filter((id) => id === base || id.startsWith(`${base}-`)).length;
   const { give } = useServiceActions();
-  const counter = state.counters[0]!;
-  const counterCustomerId = counter.customerId;
-  const counterCustomer = counterCustomerId ? state.customers[counterCustomerId] : undefined;
-  const counterOrder = counterCustomer?.orderId ? state.orders[counterCustomer.orderId] : undefined;
-  const playerOperates = counter.operatorId === PLAYER_WORKER_ID;
+  const customerCounter = (customerId: string) => state.counters.find((c) => c.customerId === customerId);
+  const counterCustomer = (counterId: string) => {
+    const id = state.counters.find((c) => c.id === counterId)?.customerId;
+    return id ? state.customers[id] : undefined;
+  };
   const workerSpots = assignWorkerSpots(state);
 
   const spotOf = (c: DeepReadonly<Customer>) => {
-    if (c.phase === 'counter') return { ...COUNTER_SPOT, scale: 1, hidden: false };
+    if (c.phase === 'counter') return { ...COUNTER_SPOT, x: COUNTER_SPOT.x + state.counters.findIndex((counter) => counter.customerId === c.id) * SECOND_OFFSET, scale: 1, hidden: false };
     if (c.phase === 'leaving') return { ...EXIT_SPOT, scale: 0.9, hidden: false };
     const index = state.queue.indexOf(c.id);
     const benchLevel = ownedLevel('bench');
@@ -179,7 +186,9 @@ export function StoreScene({ state }: { state: State }) {
       ))}
       <Counter />
       <CounterScanner level={ownedLevel('scanner')} />
-      <Register active={counterOrder?.state === 'checkingOut'} />
+      <Register active={(() => { const customer = counterCustomer('counter-1'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} />
+      {state.counters.length > 1 && <g transform={`translate(${SECOND_OFFSET} 0)`}><Counter /><CounterScanner level={ownedLevel('scanner')} /><Register active={(() => { const customer = counterCustomer('counter-2'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} /></g>}
+      {state.counters.length > 1 && state.counters.map((c, i) => <text key={c.id} x={272 + i * SECOND_OFFSET} y={287} fontSize={11} fontWeight={900} fill={INK} textAnchor="middle">QUẦY {i + 1}{!c.operatorId ? ' · CHƯA MỞ' : ''}</text>) }
       {workerSpots.map(({ worker, spot }) => (
         <WorkerBubble
           key={worker.id}
@@ -187,7 +196,7 @@ export function StoreScene({ state }: { state: State }) {
           y={spot.y - 104 * spot.scale}
           order={worker.orderId ? state.orders[worker.orderId] : undefined}
           task={worker.task}
-          waiting={worker.id === counter.operatorId && !worker.orderId && !!counterCustomer && !counterCustomer.orderId}
+          waiting={state.counters.some((c) => c.operatorId === worker.id && !worker.orderId && !!c.customerId && !state.customers[c.customerId]?.orderId)}
         />
       ))}
 
@@ -205,17 +214,17 @@ export function StoreScene({ state }: { state: State }) {
         const atCounter = c.phase === 'counter';
         const isSelected = selection?.kind === 'customer' && selection.id === c.id;
         // Chỉ nhận thả hàng khi người chơi đang đứng quầy và khách chưa có ai khác phục vụ.
-        const awaiting =
-          atCounter &&
-          playerOperates &&
-          (!c.orderId || (counterOrder?.workerId === PLAYER_WORKER_ID && counterOrder.state === 'deciding'));
+        const assignedCounter = customerCounter(c.id);
+        const customerOrder = c.orderId ? state.orders[c.orderId] : undefined;
+        const awaiting = atCounter && assignedCounter?.operatorId === PLAYER_WORKER_ID &&
+          (!c.orderId || (customerOrder?.workerId === PLAYER_WORKER_ID && customerOrder.state === 'deciding'));
         return (
           <g
             key={c.id}
             className={`actor ${c.phase === 'leaving' || spot.hidden ? 'leaving' : 'tappable'}`}
             style={{ transform: `translate(${spot.x}px, ${spot.y}px) scale(${spot.scale})` }}
-            onClick={c.phase === 'queue' ? () => select({ kind: 'customer', id: c.id }) : undefined}
-            {...(atCounter && awaiting ? { 'data-drop-target': 'counter-customer' } : {})}
+            onClick={c.phase === 'queue' ? () => select({ kind: 'customer', id: c.id }) : atCounter && assignedCounter ? () => setActiveCounterId(assignedCounter.id) : undefined}
+            {...(atCounter && awaiting ? { 'data-drop-target': assignedCounter!.id } : {})}
           >
             <g className="enter">
               {atCounter && awaiting && (
@@ -237,7 +246,11 @@ export function StoreScene({ state }: { state: State }) {
           </g>
         );
       })}
-      {counterCustomer && <RequestBubble customer={counterCustomer} order={counterOrder} />}
+      {state.counters.map((counter, index) => {
+        const customer = counterCustomer(counter.id);
+        const order = customer?.orderId ? state.orders[customer.orderId] : undefined;
+        return customer ? <RequestBubble key={counter.id} customer={customer} order={order} x={COUNTER_SPOT.x + index * SECOND_OFFSET} /> : null;
+      })}
       <Floaters />
     </svg>
   );
@@ -367,11 +380,10 @@ function Bubble({ x, y, w, h, children }: { x: number; y: number; w: number; h: 
   );
 }
 
-function RequestBubble({ customer, order }: { customer: DeepReadonly<Customer>; order: DeepReadonly<Order> | undefined }) {
+function RequestBubble({ customer, order, x }: { customer: DeepReadonly<Customer>; order: DeepReadonly<Order> | undefined; x: number }) {
   const request = REQUESTS[customer.requestId];
   if (!request) return null;
   if (order && order.customerId === customer.id && order.state !== 'deciding') return null;
-  const x = COUNTER_SPOT.x;
   const y = COUNTER_SPOT.y - 116;
   const w = 46;
   const h = 38;

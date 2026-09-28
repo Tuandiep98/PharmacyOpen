@@ -6,8 +6,8 @@ import { useUi } from '../../ui/uiStore';
 import { GameButton, PanelHeading } from '../../ui/primitives';
 import { REJECT_TEXT } from '../store/rejectText';
 
-const FURNITURE = ['wide-shelf', 'sorted-shelf', 'scanner', 'bench', 'signboard'] as const;
-const MAX_LEVEL: Record<string, number> = { 'wide-shelf': 4, 'sorted-shelf': 3, scanner: 3, bench: 3, signboard: 3 };
+const FURNITURE = ['counter-2', 'wide-shelf', 'sorted-shelf', 'scanner', 'bench', 'signboard'] as const;
+const MAX_LEVEL: Record<string, number> = { 'counter-2': 1, 'wide-shelf': 4, 'sorted-shelf': 3, scanner: 3, bench: 3, signboard: 3 };
 
 export function UpgradePanel({ state }: { state: DeepReadonly<SimState> }) {
   const level = playerLevel(state);
@@ -69,13 +69,13 @@ function FurnitureCard({ state, id }: { state: DeepReadonly<SimState>; id: typeo
   const max = MAX_LEVEL[id]!;
   const nextId = current === 0 ? id : `${id}-${nextLevel}`;
   const u = nextLevel <= max ? UPGRADES[nextId] : undefined;
-  const locked = current > 0 && playerLevel(state) < nextLevel;
+  const locked = id === 'counter-2' ? playerLevel(state) < 3 : current > 0 && playerLevel(state) < nextLevel;
   return <article className="upgrade-card tier-card">
     <UpgradeArt id={id} level={current} />
     <div className="tier-copy"><strong>{UPGRADES[id]!.name} · cấp {current}/{max}</strong>
       <span className="small">{u ? `Cấp ${nextLevel}: ${u.benefit}` : 'Đã đạt cấp tối đa'}</span>
       {u && <span className="small muted">{u.tradeoff}</span>}
-      {locked && <span className="small tier-lock">Mở ở cấp tiệm {nextLevel}</span>}
+      {locked && <span className="small tier-lock">Mở ở cấp tiệm {id === 'counter-2' ? 3 : nextLevel}</span>}
     </div>
     {u && <BuyButton state={state} id={u.id} locked={locked} />}
   </article>;

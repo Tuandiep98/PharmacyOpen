@@ -4,6 +4,7 @@ import {
   REFERRAL_MESSAGE,
   REQUESTS,
   isTrending,
+  isOnDuty,
   stockUnitCost,
   type DeepReadonly,
   type SimState,
@@ -38,11 +39,19 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
   const visibleProducts = catalogPageProducts(catalogCategory, catalogPage, state);
-  const counter = state.counters[0]!;
+  const activeCounterId = useUi((s) => s.activeCounterId);
+  const setActiveCounterId = useUi((s) => s.setActiveCounterId);
+  const counter = state.counters.find((c) => c.id === activeCounterId) ?? state.counters[0]!;
+  const counterTabs = state.counters.length > 1 && (
+    <div className="counter-tabs" role="group" aria-label="Chọn quầy">
+      {state.counters.map((c, i) => <button key={c.id} type="button" aria-pressed={c.id === counter.id} className={c.id === counter.id ? 'active' : ''} onClick={() => setActiveCounterId(c.id)}>Quầy {i + 1}{c.customerId ? ' · Có khách' : !c.operatorId ? ' · Chưa mở' : ''}</button>)}
+    </div>
+  );
   const player = state.workers[PLAYER_WORKER_ID]!;
-  const operator = state.workers[counter.operatorId] ?? player;
-  const playerOperates = operator.id === PLAYER_WORKER_ID;
-  const staff = Object.values(state.workers).filter((w) => w.controller === 'ai');
+  const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
+  const playerOperates = operator?.id === PLAYER_WORKER_ID;
+  const staff = Object.values(state.workers).filter((w) => w.controller === 'ai' && isOnDuty(state, w));
+  const freeStaff = staff.filter((w) => !state.counters.some((c) => c.operatorId === w.id));
   const customerId = counter.customerId;
   const customer = customerId ? state.customers[customerId] : undefined;
   const order = customer?.orderId ? state.orders[customer.orderId] : undefined;
@@ -54,11 +63,25 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     (!player.orderId || player.orderId === order?.id);
   const ratio = customer ? customer.patienceMs / customer.patienceMaxMs : 0;
 
+  if (!operator) {
+    return (
+      <section className="auto-counter unstaffed-counter" aria-label="Quầy chưa có người">
+        {counterTabs}
+        <div className="auto-counter-info">
+          <strong>Quầy chưa có người đứng</strong>
+          <span>Giao nhân viên hoặc tự đứng quầy để nhận khách.</span>
+        </div>
+        <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>
+        {freeStaff.map((w) => <GameButton key={w.id} size="small" onClick={() => assignCounter(w.id, counter.id)}>Giao cho {w.name}</GameButton>)}
+      </section>
+    );
+  }
   if (!playerOperates) {
     const progress = workerProgress(state, operator);
     const waiting = state.queue.length;
     return (
       <section className="auto-counter" aria-label="Quầy tự phục vụ">
+        {counterTabs}
         <WorkerPortrait worker={operator} size={40} />
         <div className="auto-counter-info">
           <strong>{operator.name} đang đứng quầy</strong>
@@ -69,7 +92,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
             </span>
           )}
         </div>
-        <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID)}>Tự đứng quầy</GameButton>
+        <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>
       </section>
     );
   }
@@ -103,14 +126,15 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
 
   return (
     <section className="tray" aria-label="Quầy phục vụ">
-      {staff.length > 0 && (
+      {counterTabs}
+      {freeStaff.length > 0 && (
         <div className="tray-operator">
           <WorkerPortrait worker={operator} size={28} />
           <span>
             Quầy: <b>{operator.name} (bạn)</b>
           </span>
-          <GameButton size="small" onClick={() => assignCounter(staff[0]!.id)}>
-            Giao cho {staff[0]!.name}
+          <GameButton size="small" onClick={() => assignCounter(freeStaff[0]!.id, counter.id)}>
+            Giao cho {freeStaff[0]!.name}
           </GameButton>
         </div>
       )}
@@ -140,7 +164,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
 
       <div className="tray-status">
         {status}
-        <GameButton className="refer" disabled={!canServe} onClick={refer} title="Khuyên khách đi khám">
+        <GameButton className="refer" disabled={!canServe} onClick={() => refer(counter.id)} title="Khuyên khách đi khám">
           <ClinicIcon size={20} />
           <span>Khuyên đi khám</span>
         </GameButton>
@@ -170,9 +194,9 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
               <button
                 className={`item-chip ${dragging === id ? 'lifted' : ''} ${isTrending(state, id) ? 'trending-product' : ''}`}
                 disabled={!canServe}
-                onPointerDown={(e) => canServe && beginProductGesture(e, id, { onDrop: give, onTap: give })}
+                onPointerDown={(e) => canServe && beginProductGesture(e, id, { onDrop: give, onTap: (productId) => give(productId, counter.id) })}
                 // Kích hoạt bằng bàn phím (Enter/Space) không có pointer event: detail = 0.
-                onClick={(e) => e.detail === 0 && give(id)}
+                onClick={(e) => e.detail === 0 && give(id, counter.id)}
                 aria-label={`Đưa ${p.name}, giá ${state.prices[id]} ${BRAND.currency}, còn ${stock}`}
               >
                 <span className="item-icon">

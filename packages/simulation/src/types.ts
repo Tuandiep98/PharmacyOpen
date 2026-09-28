@@ -298,7 +298,7 @@ export interface Counter {
   id: string;
   customerId: string | null;
   /** Nhân viên được giao phục vụ quầy này; chỉ người này được bắt đầu phục vụ khách ở quầy. */
-  operatorId: string;
+  operatorId: string | null;
 }
 
 export interface StockEntry {

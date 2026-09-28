@@ -198,37 +198,32 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   const { assignCounter } = useServiceActions();
   const team = Object.values(state.workers);
   const staffCount = team.filter((w) => w.controller === 'ai').length;
-  const operatorId = state.counters[0]?.operatorId;
-  const operator = operatorId ? state.workers[operatorId] : undefined;
-  const operatorProgress = operator ? workerProgress(state, operator) : null;
+  const counterOf = (workerId: string) => state.counters.findIndex((c) => c.operatorId === workerId);
 
   return (
     <div className="panel">
       <PanelHeading description="Mỗi nhân viên thường làm một ca; ca còn lại cần người khác.">Nhân sự</PanelHeading>
 
-      {operator && (
-        <section className="counter-summary" aria-label="Trạng thái quầy">
+      {state.counters.map((counter, index) => {
+        const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
+        const progress = operator ? workerProgress(state, operator) : null;
+        return <section key={counter.id} className="counter-summary" aria-label={`Trạng thái quầy ${index + 1}`}>
           <div className="counter-summary-head">
-            <span className="counter-summary-label">Quầy hiện tại</span>
-            <span className="small muted">{state.queue.length} khách đang chờ</span>
+            <span className="counter-summary-label">Quầy {index + 1}</span>
+            <span className="small muted">{counter.customerId ? 'Đang có khách' : !operator ? 'Chưa có người đứng' : `${state.queue.length} khách đang chờ`}</span>
           </div>
           <div className="counter-summary-main">
-            <WorkerPortrait worker={operator} size={48} />
+            {operator && <WorkerPortrait worker={operator} size={48} />}
             <div className="counter-summary-text">
-              <strong>{operator.name}{operator.id === PLAYER_WORKER_ID ? ' (bạn)' : ''}</strong>
-              <span>{workerStatus(state, operator)}</span>
+              <strong>{operator ? `${operator.name}${operator.id === PLAYER_WORKER_ID ? ' (bạn)' : ''}` : 'Quầy chưa mở'}</strong>
+              <span>{operator ? workerStatus(state, operator) : 'Chọn người đứng quầy trong khay phục vụ.'}</span>
             </div>
-            {operator.id !== PLAYER_WORKER_ID && (
-              <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID)}>Tự đứng quầy</GameButton>
-            )}
+            {operator?.id !== PLAYER_WORKER_ID && <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>}
           </div>
-          {operatorProgress !== null && (
-            <span className="progress-track" role="progressbar" aria-label={`Tiến độ công việc của ${operator.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(operatorProgress * 100)}>
-              <span className="progress-fill" style={{ width: `${operatorProgress * 100}%` }} />
-            </span>
-          )}
-        </section>
-      )}
+          {!operator && team.filter((w) => w.controller === 'ai' && isOnDuty(state, w) && counterOf(w.id) < 0).map((w) => <GameButton key={w.id} size="small" onClick={() => assignCounter(w.id, counter.id)}>Giao cho {w.name}</GameButton>)}
+          {progress !== null && <span className="progress-track" role="progressbar" aria-label={`Tiến độ công việc của ${operator?.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}><span className="progress-fill" style={{ width: `${progress * 100}%` }} /></span>}
+        </section>;
+      })}
 
       <CounterPolicy state={state} />
       <ShiftCoverage state={state} />
@@ -244,7 +239,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
         {team.map((w) => (
           <li
             key={w.id}
-            className={`staff-card team-card ${operatorId === w.id ? 'on-counter' : ''} ${w.controller === 'ai' ? `rarity-border-${w.rarity}` : ''}`}
+            className={`staff-card team-card ${counterOf(w.id) >= 0 ? 'on-counter' : ''} ${w.controller === 'ai' ? `rarity-border-${w.rarity}` : ''}`}
           >
             <div className="team-card-head">
               <WorkerPortrait worker={w} size={48} />
@@ -256,7 +251,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
                   {ROLE[w.role]} {w.controller === 'ai' && <RarityChip rarity={w.rarity} />}
                 </span>
               </div>
-              {operatorId === w.id && <span className="tag mint">Đứng quầy</span>}
+              {counterOf(w.id) >= 0 && <span className="tag mint">Quầy {counterOf(w.id) + 1}</span>}
               {w.restDay === state.day ? (
                 <span className="tag off-duty">Nghỉ hôm nay</span>
               ) : (
@@ -291,7 +286,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
             {w.controller === 'ai' && <ShiftToggle state={state} worker={w} />}
             {w.controller === 'ai' && <StationPicker state={state} worker={w} />}
             <div className="team-card-actions">
-              {w.controller === 'player' && operatorId !== w.id && (
+              {w.controller === 'player' && counterOf(w.id) < 0 && (
                 <GameButton size="small" onClick={() => assignCounter(w.id)}>
                   Tự đứng quầy
                 </GameButton>

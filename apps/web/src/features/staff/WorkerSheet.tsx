@@ -11,7 +11,7 @@ export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>
   const select = useUi((s) => s.select);
   const worker = state.workers[workerId];
   if (!worker) return null;
-  const operates = state.counters[0]?.operatorId === worker.id;
+  const operates = state.counters.some((c) => c.operatorId === worker.id);
   return (
     <div className="stack">
       <div className="service-head">

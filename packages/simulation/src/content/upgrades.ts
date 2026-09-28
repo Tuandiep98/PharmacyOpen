@@ -2,6 +2,14 @@ import type { UpgradeDef } from './types';
 
 // Mỗi nâng cấp có đánh đổi rõ ràng, không chỉ là hệ số tốc độ. Giá là giá trị cân bằng tạm thời.
 export const UPGRADES: Record<string, UpgradeDef> = {
+  'counter-2': {
+    id: 'counter-2',
+    name: 'Quầy bán thứ hai',
+    benefit: 'Phục vụ hai khách cùng lúc khi có hai người đứng quầy.',
+    tradeoff: 'Cần thêm một nhân viên; quầy trống không nhận khách.',
+    cost: 260,
+    effects: [{ type: 'counter' }],
+  },
   scanner: {
     id: 'scanner',
     name: 'Máy quét mã vạch',

@@ -31,7 +31,7 @@ import { CustomerInfo } from './features/store/CustomerInfo';
 import { ServiceTray } from './features/store/ServiceTray';
 import { PLAYER_WORKER_ID } from './features/store/useServiceActions';
 import { ProductIcon } from './art/Products';
-import { REGISTER_SPOT, StoreScene } from './features/store/StoreScene';
+import { REGISTER_SPOT, SECOND_OFFSET, StoreScene } from './features/store/StoreScene';
 import { WorkerSheet } from './features/staff/WorkerSheet';
 import { StaffPanel } from './features/staff/StaffPanel';
 import { UpgradePanel } from './features/expansion/UpgradePanel';
@@ -154,8 +154,8 @@ function useEventFeedback() {
             break;
           }
           case 'saleCompleted': {
-            pushFloater(`+${e.amount} ${BRAND.currency}`, REGISTER_SPOT.x, REGISTER_SPOT.y);
-            if (e.tip > 0) pushFloater(`Boa +${e.tip}`, REGISTER_SPOT.x - 40, REGISTER_SPOT.y - 24);
+            pushFloater(`+${e.amount} ${BRAND.currency}`, REGISTER_SPOT.x + (e.counterId === 'counter-2' ? SECOND_OFFSET : 0), REGISTER_SPOT.y);
+            if (e.tip > 0) pushFloater(`Boa +${e.tip}`, REGISTER_SPOT.x - 40 + (e.counterId === 'counter-2' ? SECOND_OFFSET : 0), REGISTER_SPOT.y - 24);
             const sales = bridge.state.stats.sales;
             if (SALE_MILESTONES.includes(sales)) {
               playSfx('milestone');
@@ -260,8 +260,8 @@ function useEventFeedback() {
             pushToast('good', `Đã lắp: ${UPGRADES[e.upgradeId]?.name ?? 'nâng cấp'}.`);
             break;
           case 'counterAssigned': {
-            const worker = bridge.state.workers[e.workerId];
-            pushToast('info', e.workerId === PLAYER_WORKER_ID ? 'Bạn đứng quầy.' : `${worker?.name} đứng quầy — bạn có thể để tiệm tự chạy.`);
+            const worker = e.workerId ? bridge.state.workers[e.workerId] : undefined;
+            if (e.workerId) pushToast('info', e.workerId === PLAYER_WORKER_ID ? `Bạn đứng quầy ${e.counterId.slice(-1)}.` : `${worker?.name} đứng quầy ${e.counterId.slice(-1)}.`);
             break;
           }
           case 'referralCompleted':

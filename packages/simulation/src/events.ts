@@ -10,7 +10,7 @@ export type SimEvent = { at: number } & (
   | { type: 'wrongProduct'; orderId: string; productId: ProductId; customerId: string }
   | { type: 'safetyWarning'; orderId: string; productId: ProductId; customerId: string; workerId: string }
   | { type: 'productReady'; orderId: string; productId: ProductId }
-  | { type: 'saleCompleted'; orderId: string; productId: ProductId; amount: number; tip: number; customerId: string; workerId: string }
+  | { type: 'saleCompleted'; orderId: string; productId: ProductId; amount: number; tip: number; customerId: string; workerId: string; counterId: string }
   | { type: 'referralCompleted'; orderId: string; customerId: string; appropriate: boolean }
   | { type: 'customerLeft'; customerId: string; reason: 'angry' | 'unserved' }
   | { type: 'customerTurnedAway' }
@@ -18,7 +18,7 @@ export type SimEvent = { at: number } & (
   | { type: 'stockExpired'; productId: ProductId; qty: number }
   | { type: 'restockStarted'; productId: ProductId; workerId: string }
   | { type: 'staffHired'; workerId: string; cost: number }
-  | { type: 'counterAssigned'; counterId: string; workerId: string }
+  | { type: 'counterAssigned'; counterId: string; workerId: string | null }
   | { type: 'upgradeBought'; upgradeId: string; cost: number }
   | { type: 'reviewPosted'; reviewId: string; stars: number; workerId: string | null }
   | { type: 'complaintOpened'; complaintId: string; reviewId: string }

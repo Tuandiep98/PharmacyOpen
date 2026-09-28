@@ -90,7 +90,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
   - NPC không đưa lại món khách đã từ chối trong cùng lượt (`order.rejectedProductIds`).
 - **Nâng cấp** (mỗi cái có đánh đổi): máy quét mã vạch, sắp kệ theo nhóm hàng, kệ rộng hơn, ghế chờ, biển hiệu sáng đèn. Tab Mở rộng hiện gợi ý điểm nghẽn dựa trên số liệu thật của ván chơi.
 - **Hàng chờ đầy** thì khách mới bỏ đi ngay: phát sự kiện `customerTurnedAway` và tăng `stats.turnedAway`. UI nhắc tối đa mỗi 20 giây.
-- **Chưa làm:** quầy thứ hai (cần sắp lại bố cục cảnh), lương theo ca (bước 5).
+- **Đã làm:** quầy thứ hai mở ở cấp tiệm 3 bằng nâng cấp. Mỗi quầy cần một người đứng, quầy trống không nhận khách; khách từ hàng chờ được phân FIFO vào quầy đang mở. Người chơi chọn quầy ở khay phục vụ hoặc chạm khách, kéo hàng vào đúng khách; nhân viên ở quầy kia tự xử lý độc lập. Khi chuyển người, đơn dở vẫn thuộc người cũ. Save một quầy cũ tiếp tục tải được. Lương theo ca hoàn thành ở bước 5.
 
 ## 3c. Đánh giá, hiệu suất và danh tiếng (bước 4)
 

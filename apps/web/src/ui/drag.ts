@@ -6,8 +6,8 @@ import { useUi } from './uiStore';
 const DRAG_THRESHOLD = 8;
 
 /** Phần tử nhận thả phải có thuộc tính `data-drop-target`. */
-function isOverDropTarget(x: number, y: number): boolean {
-  return !!document.elementFromPoint(x, y)?.closest('[data-drop-target]');
+function dropTarget(x: number, y: number): string | null {
+  return document.elementFromPoint(x, y)?.closest('[data-drop-target]')?.getAttribute('data-drop-target') ?? null;
 }
 
 /**
@@ -17,7 +17,7 @@ function isOverDropTarget(x: number, y: number): boolean {
 export function beginProductGesture(
   e: React.PointerEvent,
   productId: ProductId,
-  handlers: { onDrop: (id: ProductId) => void; onTap?: (id: ProductId) => void; draggable?: boolean },
+  handlers: { onDrop: (id: ProductId, counterId: string) => void; onTap?: (id: ProductId) => void; draggable?: boolean },
 ): void {
   if (e.pointerType === 'mouse' && e.button !== 0) return;
   const { setDrag } = useUi.getState();
@@ -31,14 +31,14 @@ export function beginProductGesture(
       dragging = true;
       playSfx('pick');
     }
-    setDrag({ productId, x: ev.clientX, y: ev.clientY, over: isOverDropTarget(ev.clientX, ev.clientY) });
+    setDrag({ productId, x: ev.clientX, y: ev.clientY, over: dropTarget(ev.clientX, ev.clientY) !== null });
   };
   const up = (ev: PointerEvent) => {
     cleanup();
     if (dragging) {
-      const over = isOverDropTarget(ev.clientX, ev.clientY);
+      const over = dropTarget(ev.clientX, ev.clientY);
       setDrag(null);
-      if (over) handlers.onDrop(productId);
+      if (over) handlers.onDrop(productId, over);
     } else if (Math.hypot(ev.clientX - startX, ev.clientY - startY) < DRAG_THRESHOLD) {
       handlers.onTap?.(productId);
     }

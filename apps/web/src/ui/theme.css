@@ -487,3 +487,14 @@ button:disabled { cursor: not-allowed; }
     font-size: 11px;
   }
 }
+
+/* Quầy thứ hai: bộ chọn luôn hiện rõ trên màn hẹp và trong khay NPC. */
+.counter-tabs { display: flex; gap: 6px; grid-column: 1 / -1; min-width: 0; overflow-x: auto; padding: 2px 0; scrollbar-width: none; }
+.counter-tabs::-webkit-scrollbar { display: none; }
+.counter-tabs button { flex: 1 0 auto; min-height: 34px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-tint); color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.counter-tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+.counter-tabs button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+
+.unstaffed-counter .auto-counter-info { grid-column: 1 / -1; }
+.unstaffed-counter .btn { grid-column: auto; }
+@media (max-width: 560px) { .unstaffed-counter { display: flex; flex-wrap: wrap; } .unstaffed-counter .counter-tabs, .unstaffed-counter .auto-counter-info { flex-basis: 100%; } }

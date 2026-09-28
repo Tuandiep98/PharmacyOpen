@@ -131,7 +131,8 @@ export type UpgradeEffect =
   | { type: 'scale'; key: 'checkoutMs' | 'retrieveMs'; factor: number }
   | { type: 'shelfCapacity'; add: number }
   | { type: 'queue'; addMax: number; patienceFactor: number }
-  | { type: 'spawnInterval'; factor: number };
+  | { type: 'spawnInterval'; factor: number }
+  | { type: 'counter' };
 
 export interface UpgradeDef {
   id: string;

@@ -361,7 +361,9 @@ function isValidState(state: Loose): state is SimState & Loose {
   }
   const workers = s.workers;
   if (!Array.isArray(s.counters) || s.counters.length === 0) return false;
-  if (!s.counters.every((c: unknown) => isObject(c) && typeof c.operatorId === 'string' && isObject(workers[c.operatorId]))) return false;
+  if (!s.counters.every((c: unknown) => isObject(c) && typeof c.id === 'string' && (c.customerId === null || typeof c.customerId === 'string') && (c.operatorId === null || (typeof c.operatorId === 'string' && isObject(workers[c.operatorId]))))) return false;
+  const assigned = s.counters.map((c: { operatorId: string | null }) => c.operatorId).filter((id: string | null): id is string => id !== null);
+  if (new Set(assigned).size !== assigned.length) return false;
   if (!Array.isArray(s.queue) || !Array.isArray(s.upgrades) || !Array.isArray(s.interactions)) return false;
   if (!Array.isArray(s.reviews) || !Array.isArray(s.complaints) || !Array.isArray(s.dayReports)) return false;
   if (!isObject(s.reputation) || !isObject(s.stats) || !isObject(s.dayStart)) return false;

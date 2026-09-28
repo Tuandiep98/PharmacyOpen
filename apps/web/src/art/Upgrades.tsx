@@ -13,6 +13,9 @@ export function UpgradeArt({ id, level = 0 }: { id: string; level?: number }) {
     case 'storefront':
       drawing = <g><rect x={16} y={29} width={64} height={32} fill={ART.paper} {...S} /><path d="M12,29 L20,17 H76 L84,29Z" fill={level >= 3 ? ART.honey : ART.leaf} {...S} /><path d="M21,29 V38 Q28,43 34,38 Q41,43 48,38 Q55,43 62,38 Q69,43 76,38 V29" fill={ART.leafLight} {...S} /><rect x={30} y={45} width={17} height={16} fill={ART.sky} {...S} /><rect x={56} y={44} width={15} height={10} fill={ART.woodInner} {...S} /></g>;
       break;
+    case 'counter-2':
+      drawing = <g><path d="M8 32h34v27H8z M54 32h34v27H54z" fill={ART.woodLight} {...S} /><path d="M5 29h40v8H5z M51 29h40v8H51z" fill={ART.leafLight} {...S} /><rect x={28} y={18} width={12} height={11} rx={2} fill={ART.paper} {...S} /><rect x={74} y={18} width={12} height={11} rx={2} fill={ART.paper} {...S} /><path d="M16 43h18 M62 43h18" stroke={INK} strokeWidth={2} /></g>;
+      break;
     case 'scanner':
       drawing = <g>
         <path d="M17,51 H79 L74,61 H21Z" fill={ART.woodLight} {...S} />

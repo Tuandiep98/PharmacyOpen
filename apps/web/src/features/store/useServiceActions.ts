@@ -14,9 +14,9 @@ export function useServiceActions() {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
 
-  const ensureOrder = (): string | null => {
+  const ensureOrder = (counterId = useUi.getState().activeCounterId): string | null => {
     const s = bridge.state;
-    const customerId = s.counters[0]?.customerId;
+    const customerId = s.counters.find((c) => c.id === counterId)?.customerId;
     if (!customerId) {
       pushToast('info', 'Chưa có khách ở quầy.');
       return null;
@@ -31,8 +31,8 @@ export function useServiceActions() {
     return bridge.state.customers[customerId]?.orderId ?? null;
   };
 
-  const give = (productId: ProductId) => {
-    const orderId = ensureOrder();
+  const give = (productId: ProductId, counterId?: string) => {
+    const orderId = ensureOrder(counterId);
     if (!orderId) return;
     const r = bridge.dispatch({ type: 'pickProduct', workerId: PLAYER_WORKER_ID, orderId, productId });
     if (r.ok) playSfx('drop');
@@ -40,8 +40,8 @@ export function useServiceActions() {
     else if (r.reason !== 'safety-referral-required') pushToast('bad', REJECT_TEXT[r.reason]);
   };
 
-  const refer = () => {
-    const orderId = ensureOrder();
+  const refer = (counterId?: string) => {
+    const orderId = ensureOrder(counterId);
     if (!orderId) return;
     const r = bridge.dispatch({ type: 'refer', workerId: PLAYER_WORKER_ID, orderId });
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
@@ -53,8 +53,8 @@ export function useServiceActions() {
   };
 
   /** Giao quầy cho nhân viên (hoặc lấy lại cho người chơi). */
-  const assignCounter = (workerId: string) => {
-    const r = bridge.dispatch({ type: 'assignCounter', counterId: 'counter-1', workerId });
+  const assignCounter = (workerId: string, counterId = useUi.getState().activeCounterId) => {
+    const r = bridge.dispatch({ type: 'assignCounter', counterId, workerId });
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
   };
 

@@ -155,17 +155,19 @@ export function shiftSummary(state: DeepReadonly<SimState>): ShiftSummary {
  * Quầy đang giao cho người đã hết ca thì bàn giao: ưu tiên NPC đang trong ca và chưa đứng quầy nào,
  * không có ai thì người chơi nhận lại. Đơn dở dang vẫn do người cũ hoàn tất.
  */
-export function handOverCounters(state: SimState, emit: Emit, shiftStart = false): void {
+export function handOverCounters(state: SimState, emit: Emit, shiftStart = false, excludedWorkerId?: string): void {
   for (const counter of state.counters) {
-    const operator = state.workers[counter.operatorId];
+    const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
     // Đầu ca: quầy người chơi đang giữ được giao cho NPC trong ca, trừ khi người chơi bật "giữ quầy khi đổi ca".
     const handBack = shiftStart && !state.keepCounterOnShiftChange && operator?.controller === 'player';
     if (operator && isOnDuty(state, operator) && !handBack) continue;
     // Ưu tiên người "Hỗ trợ"; người ở kho chỉ bị gọi ra quầy khi không còn ai khác trong ca.
     const free = Object.values(state.workers).filter(
-      (w) => w.controller === 'ai' && isOnDuty(state, w) && !state.counters.some((c) => c.operatorId === w.id),
+      (w) => w.controller === 'ai' && w.id !== excludedWorkerId && isOnDuty(state, w) && !state.counters.some((c) => c.operatorId === w.id),
     );
-    const next = (free.find((w) => w.station === 'support') ?? free.find((w) => w.station !== 'stock'))?.id ?? PLAYER_WORKER_ID;
+    const playerFree = !state.counters.some((c) => c !== counter && c.operatorId === PLAYER_WORKER_ID);
+    const next = (free.find((w) => w.station === 'support') ?? free.find((w) => w.station !== 'stock'))?.id
+      ?? (playerFree ? PLAYER_WORKER_ID : null);
     if (next === counter.operatorId) continue;
     counter.operatorId = next;
     emit({ type: 'counterAssigned', counterId: counter.id, workerId: next });

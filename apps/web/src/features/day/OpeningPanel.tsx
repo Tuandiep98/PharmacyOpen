@@ -29,7 +29,7 @@ export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
   if (phase !== 'prep') return null;
 
   const secondsLeft = Math.max(0, Math.ceil((state.config.prepMs - dayElapsed(state)) / 1000));
-  const operator = state.workers[state.counters[0]?.operatorId ?? ''];
+  const operator = state.workers[state.counters.find((c) => c.operatorId && state.workers[c.operatorId]?.controller === 'ai')?.operatorId ?? ''];
   const npcPrepares = operator?.controller === 'ai';
   const lowShelves = PRODUCT_IDS.filter((id) => state.stock[id].shelf <= state.stock[id].capacity / 3).length;
 

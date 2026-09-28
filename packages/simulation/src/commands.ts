@@ -358,9 +358,15 @@ function assignCounter(state: SimState, counterId: string, workerId: string, emi
   const worker = state.workers[workerId];
   if (!worker) return reject('unknown-worker');
   if (!isOnDuty(state, worker)) return reject('worker-off-duty');
-  // Đơn đang làm dở vẫn do người cũ hoàn tất; người mới nhận từ khách tiếp theo.
+  // Một người chỉ đứng một quầy; đơn đang làm dở vẫn thuộc người đã bắt đầu.
+  const previous = state.counters.find((c) => c.operatorId === workerId && c.id !== counterId);
+  if (previous) {
+    previous.operatorId = null;
+    emit({ type: 'counterAssigned', counterId: previous.id, workerId: null });
+  }
   counter.operatorId = workerId;
   emit({ type: 'counterAssigned', counterId, workerId });
+  if (previous) handOverCounters(state, emit);
   return OK;
 }
 
@@ -374,7 +380,9 @@ function assignStation(state: SimState, workerId: string, station: StationId, em
   const worker = state.workers[workerId];
   if (!worker) return reject('unknown-worker');
   if (station === 'counter') {
-    const counter = state.counters.find((c) => c.operatorId !== workerId) ?? state.counters[0];
+    const counter = state.counters.find((c) => c.operatorId === workerId)
+      ?? state.counters.find((c) => c.operatorId === null)
+      ?? state.counters[0];
     return counter ? assignCounter(state, counter.id, workerId, emit) : reject('unknown-counter');
   }
   if (worker.controller === 'player') return reject('cannot-schedule-player');
@@ -382,9 +390,9 @@ function assignStation(state: SimState, workerId: string, station: StationId, em
   worker.station = station;
   for (const counter of state.counters) {
     if (counter.operatorId !== workerId) continue;
-    counter.operatorId = PLAYER_WORKER_ID;
-    handOverCounters(state, emit, true);
-    if (counter.operatorId === PLAYER_WORKER_ID) emit({ type: 'counterAssigned', counterId: counter.id, workerId: PLAYER_WORKER_ID });
+    counter.operatorId = null;
+    emit({ type: 'counterAssigned', counterId: counter.id, workerId: null });
+    handOverCounters(state, emit, false, workerId);
   }
   emit({ type: 'stationAssigned', workerId, station });
   return OK;
@@ -404,6 +412,7 @@ function buyUpgrade(state: SimState, upgradeId: string, emit: Emit): CommandResu
     if (current !== target - 1) return reject('previous-level-required');
     if (playerLevel(state) < target) return reject('level-locked');
   }
+  if (upgradeId === 'counter-2' && playerLevel(state) < 3) return reject('level-locked');
   if (state.money < upgrade.cost) return reject('insufficient-funds');
   state.money -= upgrade.cost;
   state.stats.spentOnUpgrades += upgrade.cost;
@@ -452,12 +461,13 @@ function dismissStaff(state: SimState, workerId: string, emit: Emit): CommandRes
   state.stats.spentOnWages += worker.wageOwed;
   for (const counter of state.counters) {
     if (counter.operatorId === workerId) {
-      counter.operatorId = PLAYER_WORKER_ID;
-      emit({ type: 'counterAssigned', counterId: counter.id, workerId: PLAYER_WORKER_ID });
+      counter.operatorId = null;
+      emit({ type: 'counterAssigned', counterId: counter.id, workerId: null });
     }
   }
   // Việc bổ sung kệ dở dang chưa trừ tiền nên huỷ không mất gì.
   delete state.workers[workerId];
+  handOverCounters(state, emit);
   emit({ type: 'staffDismissed', workerId, name: worker.name });
   return OK;
 }
@@ -509,6 +519,9 @@ function workerSpeed(state: SimState, workerId: string): number {
 function applyEffect(state: SimState, effect: UpgradeEffect): void {
   const config = state.config;
   switch (effect.type) {
+    case 'counter':
+      state.counters.push({ id: 'counter-2', customerId: null, operatorId: null });
+      break;
     case 'catalog':
       // Quyền nhập/trưng bày được tính từ danh sách nâng cấp trong progression.ts.
       break;
@@ -564,6 +577,7 @@ export function completeSale(state: SimState, orderId: string, emit: Emit): void
   state.money += tip;
   state.stats.revenue += tip;
   state.stats.tips += tip;
-  emit({ type: 'saleCompleted', orderId, productId, amount, tip, customerId: customer.id, workerId: order.workerId });
+  const counterId = state.counters.find((c) => c.customerId === customer.id)?.id ?? 'counter-1';
+  emit({ type: 'saleCompleted', orderId, productId, amount, tip, customerId: customer.id, workerId: order.workerId, counterId });
   dismissCustomer(state, customer, 'bought', emit);
 }

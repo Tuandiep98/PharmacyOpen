@@ -145,7 +145,7 @@ function advanceCustomer(state: SimState, customer: Customer, dt: number, emit: 
 
 function fillCounters(state: SimState, emit: Emit): void {
   for (const counter of state.counters) {
-    if (counter.customerId) continue;
+    if (counter.customerId || !counter.operatorId) continue;
     const nextId = state.queue.shift();
     if (!nextId) return;
     const customer = state.customers[nextId];

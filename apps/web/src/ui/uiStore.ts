@@ -32,6 +32,8 @@ export interface Floater {
 interface UiState {
   tab: Tab;
   selection: Selection;
+  activeCounterId: string;
+  setActiveCounterId: (id: string) => void;
   drag: DragState | null;
   toasts: Toast[];
   floaters: Floater[];
@@ -61,6 +63,8 @@ const MAX_TOASTS = 3;
 export const useUi = create<UiState>((set) => ({
   tab: 'store',
   selection: null,
+  activeCounterId: 'counter-1',
+  setActiveCounterId: (activeCounterId) => set({ activeCounterId }),
   drag: null,
   toasts: [],
   floaters: [],
