@@ -62,6 +62,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7 | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding | ✅ |
 | 7b | Ca làm, mở/đóng cửa, chấm công, tổng kết ngày, xếp hạng sao | ✅ |
 | 7c | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính | ✅ |
+| 7d | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
 ## 3b. Tự động hoá (bước 3)
@@ -168,6 +169,11 @@ Logic nằm ở `packages/simulation/src/recruit.ts` (sinh ứng viên, cấp đ
 - **Tay nghề:** mỗi lượt bán đúng +1 kinh nghiệm, 10 cấp (`LEVEL_XP`), mỗi cấp +3% tốc độ, +0,02 hiểu hàng. Đánh giá thấp do lỗi của chính người đó: 10% khả năng mất 3 kinh nghiệm, không tụt cấp.
 - **Mệt mỏi và xin nghỉ:** cuối ngày nghỉ −40, làm 1 ca −10, làm 2 ca +35 (Trâu bò −10). Chạm 100 thì xin thôi việc: **tăng lương giữ chân** (+20%, ít nhất +1 xu/ca, mệt về 30) hoặc cho nghỉ; hết ngày sau chưa quyết thì tự nghỉ (trả nợ lương nếu đủ xu).
 - **Ngoại hình:** giới tính quyết định kiểu tóc (nữ: tóc ngang vai/búi/dài; nam: ngắn/rẽ ngôi/cắt sát) và lông mi. Dược sĩ mặc blouse trắng có bảng tên, nhân viên bán hàng mặc tạp dề xanh; không vẽ chữ thập. 3% ra ngoại hình "luộm thuộm" (tóc dựng, áo nhàu) chỉ để vui, không ảnh hưởng chỉ số.
+- **Ngày nghỉ (7d):** đếm `streak` số ngày làm liên tục; từ ngày thứ `streakFatigueDays` (6) mỗi ngày mệt thêm `streakFatigue` (25), kể cả người "Trâu bò". Lệnh `setRestDay` cho nghỉ trọn ngày mai: không vào ca, không lương, mệt −40, `streak` về 0. Ca của người nghỉ trống thì quầy về người chơi.
+- **Phỏng vấn (7d):** `interviewRecruit` tốn 10 xu, lộ đặc điểm ẩn của ứng viên trước khi tuyển; giá tuyển không đổi.
+- **Giữ quầy khi đổi ca (7d):** `setCounterPolicy` bật thì đầu ca quầy người chơi đang giữ không tự giao cho nhân viên (mặc định tắt để tiệm tự chạy được khi vắng mặt).
+- Balance có xếp nghỉ (ai làm liên tục 5 ngày thì nghỉ ngày sau, mỗi ngày tối đa một người): 187–190 xu/ngày trong 12 ngày, 172–174 xu/ngày trong 24 ngày; không ván nào mất nhân viên. Ngày có người nghỉ bị trống một ca: lý do để thuê người thứ ba/tư thay ca.
+- Save v6 → v7: `streak` = 0, không có lịch nghỉ, tắt giữ quầy.
 - Save v5 → v6: một đặc điểm cũ thành danh sách; lương trọn ngày chia đôi thành lương ca (tổng mỗi ngày không đổi); kinh nghiệm bằng số lượt đã bán; sinh danh sách ứng viên khi tải.
 - Balance 12 seed × 12 ngày, một người ca sáng + một người ca chiều: 205–211 xu/ngày, vắng 35 phút ước tính 513–526 xu; nhân viên đạt khoảng cấp 7 sau 12 ngày.
 

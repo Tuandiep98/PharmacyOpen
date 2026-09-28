@@ -13,6 +13,7 @@ export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly
       case 'referring': return 'Đang khuyên khách đi khám';
     }
   }
+  if (worker.restDay === state.day) return 'Nghỉ hôm nay';
   if (!isOnDuty(state, worker)) return 'Ngoài ca, đang nghỉ';
   if (!isPresent(state, worker)) return 'Chưa tới ca, đang trên đường';
   if (state.counters[0]?.operatorId === worker.id) return state.counters[0]?.customerId ? 'Đang nghe khách' : 'Đang chờ khách ở quầy';

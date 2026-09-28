@@ -37,6 +37,8 @@ export type SimEvent = { at: number } & (
   | { type: 'staffRetained'; workerId: string; wage: number }
   | { type: 'staffQuit'; workerId: string; name: string }
   | { type: 'recruitsRefreshed'; paid: boolean }
+  | { type: 'recruitInterviewed'; slot: number; traits: TraitId[] }
+  | { type: 'restScheduled'; workerId: string; day: number | null }
 );
 
 export type SimEventType = SimEvent['type'];

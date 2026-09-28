@@ -225,6 +225,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
         </section>
       )}
 
+      <CounterPolicy state={state} />
       <ShiftCoverage state={state} />
 
       <h3>
@@ -250,7 +251,11 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
                 </span>
               </div>
               {operatorId === w.id && <span className="tag mint">Đứng quầy</span>}
-              {!isOnDuty(state, w) && <span className="tag off-duty">Ngoài ca</span>}
+              {w.restDay === state.day ? (
+                <span className="tag off-duty">Nghỉ hôm nay</span>
+              ) : (
+                !isOnDuty(state, w) && <span className="tag off-duty">Ngoài ca</span>
+              )}
             </div>
             <p className="team-card-status">
               <span className="status-dot" aria-hidden />
@@ -261,6 +266,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
                 <TraitTags traits={w.traits} hidden={w.hiddenTraits.length} />
                 <LevelBar worker={w} />
                 <FatigueBar worker={w} />
+                <RestLine state={state} worker={w} />
                 {w.resigning && <ResignNotice worker={w} />}
               </>
             )}
@@ -303,12 +309,53 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
           <b>
             {dailyWages(state)} {BRAND.currency}/ngày
           </b>
-          . Cuối ngày trả theo số ca mỗi người đã vào làm. Làm cả hai ca liên tục sẽ mệt và xin nghỉ (trừ người &quot;Trâu bò&quot;).
+          . Cuối ngày trả theo số ca mỗi người đã vào làm. Làm cả hai ca, hoặc làm {state.config.streakFatigueDays} ngày liền không nghỉ, sẽ mệt và có thể xin nghỉ.
         </p>
       )}
 
       <RecruitList state={state} full={staffCount >= state.config.maxStaff} />
     </div>
+  );
+}
+
+/** Tuỳ chọn: bật thì lúc đổi ca, quầy bạn đang giữ không tự giao cho nhân viên. */
+function CounterPolicy({ state }: { state: DeepReadonly<SimState> }) {
+  const bridge = useBridge();
+  const keep = state.keepCounterOnShiftChange;
+  return (
+    <label className="policy-toggle">
+      <input type="checkbox" checked={keep} onChange={() => bridge.dispatch({ type: 'setCounterPolicy', keepOnShiftChange: !keep })} />
+      <span>
+        <b>Giữ quầy khi đổi ca</b>
+        <span className="small muted">
+          {keep ? 'Bạn đang tự bán: quầy không tự chuyển cho nhân viên.' : 'Đầu mỗi ca, nhân viên trong ca tự nhận quầy.'}
+        </span>
+      </span>
+    </label>
+  );
+}
+
+/** Số ngày làm liên tục và lịch nghỉ: làm liên tục lâu sẽ mệt thêm mỗi ngày. */
+function RestLine({ state, worker }: { state: DeepReadonly<SimState>; worker: DeepReadonly<Worker> }) {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
+  const limit = state.config.streakFatigueDays;
+  const tomorrow = worker.restDay === state.day + 1;
+  const toggle = () => {
+    const r = bridge.dispatch({ type: 'setRestDay', workerId: worker.id, rest: !tomorrow });
+    if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+  };
+  return (
+    <span className="rest-line">
+      <span className={`small ${worker.streak >= limit - 1 ? 'neg' : 'muted'}`}>
+        Làm liên tục {worker.streak} ngày{worker.streak >= limit ? ' · đang mệt thêm mỗi ngày' : worker.streak >= limit - 1 ? ' · nên cho nghỉ' : ''}
+      </span>
+      {worker.restDay !== state.day && (
+        <GameButton size="small" tone={tomorrow ? 'primary' : 'secondary'} aria-pressed={tomorrow} onClick={toggle}>
+          {tomorrow ? 'Mai nghỉ · huỷ' : 'Cho nghỉ ngày mai'}
+        </GameButton>
+      )}
+    </span>
   );
 }
 
@@ -318,13 +365,16 @@ function ShiftCoverage({ state }: { state: DeepReadonly<SimState> }) {
     <div className="shift-coverage" aria-label="Số nhân viên mỗi ca">
       {SHIFT_IDS.map((shift) => {
         const count = shiftHeadcount(state, shift);
+        const resting = Object.values(state.workers).filter((w) => w.shifts.includes(shift) && w.restDay === state.day).length;
+        const working = count - resting;
         return (
-          <span key={shift} className={`coverage-chip ${count === 0 ? 'empty' : ''}`}>
+          <span key={shift} className={`coverage-chip ${working === 0 ? 'empty' : ''}`}>
             {SHIFT_LABEL[shift]}:{' '}
             <b>
               {count}/{state.config.maxPerShift}
             </b>
-            {count === 0 && ' · thiếu người'}
+            {resting > 0 && ` · ${resting} nghỉ hôm nay`}
+            {working === 0 && ' · thiếu người'}
           </span>
         );
       })}
@@ -443,6 +493,11 @@ function RecruitCard({
         </button>
       </div>
       <TraitTags traits={recruit.traits} hidden={recruit.hiddenTraits.length} />
+      {recruit.hiddenTraits.length > 0 && (
+        <GameButton size="small" disabled={state.money < state.config.interviewCost} onClick={() => run({ type: 'interviewRecruit', slot })}>
+          Phỏng vấn để biết &quot;???&quot; · {state.config.interviewCost} {BRAND.currency}
+        </GameButton>
+      )}
       <StatBars speed={recruit.speed} knowledge={recruit.knowledge} communication={recruit.communication} />
       <span className="small">
         Lương {recruit.wage} {BRAND.currency}/ca

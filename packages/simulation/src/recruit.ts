@@ -3,7 +3,7 @@ import type { Gender, Rarity, StaffRole, TraitId } from './content/types';
 import type { Emit } from './events';
 import { LOOK_VARIANTS } from './looks';
 import { nextFloat, nextInt, pickWeighted, type RngState } from './rng';
-import type { DeepReadonly, Recruit, SimState, Worker } from './types';
+import type { DeepReadonly, Recruit, SimConfig, SimState, Worker } from './types';
 
 /*
  * Nhân viên (spec §3g): ứng viên sinh ngẫu nhiên mỗi ngày theo độ hiếm, đặc điểm có lợi/có hại/ẩn,
@@ -73,10 +73,15 @@ export function loseExperience(state: SimState, worker: Worker, emit: Emit): voi
 
 /** Mức mệt để xin thôi việc, và thay đổi cuối ngày theo số ca đã làm. */
 export const QUIT_FATIGUE = 100;
-export function fatigueDelta(worker: DeepReadonly<Worker>, shiftsWorked: number): number {
+export function fatigueDelta(
+  worker: DeepReadonly<Worker>,
+  shiftsWorked: number,
+  config: Pick<SimConfig, 'streakFatigueDays' | 'streakFatigue'>,
+): number {
   if (shiftsWorked === 0) return -40;
-  if (shiftsWorked === 1 || hasTrait(worker, 'ironman')) return -10;
-  return 35;
+  const base = shiftsWorked === 1 || hasTrait(worker, 'ironman') ? -10 : 35;
+  // Làm liên tục nhiều ngày không nghỉ cũng mệt, kể cả người "Trâu bò": cần xếp ngày nghỉ.
+  return worker.streak >= config.streakFatigueDays ? base + config.streakFatigue : base;
 }
 
 /** Tăng lương giữ chân: +20% (ít nhất +1 xu/ca). */

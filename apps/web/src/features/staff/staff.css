@@ -173,3 +173,29 @@
 .lock-btn:hover {
   background: var(--surface-tint);
 }
+
+.policy-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 8px 0;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+.policy-toggle input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--primary);
+}
+.policy-toggle > span { display: grid; }
+.rest-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}

@@ -236,6 +236,17 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     if (!Array.isArray(state.recruits)) state.recruits = [];
     if (!isNum(state.recruitRerollDay)) state.recruitRerollDay = 0;
   },
+  6: (state) => {
+    // v7: ngày làm liên tục, lịch nghỉ, tuỳ chọn giữ quầy khi đổi ca.
+    if (isObject(state.workers)) {
+      for (const worker of Object.values(state.workers)) {
+        if (!isObject(worker)) continue;
+        if (!isNum(worker.streak)) worker.streak = 0;
+        if (!(worker.restDay === null || isNum(worker.restDay))) worker.restDay = null;
+      }
+    }
+    if (typeof state.keepCounterOnShiftChange !== 'boolean') state.keepCounterOnShiftChange = false;
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -289,6 +300,8 @@ function isValidState(state: Loose): state is SimState & Loose {
       !isNum(worker.xp) ||
       !isNum(worker.fatigue) ||
       typeof worker.resigning !== 'boolean' ||
+      !isNum(worker.streak) ||
+      !(worker.restDay === null || isNum(worker.restDay)) ||
       !isObject(worker.look) ||
       (worker.look.gender !== 'female' && worker.look.gender !== 'male')
     )
@@ -310,6 +323,7 @@ function isValidState(state: Loose): state is SimState & Loose {
     !Array.isArray(s.ratingMilestones)
   )
     return false;
+  if (typeof s.keepCounterOnShiftChange !== 'boolean') return false;
   if (!Array.isArray(s.recruits) || !isNum(s.recruitRerollDay) || !isNum(s.stats.tips) || !isNum(s.stats.pilfered)) return false;
   if (
     !s.recruits.every(

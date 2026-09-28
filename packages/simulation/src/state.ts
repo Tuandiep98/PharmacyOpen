@@ -60,6 +60,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     fatigue: 0,
     resigning: false,
     arrivesAtMs: 0,
+    streak: 0,
+    restDay: null,
   };
 
   const prices = {} as Record<ProductId, number>;
@@ -124,6 +126,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     ratingMilestones: [],
     recruits: [],
     recruitRerollDay: 0,
+    keepCounterOnShiftChange: false,
     upgrades: [],
     interactions: [],
     reviews: [],
@@ -169,6 +172,8 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     fatigue: 0,
     resigning: false,
     arrivesAtMs: 0,
+    streak: 0,
+    restDay: null,
   };
 }
 

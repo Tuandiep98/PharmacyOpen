@@ -16,6 +16,7 @@ if (!Number.isInteger(seeds) || seeds < 1 || seeds > 100 || !Number.isInteger(da
 }
 
 describe('mô phỏng cân bằng nhiều seed', () => { for (const scenario of SCENARIOS) it(scenario.name, () => {
+  let quits = 0;
   const rows: { profit: number; sales: number; away: number; expired: number; complaints: number; repeat: number; level: number }[] = [];
   for (let seed = 1; seed <= seeds; seed++) {
     const state: SimState = createInitialState(seed);
@@ -29,14 +30,22 @@ describe('mô phỏng cân bằng nhiều seed', () => { for (const scenario of 
     const starting = sim.snapshot.money;
     const ticks = days * state.config.dayMs / state.config.tickMs;
     let complaints = 0;
+    let lastDay = sim.snapshot.day;
     for (let i = 0; i < ticks; i++) {
       sim.step();
+      // Chủ tiệm cho nghỉ một ngày khi ai đó làm liên tục 5 ngày (mỗi ngày tối đa một người nghỉ).
+      if (sim.snapshot.day !== lastDay) {
+        lastDay = sim.snapshot.day;
+        const tired = Object.values(sim.snapshot.workers).find((w) => w.controller === 'ai' && w.streak >= 5 && w.restDay === null);
+        if (tired) sim.dispatch({ type: 'setRestDay', workerId: tired.id, rest: true });
+      }
       if (i % 500 === 499) {
         complaints += sim.drainEvents().filter((e) => e.type === 'complaintOpened').length;
       }
     }
     complaints += sim.drainEvents().filter((e) => e.type === 'complaintOpened').length;
     const s = sim.snapshot;
+    if (Object.values(s.workers).filter((w) => w.controller === 'ai').length < 2) quits++;
     rows.push({
       profit: (s.money - starting) / days,
       sales: s.stats.sales / days,
@@ -50,7 +59,7 @@ describe('mô phỏng cân bằng nhiều seed', () => { for (const scenario of 
   const mean = (key: keyof typeof rows[number]) => Math.round(rows.reduce((sum, r) => sum + r[key], 0) / rows.length * 10) / 10;
   const profits = rows.map((r) => r.profit).sort((a, b) => a - b);
   const estimatedOffline = Math.round(mean('profit') * createInitialState(1).config.offlineCapMs / createInitialState(1).config.dayMs);
-  console.log(`${scenario.name}: lợi/ngày ${mean('profit')} xu [${Math.round(profits[0]!)}..${Math.round(profits.at(-1)!)}], vắng 35 phút ~${estimatedOffline} xu (trần), bán ${mean('sales')}, bỏ về ${mean('away')}, hết hạn ${mean('expired')}, khiếu nại ${mean('complaints')}, khách quen ${mean('repeat')}, cấp cao nhất ${mean('level')}`);
+  console.log(`${scenario.name}: lợi/ngày ${mean('profit')} xu [${Math.round(profits[0]!)}..${Math.round(profits.at(-1)!)}], vắng 35 phút ~${estimatedOffline} xu (trần), bán ${mean('sales')}, bỏ về ${mean('away')}, hết hạn ${mean('expired')}, khiếu nại ${mean('complaints')}, khách quen ${mean('repeat')}, cấp cao nhất ${mean('level')}, ván mất người ${quits}/${seeds}`);
   expect(rows.every((r) => Number.isFinite(r.profit) && r.expired >= 0)).toBe(true);
   expect(estimatedOffline).toBeLessThan(650);
 }); });

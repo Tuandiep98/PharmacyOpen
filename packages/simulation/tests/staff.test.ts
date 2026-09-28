@@ -219,3 +219,72 @@ describe('tay nghề và mệt mỏi', () => {
     expect(s.workers['w-chi']!.resigning).toBe(false);
   });
 });
+
+describe('ngày nghỉ, phỏng vấn và giữ quầy', () => {
+  /** Chạy trọn `days` ngày không có khách, một nhân viên ca sáng đứng quầy. */
+  function quietStore(seed: number) {
+    const state = createInitialState(seed);
+    state.money = 2000;
+    const sim = new Simulation(state);
+    sim.dispatch({ type: 'hire', candidateId: 'chi' });
+    const s = mutable(sim);
+    const run = (days: number) => {
+      for (let d = 0; d < days; d++) {
+        s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+        runFor(sim, s.config.dayMs);
+      }
+    };
+    return { sim, s, run };
+  }
+
+  it('làm liên tục nhiều ngày cũng mệt; cho nghỉ một ngày thì hồi và đếm lại', () => {
+    const { sim, s, run } = quietStore(20);
+    run(s.config.streakFatigueDays - 1);
+    expect(s.workers['w-chi']!.fatigue).toBe(0);
+    run(2);
+    const tired = s.workers['w-chi']!.fatigue;
+    expect(tired).toBe(2 * (s.config.streakFatigue - 10));
+    expect(s.workers['w-chi']!.streak).toBe(s.config.streakFatigueDays + 1);
+
+    expect(sim.dispatch({ type: 'setRestDay', workerId: 'w-player', rest: true })).toEqual({ ok: false, reason: 'cannot-schedule-player' });
+    expect(sim.dispatch({ type: 'setRestDay', workerId: 'w-chi', rest: true }).ok).toBe(true);
+    run(1);
+    // Ngày nghỉ: không vào ca, quầy về người chơi, không lương.
+    expect(s.workers['w-chi']!.restDay).toBe(s.day);
+    expect(s.workers['w-chi']!.shiftsToday).toEqual([]);
+    expect(s.counters[0]!.operatorId).toBe('w-player');
+    run(1);
+    expect(s.dayReports.at(-1)!.wages).toBe(0);
+    expect(s.workers['w-chi']!.streak).toBe(0);
+    // Ngày đặt lịch vẫn làm (mệt thêm), ngày nghỉ hồi 40.
+    expect(s.workers['w-chi']!.fatigue).toBe(tired + (s.config.streakFatigue - 10) - 40);
+    expect(s.workers['w-chi']!.restDay).toBeNull();
+    expect(s.workers['w-chi']!.shiftsToday).toEqual(['morning']);
+  });
+
+  it('phỏng vấn trả phí làm lộ đặc điểm ẩn của ứng viên', () => {
+    const sim = Simulation.create(21);
+    const s = mutable(sim);
+    s.money = 100;
+    s.recruits[0] = { ...s.recruits[0]!, hiddenTraits: ['lazy'], traits: [] };
+    s.recruits[1] = { ...s.recruits[1]!, hiddenTraits: [] };
+    expect(sim.dispatch({ type: 'interviewRecruit', slot: 1 })).toEqual({ ok: false, reason: 'nothing-hidden' });
+    expect(sim.dispatch({ type: 'interviewRecruit', slot: 0 }).ok).toBe(true);
+    expect(s.money).toBe(100 - s.config.interviewCost);
+    expect(s.recruits[0]!.traits).toEqual(['lazy']);
+    expect(s.recruits[0]!.hiddenTraits).toEqual([]);
+  });
+
+  it('bật "giữ quầy khi đổi ca" thì quầy của người chơi không tự chuyển cho nhân viên', () => {
+    const { sim, s, run } = quietStore(22);
+    run(1);
+    expect(s.counters[0]!.operatorId).toBe('w-chi');
+    sim.dispatch({ type: 'assignCounter', counterId: 'counter-1', workerId: 'w-player' });
+    expect(sim.dispatch({ type: 'setCounterPolicy', keepOnShiftChange: true }).ok).toBe(true);
+    run(1);
+    expect(s.counters[0]!.operatorId).toBe('w-player');
+    sim.dispatch({ type: 'setCounterPolicy', keepOnShiftChange: false });
+    run(1);
+    expect(s.counters[0]!.operatorId).toBe('w-chi');
+  });
+});

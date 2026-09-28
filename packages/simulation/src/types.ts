@@ -12,7 +12,7 @@ import type {
 } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = 'morning' | 'afternoon';
@@ -55,6 +55,11 @@ export interface SimConfig {
   /** Số ứng viên mỗi ngày và giá làm mới danh sách (một lần mỗi ngày). */
   recruitSlots: number;
   recruitRerollCost: number;
+  /** Phí phỏng vấn để xem trước đặc điểm ẩn của một ứng viên. */
+  interviewCost: number;
+  /** Làm liên tục từ chừng này ngày trở lên thì mỗi ngày mệt thêm `streakFatigue`. */
+  streakFatigueDays: number;
+  streakFatigue: number;
   /** Thời gian NPC suy nghĩ trước khi chọn món (chia cho speed, cộng thêm khi kiến thức thấp). */
   aiThinkMs: number;
   /** Thời gian một lần NPC đi bổ sung kệ (chia cho speed). */
@@ -219,6 +224,10 @@ export interface Worker {
   resigning: boolean;
   /** Người "Hay đi trễ" chỉ bắt đầu làm từ thời điểm này trong ca. */
   arrivesAtMs: number;
+  /** Số ngày làm liên tục (có vào ít nhất một ca); nghỉ trọn một ngày thì về 0. */
+  streak: number;
+  /** Ngày được cho nghỉ (không vào ca nào), null nếu không có lịch nghỉ. */
+  restDay: number | null;
 }
 
 /** Ứng viên trong danh sách tuyển hằng ngày; khoá thì được giữ sang ngày sau. */
@@ -444,6 +453,8 @@ export interface SimState {
   recruits: (Recruit | null)[];
   /** Ngày gần nhất đã dùng lượt làm mới danh sách có trả phí. */
   recruitRerollDay: number;
+  /** Bật thì lúc đổi ca, quầy người chơi đang giữ không tự giao cho nhân viên. */
+  keepCounterOnShiftChange: boolean;
   /** Id nâng cấp đã mua, theo thứ tự mua. */
   upgrades: string[];
   interactions: InteractionRecord[];

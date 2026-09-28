@@ -38,7 +38,8 @@ export function dayPhase(state: DeepReadonly<SimState>): DayPhase {
 }
 
 export function isOnDuty(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): boolean {
-  return worker.controller === 'player' || worker.shifts.includes(currentShift(state));
+  if (worker.controller === 'player') return true;
+  return worker.restDay !== state.day && worker.shifts.includes(currentShift(state));
 }
 
 /** Đủ việc chuẩn bị hôm nay thì khách được phục vụ trong tiệm gọn gàng, bớt sốt ruột. */
@@ -54,7 +55,7 @@ export function shiftPay(wage: number, shiftCount: number): number {
 /** Chấm công: người có lịch ở ca hiện tại được ghi nhận đã vào ca (một lần mỗi ca). */
 export function checkIn(state: SimState, worker: Worker): void {
   const shift = currentShift(state);
-  if (!worker.shifts.includes(shift) || worker.shiftsToday.includes(shift)) return;
+  if (!worker.shifts.includes(shift) || worker.shiftsToday.includes(shift) || worker.restDay === state.day) return;
   worker.shiftsToday.push(shift);
   worker.arrivesAtMs = state.timeMs + (hasTrait(worker, 'late') ? LATE_MS : 0);
 }
@@ -99,7 +100,10 @@ export function closeStaffDay(state: SimState, emit: Emit): void {
       emit({ type: 'staffQuit', workerId: worker.id, name: worker.name });
       continue;
     }
-    worker.fatigue = Math.max(0, Math.min(QUIT_FATIGUE, worker.fatigue + fatigueDelta(worker, worker.shiftsToday.length)));
+    worker.streak = worker.shiftsToday.length > 0 ? worker.streak + 1 : 0;
+    if (worker.restDay !== null && worker.restDay <= state.day) worker.restDay = null;
+    const delta = fatigueDelta(worker, worker.shiftsToday.length, state.config);
+    worker.fatigue = Math.max(0, Math.min(QUIT_FATIGUE, worker.fatigue + delta));
     if (worker.fatigue >= QUIT_FATIGUE) {
       worker.resigning = true;
       emit({ type: 'resignationRequested', workerId: worker.id });
@@ -142,8 +146,8 @@ export function shiftSummary(state: DeepReadonly<SimState>): ShiftSummary {
 export function handOverCounters(state: SimState, emit: Emit, shiftStart = false): void {
   for (const counter of state.counters) {
     const operator = state.workers[counter.operatorId];
-    // Đầu ca: quầy người chơi đang giữ được giao cho NPC trong ca (người chơi lấy lại được bất cứ lúc nào).
-    const handBack = shiftStart && operator?.controller === 'player';
+    // Đầu ca: quầy người chơi đang giữ được giao cho NPC trong ca, trừ khi người chơi bật "giữ quầy khi đổi ca".
+    const handBack = shiftStart && !state.keepCounterOnShiftChange && operator?.controller === 'player';
     if (operator && isOnDuty(state, operator) && !handBack) continue;
     const next =
       Object.values(state.workers).find(

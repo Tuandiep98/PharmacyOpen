@@ -35,7 +35,10 @@ export type Command =
   | { type: 'setShifts'; workerId: string; shifts: ShiftId[] }
   | { type: 'lockRecruit'; slot: number; locked: boolean }
   | { type: 'rerollRecruits' }
-  | { type: 'retainStaff'; workerId: string };
+  | { type: 'retainStaff'; workerId: string }
+  | { type: 'interviewRecruit'; slot: number }
+  | { type: 'setRestDay'; workerId: string; rest: boolean }
+  | { type: 'setCounterPolicy'; keepOnShiftChange: boolean };
 
 export type RejectReason =
   | 'unknown-worker'
@@ -72,7 +75,8 @@ export type RejectReason =
   | 'worker-not-arrived'
   | 'unknown-recruit'
   | 'reroll-used'
-  | 'not-resigning';
+  | 'not-resigning'
+  | 'nothing-hidden';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
 
@@ -115,6 +119,13 @@ export function applyCommand(state: SimState, command: Command, emit: Emit): Com
       return rerollRecruits(state, emit);
     case 'retainStaff':
       return retainStaff(state, command.workerId, emit);
+    case 'interviewRecruit':
+      return interviewRecruit(state, command.slot, emit);
+    case 'setRestDay':
+      return setRestDay(state, command.workerId, command.rest, emit);
+    case 'setCounterPolicy':
+      state.keepCounterOnShiftChange = command.keepOnShiftChange;
+      return OK;
   }
 }
 
@@ -286,6 +297,32 @@ function rerollRecruits(state: SimState, emit: Emit): CommandResult {
   state.recruitRerollDay = state.day;
   refreshRecruits(state, 'b');
   emit({ type: 'recruitsRefreshed', paid: true });
+  return OK;
+}
+
+/** Phỏng vấn trả phí: lộ đặc điểm ẩn của ứng viên trước khi quyết định tuyển (giá tuyển không đổi). */
+function interviewRecruit(state: SimState, slot: number, emit: Emit): CommandResult {
+  const recruit = state.recruits[slot];
+  if (!recruit) return reject('unknown-recruit');
+  if (recruit.hiddenTraits.length === 0) return reject('nothing-hidden');
+  const cost = state.config.interviewCost;
+  if (state.money < cost) return reject('insufficient-funds');
+  state.money -= cost;
+  state.stats.spentOnStaff += cost;
+  const traits = [...recruit.hiddenTraits];
+  recruit.traits.push(...traits);
+  recruit.hiddenTraits = [];
+  emit({ type: 'recruitInterviewed', slot, traits });
+  return OK;
+}
+
+/** Cho nghỉ trọn ngày mai (bỏ mọi ca, không lương, hồi mệt và đếm lại ngày làm liên tục), hoặc huỷ lịch nghỉ. */
+function setRestDay(state: SimState, workerId: string, rest: boolean, emit: Emit): CommandResult {
+  const worker = state.workers[workerId];
+  if (!worker) return reject('unknown-worker');
+  if (worker.controller === 'player') return reject('cannot-schedule-player');
+  worker.restDay = rest ? state.day + 1 : null;
+  emit({ type: 'restScheduled', workerId, day: worker.restDay });
   return OK;
 }
 

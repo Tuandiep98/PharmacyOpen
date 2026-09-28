@@ -211,6 +211,21 @@ function useEventFeedback() {
           case 'staffRetained':
             pushToast('good', `Đã tăng lương lên ${e.wage} ${BRAND.currency}/ca, nhân viên ở lại.`);
             break;
+          case 'recruitInterviewed': {
+            const bad = e.traits.some((id) => TRAITS[id].tone === 'bad');
+            pushToast(bad ? 'warn' : 'good', `Phỏng vấn xong: ứng viên là người "${e.traits.map((id) => TRAITS[id].name).join('", "')}".`);
+            break;
+          }
+          case 'restScheduled': {
+            const worker = bridge.state.workers[e.workerId];
+            pushToast(
+              'info',
+              e.day === null
+                ? `Đã huỷ lịch nghỉ của ${worker?.name ?? 'nhân viên'}.`
+                : `${worker?.name ?? 'Nhân viên'} sẽ nghỉ ngày ${e.day}: ca đó cần người khác hoặc bạn đứng quầy.`,
+            );
+            break;
+          }
           case 'staffQuit':
             playSfx('leave');
             pushToast('bad', `${e.name} đã nghỉ việc. Tuyển người mới ở tab Nhân sự.`);
