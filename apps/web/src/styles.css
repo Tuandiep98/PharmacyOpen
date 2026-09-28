@@ -59,7 +59,7 @@ button {
 }
 
 @media (max-width: 420px) {
-  /* Màn hẹp: chỉ giữ logo để còn chỗ cho tiền, lượt bán và 2 nút. */
+  /* Màn hẹp: ẩn tên tiệm để giữ chỗ cho tiền, ngày/giờ và menu. */
   .hud-brand span {
     display: none;
   }
@@ -1426,36 +1426,6 @@ button {
 .chip-btn.alert {
   border-color: var(--danger);
   background: var(--danger-soft);
-}
-
-/* Ngày hiện tại + vạch tiến độ ngày nằm ngay trong chip tiền. */
-.chip-day {
-  position: relative;
-  margin-left: 2px;
-  padding: 0 0 3px;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--ink-soft);
-}
-
-.chip-day::after,
-.chip-day i {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  height: 3px;
-  border-radius: 2px;
-}
-
-.chip-day::after {
-  width: 100%;
-  background: var(--line);
-}
-
-.chip-day i {
-  z-index: 1;
-  background: var(--sun);
 }
 
 .day-progress {

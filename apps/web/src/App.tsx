@@ -1,9 +1,7 @@
 import {
   dayProgress,
-  MILESTONES,
   playerLevel,
   STATIONS,
-  storeRating,
   TRAITS,
   UPGRADES,
   type DeepReadonly,
@@ -20,6 +18,7 @@ import {
   CrossMarkIcon,
   InfoIcon,
   MapIcon,
+  MenuIcon,
   SpeakerIcon,
   StaffIcon,
   StarIcon,
@@ -113,7 +112,7 @@ export function App() {
           <Inspector state={state} />
         </div>
       </main>
-      <BottomNav state={state} />
+      <PrimaryNav state={state} />
       <DragGhost />
       {offline && !showInfo && <OfflineDialog summary={offline} onClose={() => setOffline(null)} />}
       {daySummary && !offline && !showInfo && <DaySummaryDialog report={daySummary} onClose={() => setDaySummary(null)} />}
@@ -347,16 +346,41 @@ function useEventFeedback() {
   useGameEvents(handler);
 }
 
-function Hud({ state, onInfo }: { state: DeepReadonly<SimState>; onInfo: () => void }) {
+function Hud({
+  state,
+  onInfo,
+}: {
+  state: DeepReadonly<SimState>;
+  onInfo: () => void;
+}) {
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const progress = dayProgress(state);
-  const level = playerLevel(state);
-  const next = MILESTONES.find((m) => m.level > level);
   const owed = Object.values(state.workers).some((w) => w.wageOwed > 0);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuRef.current?.querySelector("button")?.focus();
+      }
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
   const openLedger = () => {
-    setTab('store');
-    select({ kind: 'ledger' });
+    setMenuOpen(false);
+    setTab("store");
+    select({ kind: "ledger" });
   };
   return (
     <header className="hud">
@@ -368,32 +392,56 @@ function Hud({ state, onInfo }: { state: DeepReadonly<SimState>; onInfo: () => v
       </div>
       <div className="hud-stats">
         <button
-          className={`chip chip-btn ${owed ? 'alert' : ''}`}
+          className={`chip chip-btn ${owed ? "alert" : ""}`}
           onClick={openLedger}
-          aria-label={`${state.money} ${BRAND.currency}, ngày ${state.day}. Mở sổ sách`}
+          aria-label={`${state.money} ${BRAND.currency}. Mở sổ sách`}
         >
           <CoinIcon size={20} />
-          <b>{state.money}</b>
-          <span className="chip-day" aria-hidden>
-            N{state.day}
-            <i style={{ width: `${progress * 100}%` }} />
-          </span>
+          <b>
+            {new Intl.NumberFormat("vi-VN", {
+              notation: "compact",
+              maximumFractionDigits: 1,
+            }).format(state.money)}
+          </b>
         </button>
-        <button className="chip chip-btn level-chip" onClick={() => setTab('expansion')} aria-label={`Tiệm cấp ${level}. ${next ? `Cấp sau cần bán ${next.sales} món và tới ngày ${next.day}` : 'Đã đạt cấp tối đa'}. Mở rộng`}>
-          <b>Cấp {level}</b>
-        </button>
-        <span className="chip hud-clock" aria-label={`${clockLabel(state)}, ${phaseLabel(state)}`}>
-          <b>{clockLabel(state)}</b>
+        <span
+          className="chip hud-time"
+          aria-label={`Ngày ${state.day}, ${clockLabel(state)}, ${phaseLabel(state)}`}
+        >
+          <b>
+            N{state.day} · {clockLabel(state)}
+          </b>
           <small>{phaseLabel(state)}</small>
+          <i
+            className="hud-time-progress"
+            style={{ width: `${progress * 100}%` }}
+            aria-hidden
+          />
         </span>
-        <span className="chip" aria-label={`Đánh giá cửa hàng ${formatRating(storeRating(state))} trên 5 sao`}>
-          <StarIcon size={20} />
-          <b>{formatRating(storeRating(state))}</b>
-        </span>
-        <SoundToggle />
-        <IconButton onClick={onInfo} aria-label="Thông tin trò chơi">
-          <InfoIcon size={24} />
-        </IconButton>
+        <div className="hud-menu" ref={menuRef}>
+          <IconButton
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label="Trợ giúp và cài đặt"
+            aria-expanded={menuOpen}
+            aria-controls={menuOpen ? "hud-menu-panel" : undefined}
+          >
+            <MenuIcon size={24} />
+          </IconButton>
+          {menuOpen && (
+            <div className="hud-menu-panel" id="hud-menu-panel">
+              <SoundToggle />
+              <button
+                className="hud-menu-item"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onInfo();
+                }}
+              >
+                <InfoIcon size={22} /> Hướng dẫn chơi
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );
@@ -403,9 +451,9 @@ function SoundToggle() {
   const sound = useSettings((s) => s.sound);
   const toggle = useSettings((s) => s.toggleSound);
   return (
-    <IconButton onClick={toggle} aria-pressed={sound} aria-label={sound ? 'Tắt âm thanh' : 'Bật âm thanh'}>
-      <SpeakerIcon size={24} muted={!sound} />
-    </IconButton>
+    <button className="hud-menu-item" onClick={toggle} aria-pressed={sound}>
+      <SpeakerIcon size={22} muted={!sound} /> Âm thanh: {sound ? "Bật" : "Tắt"}
+    </button>
   );
 }
 
@@ -458,31 +506,46 @@ const NAV: { tab: Tab; label: string; icon: React.ReactNode }[] = [
   { tab: 'expansion', label: 'Mở rộng', icon: <MapIcon /> },
 ];
 
-function BottomNav({ state }: { state: DeepReadonly<SimState> }) {
+function PrimaryNav({ state }: { state: DeepReadonly<SimState> }) {
   const tab = useUi((s) => s.tab);
   const setTab = useUi((s) => s.setTab);
-  const openComplaints = state.complaints.filter((c) => c.status === 'open').length;
-  const resigning = Object.values(state.workers).filter((w) => w.resigning).length;
+  const openComplaints = state.complaints.filter(
+    (c) => c.status === "open",
+  ).length;
+  const resigning = Object.values(state.workers).filter(
+    (w) => w.resigning,
+  ).length;
   return (
-    <nav className="bottom-nav">
-      {NAV.map((item) => {
-        const badge = item.tab === 'reviews' ? openComplaints : item.tab === 'staff' ? resigning : 0;
-        return (
-          <button
-            key={item.tab}
-            className={`nav-item ${tab === item.tab ? 'active' : ''}`}
-            aria-current={tab === item.tab ? 'page' : undefined}
-            aria-label={badge ? `${item.label}, ${badge} ${item.tab === 'staff' ? 'người xin nghỉ' : 'khiếu nại chờ phản hồi'}` : undefined}
-            onClick={() => setTab(item.tab)}
-          >
-            <span className="nav-icon">
-              {item.icon}
-              {badge > 0 && <span className="nav-badge">{badge}</span>}
-            </span>
-            <span>{item.label}</span>
-          </button>
-        );
-      })}
+    <nav className="bottom-nav" aria-label="Điều hướng chính">
+      <div className="nav-items">
+        {NAV.map((item) => {
+          const badge =
+            item.tab === "reviews"
+              ? openComplaints
+              : item.tab === "staff"
+                ? resigning
+                : 0;
+          return (
+            <button
+              key={item.tab}
+              className={`nav-item ${tab === item.tab ? "active" : ""}`}
+              aria-current={tab === item.tab ? "page" : undefined}
+              aria-label={
+                badge
+                  ? `${item.label}, ${badge} ${item.tab === "staff" ? "người xin nghỉ" : "khiếu nại chờ phản hồi"}`
+                  : undefined
+              }
+              onClick={() => setTab(item.tab)}
+            >
+              <span className="nav-icon">
+                {item.icon}
+                {badge > 0 && <span className="nav-badge">{badge}</span>}
+              </span>
+              <span>{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
     </nav>
   );
 }

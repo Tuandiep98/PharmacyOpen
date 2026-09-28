@@ -25,11 +25,12 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 - `GameButton` cho hành động có chữ; `IconButton` cho nút chỉ có biểu tượng và bắt buộc có `aria-label`.
 - `PanelHeading` cho tiêu đề bảng; `EmptyState` cho danh sách trống. Thành phần mới đặt trong `apps/web/src/ui/` khi dùng ở ít nhất hai nơi.
 - Mọi nút có trạng thái hover, nhấn, vô hiệu và focus bàn phím. Vùng chạm tối thiểu 44 × 44 px. Không dựa riêng vào kéo thả; luôn giữ cách chạm.
-- Ở điện thoại, khay phục vụ nằm dưới cảnh và điều hướng ở đáy. Ở tablet ngang, khay nằm bên cạnh. Tránh chữ dưới 11 px ở vùng cần đọc thường xuyên.
+- Ở điện thoại, khay phục vụ nằm dưới cảnh và điều hướng năm mục ở đáy. Trên tablet, nhóm năm mục giữ chiều rộng tối đa 600 px để không bị kéo giãn. Từ 1100 px, điều hướng chuyển thành thanh dọc 80 px bên trái; thứ tự mục và badge giữ nguyên. Ở tablet ngang, khay nằm bên cạnh. Tránh chữ dưới 11 px ở vùng cần đọc thường xuyên.
+- HUD chỉ giữ logo, tiền và ngày/giờ/ca; tiền mở Sổ sách. Cấp tiệm nằm trong Mở rộng, điểm sao trong Đánh giá. Âm thanh và hướng dẫn chơi nằm trong menu ở góc phải. Cần kiểm tra HUD không tràn ngang ở độ rộng 320 px và khi tiền có nhiều chữ số.
 - Khi người chơi tự đứng quầy, khay hiện lời khách, sản phẩm và hành động phục vụ. Khi NPC đứng quầy, thu khay thành dải trạng thái gồm tên người, việc đang làm, tiến độ và nút lấy lại quầy; không hiện thao tác bán hàng bị vô hiệu. Bảng chi tiết trống không chiếm chỗ.
 - Danh mục dùng `CatalogControls`: cùng nhóm hàng và trang điều khiển cả kệ trong cảnh lẫn khay. Chỉ hiện món đã mở; mỗi trang có 4/6/8/10 ô theo cấp kệ, cộng 2 ô khi sắp kệ theo nhóm. Tab Kho liệt kê món đã mở trong nhóm và xem trước nhóm sắp mở. Không thu nhỏ hình để nhét cả 20 món vào một hàng.
 - Vật dụng nâng cấp theo cấp: trong mục Mở rộng chỉ hiện cấp kế tiếp, kèm giá, lợi ích, điều kiện cấp tiệm và mức hiện tại. Cấp vật dụng phải có thay đổi nhìn thấy trong diorama; riêng Kho và Cửa hàng mở thêm quyền nhập/trưng bày. Nhãn Bán chạy luôn đi kèm chữ, không chỉ có màu vàng.
-- Hướng dẫn chơi nằm trong `OnboardingDialog`, có thể mở lại từ nút thông tin, cho phép bỏ qua và có lối vào bản lưu trực tiếp. Các bước hướng dẫn dùng hình sản phẩm và icon cùng hệ art của game.
+- Hướng dẫn chơi nằm trong `OnboardingDialog`, có thể mở lại từ menu HUD, cho phép bỏ qua và có lối vào bản lưu trực tiếp. Các bước hướng dẫn dùng hình sản phẩm và icon cùng hệ art của game.
 - Tab Nhân sự ưu tiên trạng thái quầy và việc đang làm. Trên thẻ nhân viên chỉ hiện các số liệu ngắn; kỹ năng và lương mở theo nhu cầu.
 - Chuyển động chỉ báo thao tác hoặc trạng thái; tôn trọng `prefers-reduced-motion`.
 

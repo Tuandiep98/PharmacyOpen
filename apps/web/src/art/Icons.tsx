@@ -45,6 +45,14 @@ export const InfoIcon = (p: IconProps) => (
   </Svg>
 );
 
+export const MenuIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx={5} cy={12} r={1.5} fill={INK} stroke="none" />
+    <circle cx={12} cy={12} r={1.5} fill={INK} stroke="none" />
+    <circle cx={19} cy={12} r={1.5} fill={INK} stroke="none" />
+  </Svg>
+);
+
 export const LockIcon = (p: IconProps) => (
   <Svg {...p}>
     <rect x={5} y={11} width={14} height={10} rx={2} fill={ART.wallStripe} />
