@@ -1,7 +1,6 @@
 import {
   dailyWages,
   PLAYER_WORKER_ID,
-  PRODUCTS,
   STAFF_CANDIDATE_IDS,
   STAFF_CANDIDATES,
   TRAITS,
@@ -21,24 +20,11 @@ import { StaffIcon } from '../../art/Icons';
 import { REJECT_TEXT } from '../store/rejectText';
 import { useServiceActions } from '../store/useServiceActions';
 import { DismissButton } from './DismissButton';
+import { workerProgress, workerStatus } from './workerStatus';
 
 const ROLE: Record<string, string> = { pharmacist: 'Dược sĩ', clerk: 'Nhân viên bán hàng' };
 
-const ORDER_STATUS: Record<string, string> = {
-  deciding: 'đang nghe khách',
-  retrieving: 'đang lấy hàng',
-  ready: 'chờ thanh toán',
-  checkingOut: 'đang thanh toán',
-  referring: 'đang khuyên khách đi khám',
-};
-
-export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): string {
-  if (worker.task) return `Đang bổ sung kệ ${PRODUCTS[worker.task.productId].name.toLowerCase()}`;
-  const order = worker.orderId ? state.orders[worker.orderId] : undefined;
-  if (order) return `Đang phục vụ — ${ORDER_STATUS[order.state] ?? 'bận'}`;
-  if (state.counters[0]?.operatorId === worker.id) return 'Đứng quầy, chờ khách';
-  return worker.controller === 'ai' ? 'Rảnh — sẽ tự bổ sung kệ khi hàng vơi' : 'Rảnh';
-}
+export { workerStatus } from './workerStatus';
 
 export function StatBars({ speed, knowledge, communication }: { speed: number; knowledge: number; communication: number }) {
   // speed là hệ số quanh 1; quy về 0..1 để vẽ (0.5 → 0, 1.5 → 1).
@@ -99,53 +85,77 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   const team = Object.values(state.workers);
   const staffCount = team.filter((w) => w.controller === 'ai').length;
   const operatorId = state.counters[0]?.operatorId;
+  const operator = operatorId ? state.workers[operatorId] : undefined;
+  const operatorProgress = operator ? workerProgress(state, operator) : null;
   const candidates = STAFF_CANDIDATE_IDS.filter((id) => !state.workers[`w-${id}`]);
 
   return (
     <div className="panel">
-      <PanelHeading description={
-        <>
-        Giao quầy cho nhân viên để tiệm tự chạy khi bạn bận hoặc rời game. Nhân viên rảnh sẽ tự bổ sung kệ. Mọi người đều
-        phải theo cùng quy tắc: khách mô tả triệu chứng thì khuyên đi khám.
-        </>
-      }>Nhân sự</PanelHeading>
-      {staffCount > 0 && (
-        <p className="small">
-          Tổng lương: <b>{dailyWages(state)} {BRAND.currency}/ngày</b>, trả vào cuối mỗi ngày. Thiếu xu thì ghi nợ và nhân viên
-          làm chậm lại.
-        </p>
+      <PanelHeading description="Theo dõi quầy, giao việc và quản lý đội ngũ.">Nhân sự</PanelHeading>
+
+      {operator && (
+        <section className="counter-summary" aria-label="Trạng thái quầy">
+          <div className="counter-summary-head">
+            <span className="counter-summary-label">Quầy hiện tại</span>
+            <span className="small muted">{state.queue.length} khách đang chờ</span>
+          </div>
+          <div className="counter-summary-main">
+            <WorkerPortrait worker={operator} size={48} />
+            <div className="counter-summary-text">
+              <strong>{operator.name}{operator.id === PLAYER_WORKER_ID ? ' (bạn)' : ''}</strong>
+              <span>{workerStatus(state, operator)}</span>
+            </div>
+            {operator.id !== PLAYER_WORKER_ID && (
+              <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID)}>Tự đứng quầy</GameButton>
+            )}
+          </div>
+          {operatorProgress !== null && (
+            <span className="progress-track" role="progressbar" aria-label={`Tiến độ công việc của ${operator.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(operatorProgress * 100)}>
+              <span className="progress-fill" style={{ width: `${operatorProgress * 100}%` }} />
+            </span>
+          )}
+        </section>
       )}
 
-      <h3>Đội ngũ</h3>
-      <ul className="card-list">
+      <h3>Đội ngũ <span className="muted small">({team.length})</span></h3>
+      <ul className="card-list team-list">
         {team.map((w) => (
-          <li key={w.id} className="staff-card">
-            <WorkerPortrait worker={w} size={56} />
-            <div className="staff-info">
-              <strong>
-                {w.name} {w.id === PLAYER_WORKER_ID && <span className="tag">bạn</span>}
-                {operatorId === w.id && <span className="tag mint">đứng quầy</span>}
-                <TraitTag trait={w.trait} />
-              </strong>
-              <span className="muted small">
-                {ROLE[w.role]} · đã bán {w.served}
-              </span>
-              <span className="small">{workerStatus(state, w)}</span>
-              <WorkerMetrics worker={w} />
-              <WageLine worker={w} />
-              {w.controller === 'ai' && <StatBars speed={w.speed} knowledge={w.knowledge} communication={w.communication} />}
+          <li key={w.id} className={`staff-card team-card ${operatorId === w.id ? 'on-counter' : ''}`}>
+            <div className="team-card-head">
+              <WorkerPortrait worker={w} size={48} />
+              <div className="team-card-identity">
+                <strong>{w.name} {w.id === PLAYER_WORKER_ID && <span className="tag">bạn</span>}</strong>
+                <span className="small muted">{ROLE[w.role]}</span>
+              </div>
+              {operatorId === w.id && <span className="tag mint">Đứng quầy</span>}
             </div>
-            <div className="staff-actions">
+            <p className="team-card-status"><span className="status-dot" aria-hidden />{workerStatus(state, w)}</p>
+            <div className="team-card-metrics" aria-label={`Thống kê của ${w.name}`}>
+              <span>Đã bán <b>{w.served}</b></span>
+              <span>Nghiệp vụ <b>{w.perfCount ? `${Math.round(w.perfSum / w.perfCount)}/100` : '—'}</b></span>
+              <span>Đánh giá <b>{w.repCount ? `${(w.repStarsSum / w.repCount).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}★` : '—'}</b></span>
+            </div>
+            <div className="team-card-actions">
               {operatorId !== w.id && (
                 <GameButton size="small" onClick={() => assignCounter(w.id)}>
                   Giao quầy
                 </GameButton>
               )}
-              <DismissButton worker={w} />
+              {w.controller === 'ai' && (
+                <details className="team-card-details">
+                  <summary>Kỹ năng &amp; lương</summary>
+                  <TraitTag trait={w.trait} />
+                  <StatBars speed={w.speed} knowledge={w.knowledge} communication={w.communication} />
+                  <WageLine worker={w} />
+                  <DismissButton worker={w} />
+                </details>
+              )}
             </div>
           </li>
         ))}
       </ul>
+
+      {staffCount > 0 && <p className="staff-pay-note">Tổng lương <b>{dailyWages(state)} {BRAND.currency}/ngày</b>, thanh toán vào cuối ngày.</p>}
 
       <h3>
         Tuyển thêm <span className="muted small">({staffCount}/{state.config.maxStaff} chỗ)</span>
@@ -168,23 +178,19 @@ function CandidateCard({ state, candidate, full }: { state: DeepReadonly<SimStat
   const pushToast = useUi((s) => s.pushToast);
   const affordable = state.money >= candidate.hireCost;
   return (
-    <li className="staff-card">
+    <li className="staff-card candidate-card">
       <svg width={56} height={56} viewBox="-34 -112 68 68" aria-hidden>
         <circle cx={0} cy={-78} r={33} fill="#dcefe3" />
         <StaffFigure look={candidate.look} role={candidate.role} expression="happy" />
       </svg>
       <div className="staff-info">
         <strong>
-          {candidate.name} <TraitTag trait={candidate.trait} />
+          {candidate.name}
         </strong>
         <span className="muted small">
           {ROLE[candidate.role]} · {candidate.blurb}
         </span>
-        <span className="small muted">{TRAITS[candidate.trait].description}</span>
-        <span className="small">
-          Lương {candidate.wage} {BRAND.currency}/ngày
-        </span>
-        <StatBars speed={candidate.speed} knowledge={candidate.knowledge} communication={candidate.communication} />
+        <span className="small">Lương {candidate.wage} {BRAND.currency}/ngày</span>
       </div>
       <GameButton
         tone="primary"
@@ -197,6 +203,12 @@ function CandidateCard({ state, candidate, full }: { state: DeepReadonly<SimStat
       >
         {full ? 'Hết chỗ' : `Tuyển · ${candidate.hireCost} ${BRAND.currency}`}
       </GameButton>
+      <details className="team-card-details candidate-details">
+        <summary>Xem kỹ năng</summary>
+        <TraitTag trait={candidate.trait} />
+        <span className="small muted">{TRAITS[candidate.trait].description}</span>
+        <StatBars speed={candidate.speed} knowledge={candidate.knowledge} communication={candidate.communication} />
+      </details>
     </li>
   );
 }

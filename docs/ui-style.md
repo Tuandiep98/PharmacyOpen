@@ -26,6 +26,8 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 - `PanelHeading` cho tiêu đề bảng; `EmptyState` cho danh sách trống. Thành phần mới đặt trong `apps/web/src/ui/` khi dùng ở ít nhất hai nơi.
 - Mọi nút có trạng thái hover, nhấn, vô hiệu và focus bàn phím. Vùng chạm tối thiểu 44 × 44 px. Không dựa riêng vào kéo thả; luôn giữ cách chạm.
 - Ở điện thoại, khay phục vụ nằm dưới cảnh và điều hướng ở đáy. Ở tablet ngang, khay nằm bên cạnh. Tránh chữ dưới 11 px ở vùng cần đọc thường xuyên.
+- Khi người chơi tự đứng quầy, khay hiện lời khách, sản phẩm và hành động phục vụ. Khi NPC đứng quầy, thu khay thành dải trạng thái gồm tên người, việc đang làm, tiến độ và nút lấy lại quầy; không hiện thao tác bán hàng bị vô hiệu. Bảng chi tiết trống không chiếm chỗ.
+- Tab Nhân sự ưu tiên trạng thái quầy và việc đang làm. Trên thẻ nhân viên chỉ hiện các số liệu ngắn; kỹ năng và lương mở theo nhu cầu.
 - Chuyển động chỉ báo thao tác hoặc trạng thái; tôn trọng `prefers-reduced-motion`.
 
 ## Nhân vật và icon

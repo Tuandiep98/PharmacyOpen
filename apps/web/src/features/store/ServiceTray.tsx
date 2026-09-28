@@ -16,6 +16,7 @@ import { useUi } from '../../ui/uiStore';
 import { GameButton } from '../../ui/primitives';
 import { Portrait } from './CustomerInfo';
 import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
+import { workerProgress, workerStatus } from '../staff/workerStatus';
 
 const WORKING_LABEL: Record<string, string> = {
   retrieving: 'đang lấy',
@@ -24,7 +25,8 @@ const WORKING_LABEL: Record<string, string> = {
 };
 
 /**
- * Khay phục vụ luôn hiện dưới cảnh: khách ở quầy nói gì + dãy sản phẩm.
+ * Khi người chơi đứng quầy, khay hiện yêu cầu và sản phẩm; khi NPC đứng quầy,
+ * chỉ hiện tóm tắt hoạt động để dành chỗ cho cảnh và các việc khác.
  * Kéo sản phẩm vào khách (hoặc chạm) là đưa hàng; không cần bước "bắt đầu phục vụ" riêng.
  */
 export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
@@ -46,11 +48,31 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     (!player.orderId || player.orderId === order?.id);
   const ratio = customer ? customer.patienceMs / customer.patienceMaxMs : 0;
 
+  if (!playerOperates) {
+    const progress = workerProgress(state, operator);
+    const waiting = state.queue.length;
+    return (
+      <section className="auto-counter" aria-label="Quầy tự phục vụ">
+        <WorkerPortrait worker={operator} size={40} />
+        <div className="auto-counter-info">
+          <strong>{operator.name} đang đứng quầy</strong>
+          <span>{workerStatus(state, operator)}{waiting > 0 ? ` · ${waiting} khách chờ` : ''}</span>
+          {progress !== null && (
+            <span className="progress-track" role="progressbar" aria-label={`Tiến độ công việc của ${operator.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}>
+              <span className="progress-fill" style={{ width: `${progress * 100}%` }} />
+            </span>
+          )}
+        </div>
+        <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID)}>Tự đứng quầy</GameButton>
+      </section>
+    );
+  }
+
   let status: React.ReactNode;
   if (!customer) {
     status = (
       <span className="muted">
-        {playerOperates ? 'Chưa có khách ở quầy — chuẩn bị kệ hàng nhé.' : `${operator.name} đang chờ khách ở quầy.`}
+        Chưa có khách ở quầy — chuẩn bị kệ hàng nhé.
       </span>
     );
   } else if (order && order.state !== 'deciding' && order.state !== 'ready') {
@@ -67,8 +89,6 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         </span>
       </div>
     );
-  } else if (!playerOperates) {
-    status = <span className="muted">{operator.name} đang phục vụ khách này…</span>;
   } else if (!canServe) {
     status = <span className="muted">Dược sĩ đang bận…</span>;
   } else {
@@ -81,17 +101,11 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         <div className="tray-operator">
           <WorkerPortrait worker={operator} size={28} />
           <span>
-            Quầy: <b>{playerOperates ? `${operator.name} (bạn)` : operator.name}</b>
+            Quầy: <b>{operator.name} (bạn)</b>
           </span>
-          {playerOperates ? (
-            <GameButton size="small" onClick={() => assignCounter(staff[0]!.id)}>
-              Giao cho {staff[0]!.name}
-            </GameButton>
-          ) : (
-            <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID)}>
-              Tự phục vụ
-            </GameButton>
-          )}
+          <GameButton size="small" onClick={() => assignCounter(staff[0]!.id)}>
+            Giao cho {staff[0]!.name}
+          </GameButton>
         </div>
       )}
       <div className="tray-customer">
