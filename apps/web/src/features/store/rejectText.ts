@@ -31,4 +31,9 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   'prep-already-done': 'Việc này đã làm xong.',
   'invalid-shifts': 'Mỗi nhân viên cần ít nhất một ca.',
   'cannot-schedule-player': 'Bạn là quản lý, luôn có mặt ở tiệm.',
+  'shift-full': 'Ca này đã đủ người (tối đa 2 nhân viên mỗi ca).',
+  'worker-not-arrived': 'Nhân viên chưa tới ca, đợi thêm chút.',
+  'unknown-recruit': 'Ứng viên này không còn trong danh sách.',
+  'reroll-used': 'Hôm nay đã làm mới danh sách rồi, mai quay lại nhé.',
+  'not-resigning': 'Người này không xin nghỉ.',
 };

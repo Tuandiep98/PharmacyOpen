@@ -190,10 +190,15 @@ describe('lưu game v5', () => {
     for (const stats of [raw.stats, (raw.dayStart as Record<string, unknown>).stats] as Record<string, unknown>[]) {
       for (const key of ['costOfSales', 'expiredCost', 'waitMsSum', 'servedCount']) delete stats[key];
     }
+    // Save v4 chưa có hệ nhân viên mới (v6): lương trọn ngày, một đặc điểm, chưa có danh sách ứng viên.
     for (const w of Object.values(raw.workers as Record<string, Record<string, unknown>>)) {
       delete w.shifts;
       delete w.shiftsToday;
+      for (const key of ['traits', 'hiddenTraits', 'rarity', 'xp', 'level', 'fatigue', 'resigning', 'arrivesAtMs']) delete w[key];
+      if (w.controller === 'ai') w.wage = 36;
     }
+    for (const key of ['recruits', 'recruitRerollDay']) delete raw[key];
+    delete (raw.rng as Record<string, unknown>).staff;
     raw.dayReports = [{ day: 0, revenue: 10, profit: 4 }];
     raw.version = 4;
 
@@ -208,7 +213,8 @@ describe('lưu game v5', () => {
     const resumed = Simulation.fromState(loaded.state);
     runFor(resumed, resumed.snapshot.config.dayMs);
     expect(resumed.snapshot.day).toBe(2);
-    expect(resumed.snapshot.dayReports.at(-1)!.wages).toBe(35);
+    expect(resumed.snapshot.dayReports.at(-1)!.wages).toBe(36);
+    expect(loaded.state.recruits).toHaveLength(3);
     expect(loadSave(createSave(resumed.snapshot, 2)).ok).toBe(true);
   });
 });

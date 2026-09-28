@@ -61,7 +61,7 @@ describe('ba thước đo tách biệt', () => {
       wrongCount: 0,
       price: PRODUCTS.sunscreen.price,
       referencePrice: PRODUCTS.sunscreen.referencePrice,
-      server: { communication: 0.7, trait: null },
+      server: { communication: 0.7, traits: [] },
     });
     const stars = starsFrom(satisfaction);
     expect(stars).toBeLessThanOrEqual(2);
@@ -111,8 +111,8 @@ describe('tính cách tác động theo ngữ cảnh', () => {
     referencePrice: 12,
   };
   it('nhân viên hoạt ngôn: khách hay hỏi vui hơn, khách vội phiền hơn', () => {
-    const talk = { communication: 0.85, trait: 'talkative' as const };
-    const quiet = { communication: 0.85, trait: null };
+    const talk = { communication: 0.85, traits: ['talkative' as const] };
+    const quiet = { communication: 0.85, traits: [] };
     const curiousTalk = evaluateSatisfaction({ ...base, archetype: ARCHETYPES.curious, server: talk });
     const curiousQuiet = evaluateSatisfaction({ ...base, archetype: ARCHETYPES.curious, server: quiet });
     const hurriedTalk = evaluateSatisfaction({ ...base, archetype: ARCHETYPES.hurried, server: talk });

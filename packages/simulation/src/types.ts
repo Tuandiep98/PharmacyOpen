@@ -1,8 +1,18 @@
 import type { ComplaintResponse } from './content/reviews';
-import type { ArchetypeId, ProductId, ReasonCode, RequestKind, StaffLook, StaffRole, TraitId } from './content/types';
+import type {
+  ArchetypeId,
+  ProductId,
+  Rarity,
+  ReasonCode,
+  RequestKind,
+  StaffCandidateDef,
+  StaffLook,
+  StaffRole,
+  TraitId,
+} from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = 'morning' | 'afternoon';
@@ -39,8 +49,12 @@ export interface SimConfig {
   startingMoney: number;
   firstSpawnMs: number;
   spawnIntervalMs: [number, number];
-  /** Số nhân viên NPC tối đa (không tính người chơi). */
+  /** Số nhân viên NPC tối đa (không tính người chơi) và tối đa mỗi ca. */
   maxStaff: number;
+  maxPerShift: number;
+  /** Số ứng viên mỗi ngày và giá làm mới danh sách (một lần mỗi ngày). */
+  recruitSlots: number;
+  recruitRerollCost: number;
   /** Thời gian NPC suy nghĩ trước khi chọn món (chia cho speed, cộng thêm khi kiến thức thấp). */
   aiThinkMs: number;
   /** Thời gian một lần NPC đi bổ sung kệ (chia cho speed). */
@@ -157,7 +171,10 @@ export interface Order {
 export type WorkerExpression = 'neutral' | 'focused' | 'happy' | 'worried';
 
 /** Việc không gắn với đơn hàng, có thời lượng (hiện chỉ có đi bổ sung kệ). */
-export type WorkerTask = { kind: 'restock'; productId: ProductId; timerMs: number; timerTotalMs: number };
+export type WorkerTask =
+  | { kind: 'restock'; productId: ProductId; timerMs: number; timerTotalMs: number }
+  /** Nhân viên "Siêu lười" lướt điện thoại vài giây trước khi làm việc. */
+  | { kind: 'slack'; timerMs: number; timerTotalMs: number };
 
 export interface Worker {
   id: string;
@@ -168,9 +185,12 @@ export interface Worker {
   speed: number;
   knowledge: number;
   communication: number;
-  trait: TraitId | null;
+  traits: TraitId[];
+  /** Đặc điểm chưa lộ (giao diện hiện "???"), vẫn có tác dụng; lộ ra sau ca làm đầu tiên. */
+  hiddenTraits: TraitId[];
+  rarity: Rarity;
   look: StaffLook;
-  /** Lương trọn ngày (hai ca; 0 với người chơi) và phần lương chưa trả được do thiếu xu. */
+  /** Lương mỗi ca đã vào làm (0 với người chơi) và phần lương chưa trả được do thiếu xu. */
   wage: number;
   wageOwed: number;
   /** Lịch ca của người này; chỉ làm việc mới khi đang trong ca của mình. */
@@ -190,7 +210,19 @@ export interface Worker {
   /** Danh tiếng cá nhân từ đánh giá công khai, đã loại các đánh giá không do lỗi của người này. */
   repStarsSum: number;
   repCount: number;
+  /** Tay nghề: kinh nghiệm từ lượt bán đúng và cấp tương ứng (1–10), tăng nhẹ tốc độ và hiểu biết. */
+  xp: number;
+  level: number;
+  /** Mệt mỏi 0–100; làm hai ca liền làm tăng, nghỉ ca làm giảm. Chạm 100 thì xin thôi việc. */
+  fatigue: number;
+  /** Đang xin thôi việc: chủ tiệm tăng lương giữ chân hoặc đồng ý cho nghỉ; để quá một ngày thì tự nghỉ. */
+  resigning: boolean;
+  /** Người "Hay đi trễ" chỉ bắt đầu làm từ thời điểm này trong ca. */
+  arrivesAtMs: number;
 }
+
+/** Ứng viên trong danh sách tuyển hằng ngày; khoá thì được giữ sang ngày sau. */
+export type Recruit = StaffCandidateDef & { locked: boolean };
 
 /** Nhật ký khách quan của một lượt khách, dùng để chấm điểm và giải thích đánh giá. */
 export interface InteractionRecord {
@@ -298,6 +330,9 @@ export interface SimStats {
   /** Tổng thời gian chờ tới lúc được phục vụ, và số khách đã được phục vụ. */
   waitMsSum: number;
   servedCount: number;
+  /** Tiền khách boa (đã nằm trong doanh thu) và tiền két bị cầm nhầm. */
+  tips: number;
+  pilfered: number;
 }
 
 /** Tổng kết một ca: chênh lệch sổ sách giữa lúc vào ca và lúc giao ca. */
@@ -362,6 +397,9 @@ export interface DayReport {
   storeRating: number;
   /** Số mục tiêu ngày đạt được (0–3), xem `dayGoals`. */
   grade: number;
+  /** Tiền boa trong ngày (đã tính vào doanh thu) và số xu két thiếu khi đối soát. */
+  tips: number;
+  pilfered: number;
 }
 
 /** Mốc sổ sách lúc bắt đầu ngày, để tính tổng kết. */
@@ -380,7 +418,7 @@ export interface SimState {
   nextId: number;
   money: number;
   config: SimConfig;
-  rng: { spawn: RngState; customer: RngState; ai: RngState; review: RngState };
+  rng: { spawn: RngState; customer: RngState; ai: RngState; review: RngState; staff: RngState };
   nextSpawnAtMs: number;
   customers: Record<string, Customer>;
   queue: string[];
@@ -402,6 +440,10 @@ export interface SimState {
   shiftSummaries: ShiftSummary[];
   /** Mốc sao cửa hàng đã đạt (mỗi mốc chúc mừng một lần). */
   ratingMilestones: number[];
+  /** Danh sách ứng viên hôm nay (null = ô đã tuyển, trống tới ngày sau). */
+  recruits: (Recruit | null)[];
+  /** Ngày gần nhất đã dùng lượt làm mới danh sách có trả phí. */
+  recruitRerollDay: number;
   /** Id nâng cấp đã mua, theo thứ tự mua. */
   upgrades: string[];
   interactions: InteractionRecord[];

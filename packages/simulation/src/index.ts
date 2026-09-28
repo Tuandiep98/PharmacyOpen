@@ -4,7 +4,7 @@ export * from './events';
 export * from './rng';
 export { DEFAULT_CONFIG } from './config';
 export { LOOK_VARIANTS } from './looks';
-export { applyCommand, type Command, type CommandResult, type RejectReason } from './commands';
+export { applyCommand, shiftHeadcount, type Command, type CommandResult, type RejectReason } from './commands';
 export { createInitialState, PLAYER_WORKER_ID } from './state';
 export { tick } from './tick';
 export {
@@ -33,7 +33,8 @@ export {
   wagesDueToday,
   type DayGoalId,
 } from './economy';
-export { currentShift, dayElapsed, dayPhase, isOnDuty, prepComplete, RATING_MILESTONES, shiftPay, shiftSummary } from './shift';
+export { currentShift, dayElapsed, dayPhase, isOnDuty, isPresent, prepComplete, RATING_MILESTONES, shiftPay, shiftSummary } from './shift';
+export { effectiveKnowledge, hasTrait, LEVEL_XP, levelFor, MAX_LEVEL, QUIT_FATIGUE, retainWage } from './recruit';
 export { createSave, loadSave, SAVE_FORMAT, type LoadError, type LoadResult, type SaveFile } from './save';
 export { runOffline, type OfflineSummary } from './offline';
 export { nextExpiry } from './stock';

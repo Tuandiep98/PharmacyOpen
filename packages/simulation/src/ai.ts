@@ -5,7 +5,8 @@ import { REQUESTS } from './content/requests';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
 import { nextFloat, nextInt } from './rng';
-import { dayElapsed, isOnDuty } from './shift';
+import { effectiveKnowledge, hasTrait } from './recruit';
+import { dayElapsed, isPresent } from './shift';
 import { PREP_TASK_IDS, type Order, type SimState, type Worker } from './types';
 
 /**
@@ -22,7 +23,7 @@ export function aiTick(state: SimState, emit: Emit): void {
     // Hết ca vẫn làm nốt việc dở, nhưng không nhận việc mới.
     if (worker.task) progressTask(state, worker, emit);
     else if (worker.orderId) handleOrder(state, worker, emit);
-    else if (!isOnDuty(state, worker)) continue;
+    else if (!isPresent(state, worker)) continue;
     else if (state.prep.openedAtMs === null) prepare(state, worker, emit);
     else chooseTask(state, worker, emit);
   }
@@ -49,17 +50,13 @@ function progressTask(state: SimState, worker: Worker, emit: Emit): void {
   task.timerMs = Math.max(0, task.timerMs - state.config.tickMs);
   if (task.timerMs > 0) return;
   worker.task = null;
-  applyCommand(state, { type: 'restock', productId: task.productId, workerId: worker.id }, emit);
+  if (task.kind === 'restock') applyCommand(state, { type: 'restock', productId: task.productId, workerId: worker.id }, emit);
 }
 
+/** Người cẩn thận hoặc chậm hiểu nghĩ lâu hơn. */
 function thinkMs(state: SimState, worker: Worker): number {
-  const careful = worker.trait === 'meticulous' ? 1.3 : 1;
-  return Math.round((state.config.aiThinkMs * (2 - worker.knowledge) * careful) / effectiveSpeed(worker, state.config.owedWageSpeedFactor));
-}
-
-/** Người cẩn thận nghĩ lâu hơn nhưng ít nhầm hơn. */
-function effectiveKnowledge(worker: Worker): number {
-  return Math.min(1, worker.knowledge + (worker.trait === 'meticulous' ? 0.15 : 0));
+  const slow = (hasTrait(worker, 'meticulous') ? 1.3 : 1) * (hasTrait(worker, 'slow-learner') ? 1.3 : 1);
+  return Math.round((state.config.aiThinkMs * (2 - worker.knowledge) * slow) / effectiveSpeed(worker, state.config.owedWageSpeedFactor));
 }
 
 function handleOrder(state: SimState, worker: Worker, emit: Emit): void {
@@ -144,7 +141,7 @@ function chooseTask(state: SimState, worker: Worker, emit: Emit): void {
       options.push({
         score: 0.3 + (1 - ratio) * 0.6,
         run: () => {
-          const hardworking = worker.trait === 'hardworking' ? 0.7 : 1;
+          const hardworking = hasTrait(worker, 'hardworking') ? 0.7 : 1;
           const total = Math.round((state.config.aiRestockMs * hardworking) / effectiveSpeed(worker, state.config.owedWageSpeedFactor));
           worker.task = { kind: 'restock', productId: id, timerMs: total, timerTotalMs: total };
           emit({ type: 'restockStarted', productId: id, workerId: worker.id });
@@ -153,7 +150,15 @@ function chooseTask(state: SimState, worker: Worker, emit: Emit): void {
     }
   }
 
+  // "Siêu lười": có việc cần làm thì 25% lần lướt điện thoại vài giây trước đã.
+  if (options.length > 0 && hasTrait(worker, 'lazy') && nextFloat(state.rng.ai) < 0.25) {
+    worker.task = { kind: 'slack', timerMs: SLACK_MS, timerTotalMs: SLACK_MS };
+    return;
+  }
+
   let best: Candidate | undefined;
   for (const option of options) if (!best || option.score > best.score) best = option;
   best?.run();
 }
+
+const SLACK_MS = 3000;

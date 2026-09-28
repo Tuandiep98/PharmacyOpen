@@ -36,3 +36,15 @@ export function runFor(sim: Simulation, ms: number, player?: (sim: Simulation) =
     sim.step();
   }
 }
+
+/**
+ * Tuyển một hồ sơ cố định và cho làm cả hai ca. Thêm đặc điểm "Trâu bò" để kịch bản chạy nhiều ngày
+ * không bị mệt rồi xin nghỉ (test riêng về mệt mỏi nằm ở staff.test.ts).
+ */
+export function hireAllDay(sim: Simulation, candidateId: string): string {
+  const workerId = `w-${candidateId}`;
+  if (!sim.dispatch({ type: 'hire', candidateId }).ok) throw new Error(`không tuyển được ${candidateId}`);
+  if (!sim.dispatch({ type: 'setShifts', workerId, shifts: ['morning', 'afternoon'] }).ok) throw new Error('không xếp được hai ca');
+  (sim.snapshot as SimState).workers[workerId]!.traits.push('ironman');
+  return workerId;
+}

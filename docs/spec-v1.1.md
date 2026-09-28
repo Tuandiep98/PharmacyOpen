@@ -61,6 +61,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 6 | Hạn dùng, khách quen, balance simulator | ✅ |
 | 7 | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding | ✅ |
 | 7b | Ca làm, mở/đóng cửa, chấm công, tổng kết ngày, xếp hạng sao | ✅ |
+| 7c | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính | ✅ |
 | 8 | Online (tuỳ chọn) | |
 
 ## 3b. Tự động hoá (bước 3)
@@ -155,6 +156,20 @@ Lấy cảm hứng từ quy trình mở ca, giao ca và kết ca của nhà thu�
 - Save v4 → v5: ngày đang dở coi như đã mở; nhân viên làm đủ hai ca; `dayMs` 3 phút cũ đổi sang 4 phút; báo cáo cũ để trống số liệu ca và hiển thị như dòng tiền.
 - Balance 12 seed × 12 ngày: Bình 203,8; Chi 209,8; Dũng 208,2 xu/ngày (ngày 4 phút); vắng 35 phút ước tính 510–525 xu.
 - **Chưa làm:** mệt mỏi khi làm ca kép (`morale`), thưởng theo xếp hạng ngày.
+
+## 3g. Nhân viên: tuyển dụng, đặc điểm, tay nghề và mệt mỏi
+
+Logic nằm ở `packages/simulation/src/recruit.ts` (sinh ứng viên, cấp độ, mệt mỏi) và nội dung ở `content/staff.ts`. Mọi random dùng luồng RNG riêng `staff`.
+
+- **Một người một ca.** Nhân viên mới làm ca đang diễn ra nếu còn chỗ, không thì ca còn lại. Tối đa 4 nhân viên, 2 người mỗi ca (`maxStaff`, `maxPerShift`). Lương tính **theo ca** (`wage` = xu/ca). Ép làm cả hai ca được nhưng mệt thêm. Đầu mỗi ca, quầy người chơi đang giữ được giao cho NPC trong ca (người chơi lấy lại được bất cứ lúc nào).
+- **Ứng viên hằng ngày:** 3 ô (`recruitSlots`), đổi mới mỗi sáng; ô **khoá** được giữ sang ngày sau. Làm mới có trả phí 15 xu, mỗi ngày một lần. Tên Việt hư cấu theo giới tính; 35% là dược sĩ (hiểu hàng hơn, lương cao hơn).
+- **Độ hiếm** (màu trên thẻ): Thường 70% (xám), Khá 22% (xanh lá), Hiếm 7% (xanh dương), Huyền thoại 1% (vàng). Bậc cao có khoảng chỉ số cao hơn. Hiếm/Huyền thoại có một **đặc điểm ẩn** ("???", có thể tốt hoặc xấu), lộ ra khi hết ca làm đầu tiên nhưng có tác dụng ngay. Giá tuyển và lương chỉ tính theo phần nhìn thấy.
+- **Đặc điểm** (tô màu: xanh có lợi, đỏ có hại, vàng vừa lợi vừa hại): Trâu bò (hai ca không mệt), Thần tài (20% đơn khách boa gấp đôi), Dẻo miệng (+hài lòng), Trí nhớ tốt (+hiểu hàng), Nhanh tay (+40% tốc độ), Được khách quen quý, Ngăn nắp (khách chờ bớt sốt ruột), Chăm chỉ, Cẩn thận, Hoạt ngôn, Tay nhanh hơn não (nhanh mà hay nhầm), Siêu lười (hay lướt điện thoại), Chậm hiểu, Nóng tính (khách kém hài lòng, lý do đánh giá "Thái độ chưa tốt"), Hay đi trễ (vào ca muộn 6 giây), Cầm nhầm tiền két (két thiếu 1–3 xu ở 15% lượt bán, hiện ở đối soát két cuối ngày). Không có đặc điểm bạo lực; "Nóng tính" thay cho ý tưởng "cục súc".
+- **Tay nghề:** mỗi lượt bán đúng +1 kinh nghiệm, 10 cấp (`LEVEL_XP`), mỗi cấp +3% tốc độ, +0,02 hiểu hàng. Đánh giá thấp do lỗi của chính người đó: 10% khả năng mất 3 kinh nghiệm, không tụt cấp.
+- **Mệt mỏi và xin nghỉ:** cuối ngày nghỉ −40, làm 1 ca −10, làm 2 ca +35 (Trâu bò −10). Chạm 100 thì xin thôi việc: **tăng lương giữ chân** (+20%, ít nhất +1 xu/ca, mệt về 30) hoặc cho nghỉ; hết ngày sau chưa quyết thì tự nghỉ (trả nợ lương nếu đủ xu).
+- **Ngoại hình:** giới tính quyết định kiểu tóc (nữ: tóc ngang vai/búi/dài; nam: ngắn/rẽ ngôi/cắt sát) và lông mi. Dược sĩ mặc blouse trắng có bảng tên, nhân viên bán hàng mặc tạp dề xanh; không vẽ chữ thập. 3% ra ngoại hình "luộm thuộm" (tóc dựng, áo nhàu) chỉ để vui, không ảnh hưởng chỉ số.
+- Save v5 → v6: một đặc điểm cũ thành danh sách; lương trọn ngày chia đôi thành lương ca (tổng mỗi ngày không đổi); kinh nghiệm bằng số lượt đã bán; sinh danh sách ứng viên khi tải.
+- Balance 12 seed × 12 ngày, một người ca sáng + một người ca chiều: 205–211 xu/ngày, vắng 35 phút ước tính 513–526 xu; nhân viên đạt khoảng cấp 7 sau 12 ngày.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

@@ -58,12 +58,14 @@ export function ProfitTable({ report }: { report: DeepReadonly<DayReport> }) {
   const margin = (value: number) => (report.revenue > 0 ? ` (${percent(value / report.revenue)})` : '');
   return (
     <dl className="ledger-rows">
-      <Row label="Doanh thu" value={report.revenue} />
+      <Row label={report.tips > 0 ? `Doanh thu (gồm ${report.tips} xu khách boa)` : 'Doanh thu'} value={report.revenue} />
       <Row label="Giá vốn hàng đã bán" value={-report.costOfSales} />
       <Row label={`Lãi gộp${margin(gross)}`} value={gross} strong />
       {report.wages > 0 && <Row label="Lương nhân viên" value={-report.wages} />}
       {report.vouchers > 0 && <Row label="Phiếu giảm giá" value={-report.vouchers} />}
       {report.expiredCost > 0 && <Row label={`Hàng hết hạn (${report.expiredStock} món)`} value={-report.expiredCost} />}
+      {/* Đối soát két cuối ngày: tiền két khớp sổ trừ khi có người "cầm nhầm". */}
+      {report.pilfered > 0 && <Row label="Đối soát két: thiếu" value={-report.pilfered} />}
       <Row label={`Lãi ròng${margin(report.netProfit)}`} value={report.netProfit} strong />
       <Row label="Dòng tiền trong ngày" value={report.profit} muted />
     </dl>
@@ -87,6 +89,7 @@ function DayMetrics({ report }: { report: DeepReadonly<DayReport> }) {
     ],
   ];
   if (report.prepDone !== null) rows.push(['Chuẩn bị mở cửa', `${report.prepDone}/${PREP_TASK_IDS.length} việc`]);
+  rows.push(['Đối soát két', report.pilfered > 0 ? `thiếu ${report.pilfered} ${BRAND.currency} — có người cầm nhầm?` : 'khớp sổ']);
   return (
     <dl className="ledger-rows day-metrics">
       {rows.map(([label, value]) => (

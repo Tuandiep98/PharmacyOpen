@@ -1,6 +1,7 @@
-import { isOnDuty, PRODUCTS, type DeepReadonly, type SimState, type Worker } from '@pharmacy/simulation';
+import { isOnDuty, isPresent, PRODUCTS, type DeepReadonly, type SimState, type Worker } from '@pharmacy/simulation';
 
 export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): string {
+  if (worker.task?.kind === 'slack') return 'Đang lướt điện thoại…';
   if (worker.task) return `Đang bổ sung ${PRODUCTS[worker.task.productId].name.toLowerCase()}`;
   const order = worker.orderId ? state.orders[worker.orderId] : undefined;
   if (order) {
@@ -13,6 +14,7 @@ export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly
     }
   }
   if (!isOnDuty(state, worker)) return 'Ngoài ca, đang nghỉ';
+  if (!isPresent(state, worker)) return 'Chưa tới ca, đang trên đường';
   if (state.counters[0]?.operatorId === worker.id) return state.counters[0]?.customerId ? 'Đang nghe khách' : 'Đang chờ khách ở quầy';
   return worker.controller === 'ai' ? 'Rảnh, sẽ tự bổ sung hàng khi kệ vơi' : 'Đang nghỉ';
 }

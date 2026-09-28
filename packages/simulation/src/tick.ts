@@ -10,7 +10,7 @@ import { demandMultiplier } from './reputation';
 import { nextInt, pickWeighted } from './rng';
 import { dismissCustomer, newId, returnReservedStock } from './state';
 import { PRODUCTS } from './content/products';
-import { dayPhase, prepComplete, shiftTick } from './shift';
+import { dayPhase, prepComplete, shiftTick, tidyOnDuty } from './shift';
 import { expireStock } from './stock';
 import type { Customer, Order, SimState } from './types';
 
@@ -115,7 +115,9 @@ function advanceCustomer(state: SimState, customer: Customer, dt: number, emit: 
   const server = order ? state.workers[order.workerId] : undefined;
   const served = server ? baseRate * (1.25 - 0.5 * server.communication) : baseRate;
   // Chuẩn bị đầu ngày đầy đủ (kệ gọn, hàng cận hạn đã rà) giúp khách bớt sốt ruột.
-  const rate = prepComplete(state) ? served * state.config.prepPatienceFactor : served;
+  // Người "Ngăn nắp" trong ca giữ tiệm gọn gàng: khách đang chờ ở hàng cũng bớt sốt ruột.
+  const tidy = customer.phase === 'queue' && tidyOnDuty(state) ? 0.9 : 1;
+  const rate = (prepComplete(state) ? served * state.config.prepPatienceFactor : served) * tidy;
   customer.patienceMs = Math.max(0, customer.patienceMs - dt * rate);
 
   if (customer.patienceMs <= 0) {

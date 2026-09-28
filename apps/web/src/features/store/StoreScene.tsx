@@ -1,5 +1,5 @@
 import {
-  isOnDuty,
+  isPresent,
   PRODUCTS,
   REQUESTS,
   type Customer,
@@ -42,13 +42,14 @@ const SHELF_SPOT: Spot = { x: 100, y: 296, scale: 0.85 };
 function assignWorkerSpots(state: State): { worker: DeepReadonly<Worker>; spot: Spot }[] {
   const operatorId = state.counters[0]!.operatorId;
   // Người ngoài ca chỉ còn trong cảnh khi đang làm nốt việc dở.
-  const others = Object.values(state.workers).filter((w) => w.id !== operatorId && (isOnDuty(state, w) || !!w.orderId || !!w.task));
+  // Người đi trễ chưa tới thì chưa xuất hiện.
+  const others = Object.values(state.workers).filter((w) => w.id !== operatorId && (isPresent(state, w) || !!w.orderId || !!w.task));
   // Người đang bổ sung kệ đứng ở kệ; người rảnh đứng sau quầy, người thứ hai đứng cạnh kệ.
   others.sort((a, b) => Number(!!b.task) - Number(!!a.task));
   const free = others[0]?.task ? [SHELF_SPOT, BEHIND_SPOT] : [BEHIND_SPOT, SHELF_SPOT];
   const result = others.map((worker, i) => ({ worker, spot: free[i] ?? SHELF_SPOT }));
   const operator = state.workers[operatorId];
-  if (operator) result.push({ worker: operator, spot: SERVE_SPOT });
+  if (operator && (isPresent(state, operator) || operator.orderId)) result.push({ worker: operator, spot: SERVE_SPOT });
   return result;
 }
 
@@ -392,7 +393,21 @@ function WorkerBubble(props: {
   waiting: boolean;
 }) {
   const { x, y, order, task, waiting } = props;
-  if (!order && task) {
+  if (!order && task?.kind === 'slack') {
+    // "Siêu lười": cầm điện thoại, thanh tiến độ là thời gian lướt.
+    const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
+    return (
+      <Bubble x={x} y={y} w={40} h={40}>
+        <rect x={13} y={5} width={14} height={22} rx={3} fill={ART.sky} stroke={INK} strokeWidth={1.4} />
+        <path d="M17,10 H23 M17,14 H23 M17,18 H21" stroke={INK} strokeWidth={1.1} strokeLinecap="round" />
+        <g transform="translate(6 31)">
+          <rect x={0} y={0} width={28} height={5} rx={2.5} fill={ART.mint} />
+          <rect className="bar-fill" x={0} y={0} width={28 * progress} height={5} rx={2.5} fill={ART.coral} />
+        </g>
+      </Bubble>
+    );
+  }
+  if (!order && task?.kind === 'restock') {
     // Đang bổ sung kệ: hộp hàng + món cần bổ sung + thanh tiến độ.
     const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
     return (

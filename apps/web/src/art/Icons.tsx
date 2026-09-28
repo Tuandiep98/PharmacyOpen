@@ -139,3 +139,12 @@ export const CrossMarkIcon = (p: IconProps) => (
     <path d="M8.5,8.5 L15.5,15.5 M15.5,8.5 L8.5,15.5" strokeWidth={2.2} />
   </Svg>
 );
+
+/** Ổ khoá bật/tắt: đóng = giữ ứng viên sang ngày sau. */
+export const PadlockIcon = ({ open = false, ...p }: IconProps & { open?: boolean }) => (
+  <Svg {...p}>
+    <rect x={5} y={11} width={14} height={10} rx={2.5} fill={open ? ART.paper : ART.honey} />
+    <path d={open ? 'M8,11 V8 a4,4 0 0 1 7.6,-1.7' : 'M8,11 V8 a4,4 0 0 1 8,0 V11'} />
+    <circle cx={12} cy={16} r={1.4} fill={INK} strokeWidth={0} />
+  </Svg>
+);

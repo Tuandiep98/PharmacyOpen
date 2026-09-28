@@ -1,7 +1,8 @@
 import { PRODUCTS } from './content/products';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
-import { shiftPay, shiftSummary, startDay } from './shift';
+import { levelSpeedFactor, traitSpeedFactor } from './recruit';
+import { closeStaffDay, shiftPay, shiftSummary, startDay } from './shift';
 import { storeRating } from './reputation';
 import type { DayReport, DeepReadonly, SimState, SimStats, Worker } from './types';
 
@@ -12,7 +13,8 @@ import type { DayReport, DeepReadonly, SimState, SimStats, Worker } from './type
 
 /** Tốc độ thực tế: bị nợ lương thì làm chậm hơn (hậu quả nhìn thấy được, không phạt ngầm). */
 export function effectiveSpeed(worker: DeepReadonly<Worker>, owedFactor: number): number {
-  return worker.wageOwed > 0 ? worker.speed * owedFactor : worker.speed;
+  const base = worker.speed * levelSpeedFactor(worker.level) * traitSpeedFactor(worker);
+  return worker.wageOwed > 0 ? base * owedFactor : base;
 }
 
 /** Khoảng giá hợp lệ: không bán lỗ, không cao quá giá tham khảo × priceMaxFactor. */
@@ -99,12 +101,14 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     expiredCost,
     vouchers,
     // Nhập hàng là chuyển tiền thành hàng tồn, không phải lỗ; chỉ giá vốn của hàng đã bán/đã huỷ mới là chi phí.
-    netProfit: revenue - costOfSales - wages - vouchers - expiredCost,
+    netProfit: revenue - costOfSales - wages - vouchers - expiredCost - diff('pilfered'),
     avgWaitMs: served > 0 ? diff('waitMsSum') / served : null,
     prepDone: state.prep.required ? state.prep.done.length : null,
     shifts: [...state.shiftSummaries.map((s) => ({ ...s, staff: [...s.staff] })), shiftSummary(state)],
     storeRating: storeRating(state),
     grade: 0,
+    tips: diff('tips'),
+    pilfered: diff('pilfered'),
   };
   report.grade = dayGoals(report).filter((g) => g.met).length;
   return report;
@@ -143,6 +147,7 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
     }
   }
   state.stats.spentOnWages += paidTotal;
+  closeStaffDay(state, emit);
 
   const report = dayReport(state);
   state.dayReports.push(report);

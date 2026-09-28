@@ -4,6 +4,7 @@ import type { ProductId, StaffCandidateDef } from './content/types';
 import type { Emit } from './events';
 import { recordInteraction } from './reputation';
 import { recordVisit } from './loyalty';
+import { refreshRecruits } from './recruit';
 import { createStream } from './rng';
 import {
   SAVE_VERSION,
@@ -36,8 +37,10 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     // Người chơi tự chọn món nên knowledge không dùng; communication áp dụng như mọi nhân viên.
     knowledge: 1,
     communication: 0.7,
-    trait: null,
-    look: { skin: 1, hair: 0, hairStyle: 0 },
+    traits: [],
+    hiddenTraits: [],
+    rarity: 'common',
+    look: { gender: 'female', skin: 1, hair: 0, hairStyle: 0, messy: false },
     wage: 0,
     wageOwed: 0,
     shifts: [...SHIFT_IDS],
@@ -52,6 +55,11 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     perfCount: 0,
     repStarsSum: 0,
     repCount: 0,
+    xp: 0,
+    level: 1,
+    fatigue: 0,
+    resigning: false,
+    arrivesAtMs: 0,
   };
 
   const prices = {} as Record<ProductId, number>;
@@ -77,10 +85,12 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     expiredCost: 0,
     waitMsSum: 0,
     servedCount: 0,
+    tips: 0,
+    pilfered: 0,
   };
 
   const ownConfig = cloneConfig(config);
-  return {
+  const state: SimState = {
     version: SAVE_VERSION,
     seed,
     tick: 0,
@@ -93,6 +103,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
       customer: createStream(seed, 'customer'),
       ai: createStream(seed, 'ai'),
       review: createStream(seed, 'review'),
+      staff: createStream(seed, 'staff'),
     },
     nextSpawnAtMs: ownConfig.firstSpawnMs,
     customers: {},
@@ -111,6 +122,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     shiftMark: { shift: 'morning', stats: { ...stats } },
     shiftSummaries: [],
     ratingMilestones: [],
+    recruits: [],
+    recruitRerollDay: 0,
     upgrades: [],
     interactions: [],
     reviews: [],
@@ -119,6 +132,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     stats,
     dayStart: { money: ownConfig.startingMoney, stats: { ...stats }, starsSum: 0, reviewCount: 0 },
   };
+  refreshRecruits(state);
+  return state;
 }
 
 export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
@@ -130,12 +145,14 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     speed: candidate.speed,
     knowledge: candidate.knowledge,
     communication: candidate.communication,
-    trait: candidate.trait,
+    traits: [...candidate.traits],
+    hiddenTraits: [...candidate.hiddenTraits],
+    rarity: candidate.rarity,
     look: { ...candidate.look },
     wage: candidate.wage,
     wageOwed: 0,
-    // Mặc định làm cả hai ca; chấm công khi được tuyển (xem hire).
-    shifts: [...SHIFT_IDS],
+    // Lịch ca do lệnh hire đặt (một ca còn chỗ); chấm công khi vào ca.
+    shifts: [],
     shiftsToday: [],
     orderId: null,
     task: null,
@@ -147,6 +164,11 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     perfCount: 0,
     repStarsSum: 0,
     repCount: 0,
+    xp: 0,
+    level: 1,
+    fatigue: 0,
+    resigning: false,
+    arrivesAtMs: 0,
   };
 }
 

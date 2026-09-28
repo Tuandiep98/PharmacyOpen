@@ -1,4 +1,4 @@
-import type { ProductId } from './content/types';
+import type { ProductId, TraitId } from './content/types';
 import type { DayReport, PrepTaskId, ShiftId, ShiftSummary } from './types';
 
 export type SimEvent = { at: number } & (
@@ -9,7 +9,7 @@ export type SimEvent = { at: number } & (
   | { type: 'wrongProduct'; orderId: string; productId: ProductId; customerId: string }
   | { type: 'safetyWarning'; orderId: string; productId: ProductId; customerId: string; workerId: string }
   | { type: 'productReady'; orderId: string; productId: ProductId }
-  | { type: 'saleCompleted'; orderId: string; productId: ProductId; amount: number; customerId: string; workerId: string }
+  | { type: 'saleCompleted'; orderId: string; productId: ProductId; amount: number; tip: number; customerId: string; workerId: string }
   | { type: 'referralCompleted'; orderId: string; customerId: string; appropriate: boolean }
   | { type: 'customerLeft'; customerId: string; reason: 'angry' | 'unserved' }
   | { type: 'customerTurnedAway' }
@@ -30,6 +30,13 @@ export type SimEvent = { at: number } & (
   | { type: 'shiftChanged'; shift: ShiftId; previous: ShiftSummary }
   | { type: 'staffScheduled'; workerId: string; shifts: ShiftId[] }
   | { type: 'ratingMilestone'; stars: number }
+  | { type: 'staffLevelUp'; workerId: string; level: number }
+  | { type: 'staffSkillSlipped'; workerId: string }
+  | { type: 'traitRevealed'; workerId: string; traits: TraitId[] }
+  | { type: 'resignationRequested'; workerId: string }
+  | { type: 'staffRetained'; workerId: string; wage: number }
+  | { type: 'staffQuit'; workerId: string; name: string }
+  | { type: 'recruitsRefreshed'; paid: boolean }
 );
 
 export type SimEventType = SimEvent['type'];

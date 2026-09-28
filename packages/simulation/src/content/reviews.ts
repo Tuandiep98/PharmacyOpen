@@ -21,6 +21,7 @@ export const REASONS: Record<ReasonCode, { label: string; scope: ReasonScope }> 
   'wrong-item': { label: 'Đưa nhầm món', scope: 'staff' },
   'unneeded-referral': { label: 'Không bán được hàng cần', scope: 'staff' },
   'too-chatty': { label: 'Nói nhiều khi khách vội', scope: 'staff' },
+  'rude-staff': { label: 'Thái độ chưa tốt', scope: 'staff' },
   'strict-customer': { label: 'Khách kỳ vọng cao', scope: 'customer' },
 };
 
@@ -43,6 +44,7 @@ export const REVIEW_COMMENTS: Record<ReasonCode, string[]> = {
   'wrong-item': ['Đưa nhầm món, phải nói lại mấy lần.', 'Mình hỏi một đằng, nhân viên lấy một nẻo.'],
   'unneeded-referral': ['Mình chỉ muốn mua đồ thôi mà không mua được.', 'Hỏi mua mà lại bị bảo đi chỗ khác.'],
   'too-chatty': ['Đang vội mà nhân viên nói hơi nhiều.', 'Chỉ cần lấy món thôi, không cần giải thích dài.'],
+  'rude-staff': ['Nhân viên cáu gắt, mua xong không vui chút nào.', 'Hỏi thêm một câu là bị gắt, lần sau chắc thôi.'],
   'strict-customer': ['Tạm được, chưa có gì đặc biệt.', 'Bình thường, không có gì để khen.'],
 };
 

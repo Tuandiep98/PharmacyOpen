@@ -12,15 +12,14 @@ import {
   type SimEvent,
   type SimState,
 } from '../src';
-import { runFor } from './helpers';
+import { hireAllDay, runFor } from './helpers';
 
 /** Ván có sẵn nhiều tiền, đã tuyển `candidateId` và giao quầy cho NPC đó. */
 function withNpc(seed = 3, candidateId = 'chi', money = 1000) {
   const state = createInitialState(seed);
   state.money = money;
   const sim = new Simulation(state);
-  expect(sim.dispatch({ type: 'hire', candidateId }).ok).toBe(true);
-  const workerId = `w-${candidateId}`;
+  const workerId = hireAllDay(sim, candidateId);
   expect(sim.dispatch({ type: 'assignCounter', counterId: 'counter-1', workerId }).ok).toBe(true);
   return { sim, state: sim.snapshot as SimState, workerId };
 }
@@ -176,8 +175,20 @@ describe('tuyển người, nâng cấp, giới hạn hàng chờ', () => {
     expect(sim.dispatch({ type: 'hire', candidateId: 'binh' }).ok).toBe(true);
     expect(sim.dispatch({ type: 'hire', candidateId: 'binh' })).toEqual({ ok: false, reason: 'already-hired' });
     expect(sim.dispatch({ type: 'hire', candidateId: 'chi' }).ok).toBe(true);
-    expect(sim.dispatch({ type: 'hire', candidateId: 'dung' })).toEqual({ ok: false, reason: 'staff-full' });
-    expect(state.stats.spentOnStaff).toBe(STAFF_CANDIDATES.binh!.hireCost + STAFF_CANDIDATES.chi!.hireCost);
+    // Ca sáng đã đủ 2 người: người thứ ba được xếp sang ca chiều.
+    expect(sim.dispatch({ type: 'hire', candidateId: 'dung' }).ok).toBe(true);
+    expect(state.workers['w-dung']!.shifts).toEqual(['afternoon']);
+    expect(sim.dispatch({ type: 'setShifts', workerId: 'w-dung', shifts: ['morning', 'afternoon'] })).toEqual({
+      ok: false,
+      reason: 'shift-full',
+    });
+    const recruit = state.recruits[0]!;
+    expect(sim.dispatch({ type: 'hire', candidateId: recruit.id }).ok).toBe(true);
+    expect(state.recruits[0]).toBeNull();
+    expect(sim.dispatch({ type: 'hire', candidateId: state.recruits[1]!.id })).toEqual({ ok: false, reason: 'staff-full' });
+    expect(state.stats.spentOnStaff).toBe(
+      STAFF_CANDIDATES.binh!.hireCost + STAFF_CANDIDATES.chi!.hireCost + STAFF_CANDIDATES.dung!.hireCost + recruit.hireCost,
+    );
   });
 
   it('nâng cấp áp dụng hiệu ứng một lần, có kiểm tra tiền', () => {

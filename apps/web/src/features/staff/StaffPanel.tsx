@@ -2,17 +2,21 @@ import {
   currentShift,
   dailyWages,
   isOnDuty,
+  LEVEL_XP,
+  MAX_LEVEL,
   PLAYER_WORKER_ID,
+  QUIT_FATIGUE,
+  RARITIES,
+  retainWage,
   SHIFT_IDS,
-  shiftPay,
-  STAFF_CANDIDATE_IDS,
-  STAFF_CANDIDATES,
+  shiftHeadcount,
   TRAITS,
-  type TraitId,
   type DeepReadonly,
+  type Rarity,
+  type Recruit,
   type ShiftId,
   type SimState,
-  type StaffCandidateDef,
+  type TraitId,
   type Worker,
 } from '@pharmacy/simulation';
 import { SHIFT_LABEL } from '../day/dayText';
@@ -22,11 +26,12 @@ import { BRAND } from '../../brand';
 import { useBridge } from '../../game/useGame';
 import { useUi } from '../../ui/uiStore';
 import { GameButton, PanelHeading, EmptyState } from '../../ui/primitives';
-import { StaffIcon } from '../../art/Icons';
+import { PadlockIcon, StaffIcon, WarningIcon } from '../../art/Icons';
 import { REJECT_TEXT } from '../store/rejectText';
 import { useServiceActions } from '../store/useServiceActions';
 import { DismissButton } from './DismissButton';
 import { workerProgress, workerStatus } from './workerStatus';
+import './staff.css';
 
 const ROLE: Record<string, string> = { pharmacist: 'Dược sĩ', clerk: 'Nhân viên bán hàng' };
 
@@ -55,12 +60,41 @@ export function StatBars({ speed, knowledge, communication }: { speed: number; k
   );
 }
 
-export function TraitTag({ trait }: { trait: TraitId | null }) {
-  if (!trait) return null;
+/** Nhãn độ hiếm, tô màu theo bậc (xám → xanh lá → xanh dương → vàng). */
+export function RarityChip({ rarity }: { rarity: Rarity }) {
+  return <span className={`rarity-chip rarity-${rarity}`}>{RARITIES[rarity].name}</span>;
+}
+
+/** Đặc điểm tô màu theo loại: xanh có lợi, đỏ có hại, vàng vừa lợi vừa hại; đặc điểm ẩn hiện "???". */
+export function TraitTags({ traits, hidden }: { traits: readonly TraitId[]; hidden: number }) {
+  if (traits.length === 0 && hidden === 0) return <span className="small muted">Không có đặc điểm nổi bật</span>;
   return (
-    <span className="tag trait" title={TRAITS[trait].description}>
-      {TRAITS[trait].name}
+    <span className="trait-tags">
+      {traits.map((id) => (
+        <span key={id} className={`tag trait tone-${TRAITS[id].tone}`} title={TRAITS[id].description}>
+          {TRAITS[id].name}
+        </span>
+      ))}
+      {Array.from({ length: hidden }, (_, i) => (
+        <span key={`hidden-${i}`} className="tag trait tone-hidden" title="Đặc điểm ẩn: lộ ra sau ca làm đầu tiên.">
+          ???
+        </span>
+      ))}
     </span>
+  );
+}
+
+/** Mô tả đầy đủ các đặc điểm đã biết, cho phần mở rộng của thẻ. */
+function TraitDetails({ traits }: { traits: readonly TraitId[] }) {
+  if (traits.length === 0) return null;
+  return (
+    <ul className="trait-details">
+      {traits.map((id) => (
+        <li key={id} className={`tone-${TRAITS[id].tone}`}>
+          <b>{TRAITS[id].name}:</b> {TRAITS[id].description}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -80,9 +114,78 @@ export function WageLine({ worker }: { worker: DeepReadonly<Worker> }) {
   if (worker.controller !== 'ai') return null;
   return (
     <span className="small">
-      Lương {shiftPay(worker.wage, 1)} {BRAND.currency}/ca · {shiftPay(worker.wage, worker.shifts.length)} {BRAND.currency}/ngày theo lịch
+      Lương {worker.wage} {BRAND.currency}/ca · {worker.wage * worker.shifts.length} {BRAND.currency}/ngày theo lịch
       {worker.wageOwed > 0 && <b className="neg"> · đang nợ {worker.wageOwed} — làm chậm hơn</b>}
     </span>
+  );
+}
+
+/** Cấp tay nghề và kinh nghiệm tới cấp sau. */
+export function LevelBar({ worker }: { worker: DeepReadonly<Worker> }) {
+  const floor = LEVEL_XP[worker.level - 1] ?? 0;
+  const next = LEVEL_XP[worker.level];
+  const ratio = next === undefined ? 1 : (worker.xp - floor) / (next - floor);
+  return (
+    <span className="meter-line">
+      <b className="level-badge">Cấp {worker.level}</b>
+      <span
+        className="progress-track"
+        role="progressbar"
+        aria-label={`Kinh nghiệm của ${worker.name}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(ratio * 100)}
+      >
+        <span className="progress-fill" style={{ width: `${ratio * 100}%` }} />
+      </span>
+      <span className="small muted">{worker.level >= MAX_LEVEL ? 'Tối đa' : `${worker.xp - floor}/${(next ?? floor) - floor}`}</span>
+    </span>
+  );
+}
+
+/** Thanh mệt: xanh → vàng → đỏ; chạm đỉnh thì người đó xin thôi việc. */
+function FatigueBar({ worker }: { worker: DeepReadonly<Worker> }) {
+  const ratio = worker.fatigue / QUIT_FATIGUE;
+  const level = ratio >= 0.7 ? 'high' : ratio >= 0.35 ? 'mid' : 'low';
+  return (
+    <span className="meter-line">
+      <b className="small">Mệt</b>
+      <span
+        className={`progress-track fatigue-${level}`}
+        role="meter"
+        aria-label={`Độ mệt của ${worker.name}`}
+        aria-valuemin={0}
+        aria-valuemax={QUIT_FATIGUE}
+        aria-valuenow={worker.fatigue}
+      >
+        <span className="progress-fill" style={{ width: `${ratio * 100}%` }} />
+      </span>
+      <span className="small muted">
+        {worker.fatigue}/{QUIT_FATIGUE}
+      </span>
+    </span>
+  );
+}
+
+/** Người xin thôi việc: tăng lương giữ chân hoặc đồng ý cho nghỉ. Hết ngày chưa quyết thì tự nghỉ. */
+function ResignNotice({ worker }: { worker: DeepReadonly<Worker> }) {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
+  const retain = () => {
+    const r = bridge.dispatch({ type: 'retainStaff', workerId: worker.id });
+    if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+  };
+  return (
+    <div className="notice bad resign-notice" role="alert">
+      <WarningIcon size={18} />
+      <span>{worker.name} xin thôi việc vì làm quá sức. Hết hôm nay chưa giữ chân thì sẽ nghỉ hẳn.</span>
+      <div className="resign-actions">
+        <GameButton size="small" tone="primary" onClick={retain}>
+          Tăng lương giữ chân · {worker.wage} → {retainWage(worker.wage)} {BRAND.currency}/ca
+        </GameButton>
+        <DismissButton worker={worker} />
+      </div>
+    </div>
   );
 }
 
@@ -93,11 +196,10 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   const operatorId = state.counters[0]?.operatorId;
   const operator = operatorId ? state.workers[operatorId] : undefined;
   const operatorProgress = operator ? workerProgress(state, operator) : null;
-  const candidates = STAFF_CANDIDATE_IDS.filter((id) => !state.workers[`w-${id}`]);
 
   return (
     <div className="panel">
-      <PanelHeading description="Theo dõi quầy, giao việc và quản lý đội ngũ.">Nhân sự</PanelHeading>
+      <PanelHeading description="Mỗi nhân viên thường làm một ca; ca còn lại cần người khác.">Nhân sự</PanelHeading>
 
       {operator && (
         <section className="counter-summary" aria-label="Trạng thái quầy">
@@ -123,20 +225,45 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
         </section>
       )}
 
-      <h3>Đội ngũ <span className="muted small">({team.length})</span></h3>
+      <ShiftCoverage state={state} />
+
+      <h3>
+        Đội ngũ{' '}
+        <span className="muted small">
+          ({staffCount}/{state.config.maxStaff} nhân viên)
+        </span>
+      </h3>
       <ul className="card-list team-list">
         {team.map((w) => (
-          <li key={w.id} className={`staff-card team-card ${operatorId === w.id ? 'on-counter' : ''}`}>
+          <li
+            key={w.id}
+            className={`staff-card team-card ${operatorId === w.id ? 'on-counter' : ''} ${w.controller === 'ai' ? `rarity-border-${w.rarity}` : ''}`}
+          >
             <div className="team-card-head">
               <WorkerPortrait worker={w} size={48} />
               <div className="team-card-identity">
-                <strong>{w.name} {w.id === PLAYER_WORKER_ID && <span className="tag">bạn</span>}</strong>
-                <span className="small muted">{ROLE[w.role]}</span>
+                <strong>
+                  {w.name} {w.id === PLAYER_WORKER_ID && <span className="tag">bạn</span>}
+                </strong>
+                <span className="small muted">
+                  {ROLE[w.role]} {w.controller === 'ai' && <RarityChip rarity={w.rarity} />}
+                </span>
               </div>
               {operatorId === w.id && <span className="tag mint">Đứng quầy</span>}
               {!isOnDuty(state, w) && <span className="tag off-duty">Ngoài ca</span>}
             </div>
-            <p className="team-card-status"><span className="status-dot" aria-hidden />{workerStatus(state, w)}</p>
+            <p className="team-card-status">
+              <span className="status-dot" aria-hidden />
+              {workerStatus(state, w)}
+            </p>
+            {w.controller === 'ai' && (
+              <>
+                <TraitTags traits={w.traits} hidden={w.hiddenTraits.length} />
+                <LevelBar worker={w} />
+                <FatigueBar worker={w} />
+                {w.resigning && <ResignNotice worker={w} />}
+              </>
+            )}
             <div className="team-card-metrics" aria-label={`Thống kê của ${w.name}`}>
               <span>
                 Đã bán <b>{w.served}</b>
@@ -159,10 +286,10 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
               {w.controller === 'ai' && (
                 <details className="team-card-details">
                   <summary>Kỹ năng &amp; lương</summary>
-                  <TraitTag trait={w.trait} />
+                  <TraitDetails traits={w.traits} />
                   <StatBars speed={w.speed} knowledge={w.knowledge} communication={w.communication} />
                   <WageLine worker={w} />
-                  <DismissButton worker={w} />
+                  {!w.resigning && <DismissButton worker={w} />}
                 </details>
               )}
             </div>
@@ -176,30 +303,36 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
           <b>
             {dailyWages(state)} {BRAND.currency}/ngày
           </b>
-          . Cuối ngày trả theo số ca mỗi người đã vào làm.
+          . Cuối ngày trả theo số ca mỗi người đã vào làm. Làm cả hai ca liên tục sẽ mệt và xin nghỉ (trừ người &quot;Trâu bò&quot;).
         </p>
       )}
 
-      <h3>
-        Tuyển thêm{' '}
-        <span className="muted small">
-          ({staffCount}/{state.config.maxStaff} chỗ)
-        </span>
-      </h3>
-      {candidates.length === 0 ? (
-        <EmptyState icon={<StaffIcon />} title="Đội ngũ đã đủ người">Hiện chưa có thêm ứng viên để tuyển.</EmptyState>
-      ) : (
-        <ul className="card-list">
-          {candidates.map((id) => (
-            <CandidateCard key={id} state={state} candidate={STAFF_CANDIDATES[id]!} full={staffCount >= state.config.maxStaff} />
-          ))}
-        </ul>
-      )}
+      <RecruitList state={state} full={staffCount >= state.config.maxStaff} />
     </div>
   );
 }
 
-/** Lịch ca của một NPC: bật/tắt từng ca, luôn giữ ít nhất một ca. */
+/** Mỗi ca có bao nhiêu nhân viên; ca trống thì bạn phải tự đứng quầy (và tiệm đóng cửa khi bạn vắng mặt). */
+function ShiftCoverage({ state }: { state: DeepReadonly<SimState> }) {
+  return (
+    <div className="shift-coverage" aria-label="Số nhân viên mỗi ca">
+      {SHIFT_IDS.map((shift) => {
+        const count = shiftHeadcount(state, shift);
+        return (
+          <span key={shift} className={`coverage-chip ${count === 0 ? 'empty' : ''}`}>
+            {SHIFT_LABEL[shift]}:{' '}
+            <b>
+              {count}/{state.config.maxPerShift}
+            </b>
+            {count === 0 && ' · thiếu người'}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Lịch ca của một NPC: bật/tắt từng ca, luôn giữ ít nhất một ca; ca đã đủ người thì không thêm được. */
 function ShiftToggle({ state, worker }: { state: DeepReadonly<SimState>; worker: DeepReadonly<Worker> }) {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
@@ -208,63 +341,116 @@ function ShiftToggle({ state, worker }: { state: DeepReadonly<SimState>; worker:
     const next = has ? worker.shifts.filter((s) => s !== shift) : [...worker.shifts, shift];
     const r = bridge.dispatch({ type: 'setShifts', workerId: worker.id, shifts: next });
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+    else if (!has && next.length === 2 && !worker.traits.includes('ironman')) {
+      pushToast('warn', `${worker.name} sẽ làm cả hai ca: mỗi ngày như vậy sẽ mệt thêm và có thể xin nghỉ.`);
+    }
   };
   return (
     <div className="shift-toggle" role="group" aria-label={`Lịch ca của ${worker.name}`}>
       <span className="small muted">Lịch ca:</span>
-      {SHIFT_IDS.map((shift) => (
-        <button
-          key={shift}
-          aria-pressed={worker.shifts.includes(shift)}
-          disabled={worker.shifts.length === 1 && worker.shifts.includes(shift)}
-          onClick={() => toggle(shift)}
-        >
-          {SHIFT_LABEL[shift]}
-          {currentShift(state) === shift && worker.shiftsToday.includes(shift) ? ' ✓' : ''}
-        </button>
-      ))}
+      {SHIFT_IDS.map((shift) => {
+        const has = worker.shifts.includes(shift);
+        const full = !has && shiftHeadcount(state, shift) >= state.config.maxPerShift;
+        return (
+          <button key={shift} aria-pressed={has} disabled={(has && worker.shifts.length === 1) || full} onClick={() => toggle(shift)}>
+            {SHIFT_LABEL[shift]}
+            {currentShift(state) === shift && worker.shiftsToday.includes(shift) ? ' ✓' : ''}
+            {full ? ' (đủ người)' : ''}
+          </button>
+        );
+      })}
     </div>
   );
 }
 
-function CandidateCard({ state, candidate, full }: { state: DeepReadonly<SimState>; candidate: StaffCandidateDef; full: boolean }) {
+/** Ứng viên hôm nay: 3 người ngẫu nhiên, khoá để giữ sang ngày sau, làm mới có trả phí mỗi ngày một lần. */
+function RecruitList({ state, full }: { state: DeepReadonly<SimState>; full: boolean }) {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
-  const affordable = state.money >= candidate.hireCost;
+  const rerolled = state.recruitRerollDay === state.day;
+  const cost = state.config.recruitRerollCost;
   return (
-    <li className="staff-card candidate-card">
-      <svg width={56} height={56} viewBox="-34 -112 68 68" aria-hidden>
-        <circle cx={0} cy={-78} r={33} fill="#dcefe3" />
-        <StaffFigure look={candidate.look} role={candidate.role} expression="happy" />
-      </svg>
-      <div className="staff-info">
-        <strong>
-          {candidate.name}
-        </strong>
-        <span className="muted small">
-          {ROLE[candidate.role]} · {candidate.blurb}
-        </span>
-        <span className="small">
-          Lương {shiftPay(candidate.wage, 1)} {BRAND.currency}/ca · {candidate.wage} {BRAND.currency} nếu làm cả ngày
-        </span>
+    <section aria-label="Ứng viên hôm nay">
+      <div className="recruit-head">
+        <h3>
+          Ứng viên hôm nay <span className="muted small">(đổi mới mỗi sáng, ô khoá được giữ lại)</span>
+        </h3>
+        <GameButton
+          size="small"
+          disabled={rerolled || state.money < cost}
+          onClick={() => {
+            const r = bridge.dispatch({ type: 'rerollRecruits' });
+            if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+          }}
+        >
+          {rerolled ? 'Đã làm mới hôm nay' : `Làm mới · ${cost} ${BRAND.currency}`}
+        </GameButton>
       </div>
-      <GameButton
-        tone="primary"
-        size="small"
-        disabled={full || !affordable}
-        onClick={() => {
-          const r = bridge.dispatch({ type: 'hire', candidateId: candidate.id });
-          if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
-        }}
-      >
-        {full ? 'Hết chỗ' : `Tuyển · ${candidate.hireCost} ${BRAND.currency}`}
+      {state.recruits.every((r) => r === null) ? (
+        <EmptyState icon={<StaffIcon />} title="Đã tuyển hết ứng viên hôm nay">
+          Sáng mai sẽ có ứng viên mới.
+        </EmptyState>
+      ) : (
+        <ul className="card-list recruit-list">
+          {state.recruits.map((recruit, slot) =>
+            recruit ? <RecruitCard key={recruit.id} state={state} recruit={recruit} slot={slot} full={full} /> : null,
+          )}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RecruitCard({
+  state,
+  recruit,
+  slot,
+  full,
+}: {
+  state: DeepReadonly<SimState>;
+  recruit: DeepReadonly<Recruit>;
+  slot: number;
+  full: boolean;
+}) {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
+  const affordable = state.money >= recruit.hireCost;
+  const run = (command: Parameters<typeof bridge.dispatch>[0]) => {
+    const r = bridge.dispatch(command);
+    if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
+  };
+  return (
+    <li className={`staff-card recruit-card rarity-border-${recruit.rarity}`}>
+      <div className="recruit-top">
+        <svg width={56} height={56} viewBox="-34 -112 68 68" aria-hidden>
+          <circle cx={0} cy={-78} r={33} fill={recruit.role === 'pharmacist' ? '#DCEFE3' : '#F8ECD6'} />
+          <StaffFigure look={recruit.look} role={recruit.role} expression="happy" />
+        </svg>
+        <div className="staff-info">
+          <strong>{recruit.name}</strong>
+          <span className="small muted">
+            {ROLE[recruit.role]} <RarityChip rarity={recruit.rarity} />
+          </span>
+          <span className="small muted">{recruit.blurb}</span>
+        </div>
+        <button
+          className={`lock-btn ${recruit.locked ? 'locked' : ''}`}
+          aria-pressed={recruit.locked}
+          aria-label={recruit.locked ? `Bỏ khoá ${recruit.name}` : `Khoá ${recruit.name} để giữ sang ngày sau`}
+          onClick={() => run({ type: 'lockRecruit', slot, locked: !recruit.locked })}
+        >
+          <PadlockIcon open={!recruit.locked} size={22} />
+        </button>
+      </div>
+      <TraitTags traits={recruit.traits} hidden={recruit.hiddenTraits.length} />
+      <StatBars speed={recruit.speed} knowledge={recruit.knowledge} communication={recruit.communication} />
+      <span className="small">
+        Lương {recruit.wage} {BRAND.currency}/ca
+      </span>
+      <GameButton tone="primary" size="small" disabled={full || !affordable} onClick={() => run({ type: 'hire', candidateId: recruit.id })}>
+        {full ? 'Đội đã đủ người' : `Tuyển · ${recruit.hireCost} ${BRAND.currency}`}
       </GameButton>
-      <details className="team-card-details candidate-details">
-        <summary>Xem kỹ năng</summary>
-        <TraitTag trait={candidate.trait} />
-        <span className="small muted">{TRAITS[candidate.trait].description}</span>
-        <StatBars speed={candidate.speed} knowledge={candidate.knowledge} communication={candidate.communication} />
-      </details>
+      <TraitDetails traits={recruit.traits} />
     </li>
   );
 }

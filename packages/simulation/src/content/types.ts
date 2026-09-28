@@ -21,14 +21,39 @@ export interface ProductDef {
   shelfCapacity: number;
 }
 
-/** Tính cách ảnh hưởng theo ngữ cảnh, không phải hệ số cộng thẳng. */
-export type TraitId = 'hardworking' | 'meticulous' | 'talkative';
+/** Đặc điểm nhân viên: tác động theo ngữ cảnh, một số có lợi, một số có hại, một số vừa lợi vừa hại. */
+export type TraitId =
+  | 'hardworking'
+  | 'meticulous'
+  | 'talkative'
+  | 'ironman'
+  | 'lucky'
+  | 'silver-tongue'
+  | 'sharp-memory'
+  | 'quick-hands'
+  | 'regulars-favorite'
+  | 'tidy'
+  | 'lazy'
+  | 'slow-learner'
+  | 'hot-tempered'
+  | 'late'
+  | 'sticky-fingers'
+  | 'reckless';
+
+/** good: có lợi, bad: có hại, mixed: vừa lợi vừa hại (giao diện tô màu theo loại này). */
+export type TraitTone = 'good' | 'bad' | 'mixed';
 
 export interface TraitDef {
   id: TraitId;
   name: string;
   description: string;
+  tone: TraitTone;
+  /** Đặc điểm đặc biệt chỉ ra ở ứng viên Hiếm/Huyền thoại. */
+  special: boolean;
 }
+
+/** Độ hiếm của ứng viên: quyết định khoảng chỉ số và số đặc điểm. */
+export type Rarity = 'common' | 'good' | 'rare' | 'legendary';
 
 /**
  * Mã lý do của một đánh giá. Phân nhóm để quy trách nhiệm đúng chỗ:
@@ -48,6 +73,7 @@ export type ReasonCode =
   | 'wrong-item'
   | 'unneeded-referral'
   | 'too-chatty'
+  | 'rude-staff'
   | 'strict-customer';
 
 /**
@@ -67,10 +93,16 @@ export interface RequestDef {
 
 export type StaffRole = 'pharmacist' | 'clerk';
 
+export type Gender = 'female' | 'male';
+
 export interface StaffLook {
+  gender: Gender;
   skin: number;
   hair: number;
+  /** Kiểu tóc theo giới tính, xem STAFF_HAIR_STYLES. */
   hairStyle: number;
+  /** Ngoại hình "luộm thuộm" hiếm gặp: chỉ để trang trí, không ảnh hưởng chỉ số. */
+  messy: boolean;
 }
 
 export interface StaffCandidateDef {
@@ -79,7 +111,7 @@ export interface StaffCandidateDef {
   role: StaffRole;
   blurb: string;
   hireCost: number;
-  /** Lương trả vào cuối mỗi ngày trong game (xu). */
+  /** Lương mỗi ca đã vào làm, trả vào cuối ngày (xu). */
   wage: number;
   /** Hệ số tốc độ thao tác (1 = chuẩn). */
   speed: number;
@@ -87,7 +119,10 @@ export interface StaffCandidateDef {
   knowledge: number;
   /** Giao tiếp tốt thì khách hao kiên nhẫn chậm hơn khi đang được phục vụ, [0, 1]. */
   communication: number;
-  trait: TraitId;
+  rarity: Rarity;
+  traits: TraitId[];
+  /** Đặc điểm chưa lộ ra (hiện "???") cho tới hết ca làm đầu tiên; vẫn có tác dụng ngay. */
+  hiddenTraits: TraitId[];
   look: StaffLook;
 }
 

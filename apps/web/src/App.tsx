@@ -1,4 +1,4 @@
-import { dayProgress, storeRating, UPGRADES, type DeepReadonly, type SimEvent, type SimState } from '@pharmacy/simulation';
+import { dayProgress, storeRating, TRAITS, UPGRADES, type DeepReadonly, type SimEvent, type SimState } from '@pharmacy/simulation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BRAND } from './brand';
 import { DandelionLogo } from './art/Furniture';
@@ -136,6 +136,7 @@ function useEventFeedback() {
           }
           case 'saleCompleted': {
             pushFloater(`+${e.amount} ${BRAND.currency}`, REGISTER_SPOT.x, REGISTER_SPOT.y);
+            if (e.tip > 0) pushFloater(`Boa +${e.tip}`, REGISTER_SPOT.x - 40, REGISTER_SPOT.y - 24);
             const sales = bridge.state.stats.sales;
             if (SALE_MILESTONES.includes(sales)) {
               playSfx('milestone');
@@ -174,9 +175,46 @@ function useEventFeedback() {
             const worker = bridge.state.workers[e.workerId];
             playSfx('milestone');
             burst(0.5, 0.4);
-            pushToast('good', `${worker?.name ?? 'Nhân viên mới'} đã vào làm! Giao quầy trong khay phục vụ hoặc tab Nhân sự.`);
+            const shift = worker?.shifts[0];
+            pushToast(
+              'good',
+              `${worker?.name ?? 'Nhân viên mới'} đã vào làm${shift ? ` ${SHIFT_LABEL[shift].toLowerCase()}` : ''}! Xếp ca và giao quầy ở tab Nhân sự.`,
+            );
             break;
           }
+          case 'staffLevelUp': {
+            const worker = bridge.state.workers[e.workerId];
+            playSfx('milestone');
+            pushToast('good', `${worker?.name ?? 'Nhân viên'} lên cấp ${e.level}: nhanh tay và hiểu hàng hơn.`);
+            break;
+          }
+          case 'staffSkillSlipped': {
+            const worker = bridge.state.workers[e.workerId];
+            pushToast('info', `${worker?.name ?? 'Nhân viên'} bị chê nên hơi mất tự tin (giảm chút kinh nghiệm).`);
+            break;
+          }
+          case 'traitRevealed': {
+            const worker = bridge.state.workers[e.workerId];
+            const bad = e.traits.some((id) => TRAITS[id].tone === 'bad');
+            pushToast(
+              bad ? 'warn' : 'good',
+              `Sau ca đầu, lộ ra ${worker?.name ?? 'nhân viên'} là người "${e.traits.map((id) => TRAITS[id].name).join('", "')}".`,
+            );
+            break;
+          }
+          case 'resignationRequested': {
+            const worker = bridge.state.workers[e.workerId];
+            playSfx('warn');
+            pushToast('warn', `${worker?.name ?? 'Nhân viên'} xin thôi việc vì làm quá sức. Mở tab Nhân sự để tăng lương giữ chân.`);
+            break;
+          }
+          case 'staffRetained':
+            pushToast('good', `Đã tăng lương lên ${e.wage} ${BRAND.currency}/ca, nhân viên ở lại.`);
+            break;
+          case 'staffQuit':
+            playSfx('leave');
+            pushToast('bad', `${e.name} đã nghỉ việc. Tuyển người mới ở tab Nhân sự.`);
+            break;
           case 'upgradeBought':
             playSfx('restock');
             burst(0.5, 0.35);
@@ -379,16 +417,17 @@ function BottomNav({ state }: { state: DeepReadonly<SimState> }) {
   const tab = useUi((s) => s.tab);
   const setTab = useUi((s) => s.setTab);
   const openComplaints = state.complaints.filter((c) => c.status === 'open').length;
+  const resigning = Object.values(state.workers).filter((w) => w.resigning).length;
   return (
     <nav className="bottom-nav">
       {NAV.map((item) => {
-        const badge = item.tab === 'reviews' ? openComplaints : 0;
+        const badge = item.tab === 'reviews' ? openComplaints : item.tab === 'staff' ? resigning : 0;
         return (
           <button
             key={item.tab}
             className={`nav-item ${tab === item.tab ? 'active' : ''}`}
             aria-current={tab === item.tab ? 'page' : undefined}
-            aria-label={badge ? `${item.label}, ${badge} khiếu nại chờ phản hồi` : undefined}
+            aria-label={badge ? `${item.label}, ${badge} ${item.tab === 'staff' ? 'người xin nghỉ' : 'khiếu nại chờ phản hồi'}` : undefined}
             onClick={() => setTab(item.tab)}
           >
             <span className="nav-icon">

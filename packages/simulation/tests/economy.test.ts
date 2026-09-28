@@ -13,7 +13,7 @@ import {
   type SimEvent,
   type SimState,
 } from '../src';
-import { autoPlay, runFor } from './helpers';
+import { autoPlay, hireAllDay, runFor } from './helpers';
 
 // Package mô phỏng không nạp kiểu DOM/Node; test chỉ cần đồng hồ để đo hiệu năng.
 const clock = (globalThis as unknown as { performance: { now(): number } }).performance;
@@ -26,8 +26,8 @@ function staffedStore(seed: number, candidateId = 'dung', money = 400): Simulati
   state.money = money;
   state.dayStart.money = money;
   const sim = new Simulation(state);
-  expect(sim.dispatch({ type: 'hire', candidateId }).ok).toBe(true);
-  expect(sim.dispatch({ type: 'assignCounter', counterId: 'counter-1', workerId: `w-${candidateId}` }).ok).toBe(true);
+  const workerId = hireAllDay(sim, candidateId);
+  expect(sim.dispatch({ type: 'assignCounter', counterId: 'counter-1', workerId }).ok).toBe(true);
   return sim;
 }
 
@@ -45,8 +45,9 @@ describe('ngày và lương', () => {
     expect(s.dayReports).toHaveLength(1);
     const report = s.dayReports[0]!;
     expect(events.some((e) => e.type === 'dayEnded')).toBe(true);
-    expect(report.wages).toBe(35);
-    expect(s.stats.spentOnWages).toBe(35);
+    // Dũng 18 xu/ca × 2 ca.
+    expect(report.wages).toBe(36);
+    expect(s.stats.spentOnWages).toBe(36);
     // Ngày 1 gồm cả tiền tuyển Dũng (300) — xuất hiện ở mục đầu tư, lợi nhuận = chênh lệch xu thật.
     expect(report.investments).toBe(300);
     expect(report.profit).toBe(report.revenue - report.stockCost - report.wages - report.investments);
@@ -118,7 +119,7 @@ describe('giá bán', () => {
       patienceRatio: 0.5,
       wrongCount: 0,
       referencePrice: 20,
-      server: { communication: 0.5, trait: null },
+      server: { communication: 0.5, traits: [] },
     };
     const fair = evaluateSatisfaction({ ...base, price: 20 });
     const cheap = evaluateSatisfaction({ ...base, price: 15 });
@@ -176,7 +177,8 @@ describe('lưu & tải', () => {
     expect(loaded.ok).toBe(true);
     if (!loaded.ok) return;
     expect(loaded.state.prices.sunscreen).toBe(PRODUCTS.sunscreen.price);
-    expect(loaded.state.workers['w-dung']!.wage).toBe(35);
+    // Save v1 lưu lương trọn ngày; từ v6 lương tính theo ca.
+    expect(loaded.state.workers['w-dung']!.wage).toBe(18);
     expect(loaded.state.config.dayMs).toBeGreaterThan(0);
     const sim = Simulation.fromState(loaded.state);
     runFor(sim, sim.snapshot.config.dayMs + 200);
@@ -228,7 +230,7 @@ describe('tiến trình khi vắng mặt', () => {
     expect(offline.serialize()).toEqual(online.serialize());
     expect(summary.moneyDelta).toBe(online.snapshot.money - 100);
     expect(summary.daysEnded).toBe(Math.floor(cap / online.snapshot.config.dayMs));
-    expect(summary.wages).toBe(summary.daysEnded * 35);
+    expect(summary.wages).toBe(summary.daysEnded * 36);
     // Một giờ chạy bù phải đủ nhanh để không làm treo lúc mở game.
     expect(elapsed).toBeLessThan(3000);
   });

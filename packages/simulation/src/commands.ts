@@ -8,9 +8,11 @@ import { effectiveSpeed, priceBounds } from './economy';
 import { resolveComplaint } from './reputation';
 import type { Emit } from './events';
 import { dismissCustomer, newId, PLAYER_WORKER_ID, workerFromCandidate } from './state';
-import { checkIn, handOverCounters, isOnDuty, markPrepDone, openStore } from './shift';
+import { gainExperience, hasTrait, refreshRecruits, retainWage } from './recruit';
+import { nextFloat, nextInt } from './rng';
+import { checkIn, currentShift, handOverCounters, isOnDuty, isPresent, markPrepDone, openStore } from './shift';
 import { addStock, takeStock } from './stock';
-import { PREP_TASK_IDS, SHIFT_IDS, type Order, type PrepTaskId, type ShiftId, type SimState } from './types';
+import { PREP_TASK_IDS, SHIFT_IDS, type DeepReadonly, type Order, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /**
  * Lệnh là cách DUY NHẤT để thay đổi state từ bên ngoài. Người chơi và NPC gửi cùng loại lệnh
@@ -30,7 +32,10 @@ export type Command =
   | { type: 'dismissStaff'; workerId: string }
   | { type: 'completePrep'; taskId: PrepTaskId; workerId: string }
   | { type: 'openStore' }
-  | { type: 'setShifts'; workerId: string; shifts: ShiftId[] };
+  | { type: 'setShifts'; workerId: string; shifts: ShiftId[] }
+  | { type: 'lockRecruit'; slot: number; locked: boolean }
+  | { type: 'rerollRecruits' }
+  | { type: 'retainStaff'; workerId: string };
 
 export type RejectReason =
   | 'unknown-worker'
@@ -62,7 +67,12 @@ export type RejectReason =
   | 'unknown-prep-task'
   | 'prep-already-done'
   | 'invalid-shifts'
-  | 'cannot-schedule-player';
+  | 'cannot-schedule-player'
+  | 'shift-full'
+  | 'worker-not-arrived'
+  | 'unknown-recruit'
+  | 'reroll-used'
+  | 'not-resigning';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
 
@@ -99,6 +109,12 @@ export function applyCommand(state: SimState, command: Command, emit: Emit): Com
       return openStoreCommand(state, emit);
     case 'setShifts':
       return setShifts(state, command.workerId, command.shifts, emit);
+    case 'lockRecruit':
+      return lockRecruit(state, command.slot, command.locked);
+    case 'rerollRecruits':
+      return rerollRecruits(state, emit);
+    case 'retainStaff':
+      return retainStaff(state, command.workerId, emit);
   }
 }
 
@@ -115,6 +131,7 @@ function startService(state: SimState, workerId: string, customerId: string, emi
   if (!worker) return reject('unknown-worker');
   if (worker.orderId || worker.task) return reject('worker-busy');
   if (!isOnDuty(state, worker)) return reject('worker-off-duty');
+  if (!isPresent(state, worker)) return reject('worker-not-arrived');
   const customer = state.customers[customerId];
   if (!customer) return reject('unknown-customer');
   const counter = state.counters.find((c) => c.customerId === customerId);
@@ -221,20 +238,66 @@ function restock(state: SimState, productId: ProductId, workerId: string | null,
   return OK;
 }
 
+/**
+ * Tuyển từ danh sách ứng viên hôm nay (hoặc hồ sơ cố định dùng cho test/balance). Người mới làm một ca:
+ * ưu tiên ca đang diễn ra nếu còn chỗ (vào làm ngay, được tính lương ca này), không thì ca còn lại.
+ */
 function hire(state: SimState, candidateId: string, emit: Emit): CommandResult {
-  const candidate = STAFF_CANDIDATES[candidateId];
+  const slot = state.recruits.findIndex((r) => r?.id === candidateId);
+  const candidate = slot >= 0 ? state.recruits[slot] : STAFF_CANDIDATES[candidateId];
   if (!candidate) return reject('unknown-candidate');
   const worker = workerFromCandidate(candidate);
   if (state.workers[worker.id]) return reject('already-hired');
   const staffCount = Object.values(state.workers).filter((w) => w.controller === 'ai').length;
   if (staffCount >= state.config.maxStaff) return reject('staff-full');
+  const now = currentShift(state);
+  const shift = [now, ...SHIFT_IDS.filter((id) => id !== now)].find((id) => shiftHeadcount(state, id) < state.config.maxPerShift);
+  if (!shift) return reject('shift-full');
   if (state.money < candidate.hireCost) return reject('insufficient-funds');
   state.money -= candidate.hireCost;
   state.stats.spentOnStaff += candidate.hireCost;
+  worker.shifts = [shift];
   state.workers[worker.id] = worker;
-  // Vào làm ngay trong ca hiện tại (được tính lương ca này).
+  if (slot >= 0) state.recruits[slot] = null;
   checkIn(state, worker);
   emit({ type: 'staffHired', workerId: worker.id, cost: candidate.hireCost });
+  return OK;
+}
+
+/** Số NPC có lịch ở một ca (không tính người chơi). */
+export function shiftHeadcount(state: DeepReadonly<SimState>, shift: ShiftId, exceptId?: string): number {
+  return Object.values(state.workers).filter((w) => w.controller === 'ai' && w.id !== exceptId && w.shifts.includes(shift)).length;
+}
+
+function lockRecruit(state: SimState, slot: number, locked: boolean): CommandResult {
+  const recruit = state.recruits[slot];
+  if (!recruit) return reject('unknown-recruit');
+  recruit.locked = locked;
+  return OK;
+}
+
+/** Làm mới các ô không khoá, có trả phí, mỗi ngày một lần. */
+function rerollRecruits(state: SimState, emit: Emit): CommandResult {
+  if (state.recruitRerollDay === state.day) return reject('reroll-used');
+  const cost = state.config.recruitRerollCost;
+  if (state.money < cost) return reject('insufficient-funds');
+  state.money -= cost;
+  state.stats.spentOnStaff += cost;
+  state.recruitRerollDay = state.day;
+  refreshRecruits(state, 'b');
+  emit({ type: 'recruitsRefreshed', paid: true });
+  return OK;
+}
+
+/** Giữ chân người đang xin nghỉ: tăng lương vĩnh viễn, cho nghỉ lấy sức (mệt về 30). */
+function retainStaff(state: SimState, workerId: string, emit: Emit): CommandResult {
+  const worker = state.workers[workerId];
+  if (!worker) return reject('unknown-worker');
+  if (!worker.resigning) return reject('not-resigning');
+  worker.wage = retainWage(worker.wage);
+  worker.fatigue = 30;
+  worker.resigning = false;
+  emit({ type: 'staffRetained', workerId, wage: worker.wage });
   return OK;
 }
 
@@ -340,6 +403,9 @@ function setShifts(state: SimState, workerId: string, shifts: ShiftId[], emit: E
   if (worker.controller === 'player') return reject('cannot-schedule-player');
   const next = SHIFT_IDS.filter((id) => shifts.includes(id));
   if (next.length === 0 || next.length !== new Set(shifts).size) return reject('invalid-shifts');
+  if (next.some((id) => !worker.shifts.includes(id) && shiftHeadcount(state, id, workerId) >= state.config.maxPerShift)) {
+    return reject('shift-full');
+  }
   worker.shifts = next;
   checkIn(state, worker);
   handOverCounters(state, emit);
@@ -390,11 +456,23 @@ export function completeSale(state: SimState, orderId: string, emit: Emit): void
   order.state = 'done';
   order.facts.push('correct-item');
   const worker = state.workers[order.workerId];
+  let tip = 0;
   if (worker) {
     worker.served += 1;
     worker.expression = 'happy';
     worker.emoteUntilMs = state.timeMs + state.config.emoteMs;
+    gainExperience(worker, emit);
+    // "Thần tài": khách boa gấp đôi; "Cầm nhầm tiền két": két hụt vài xu (lộ ra khi đối soát cuối ngày).
+    if (hasTrait(worker, 'lucky') && nextFloat(state.rng.staff) < 0.2) tip = amount;
+    if (hasTrait(worker, 'sticky-fingers') && nextFloat(state.rng.staff) < 0.15) {
+      const taken = Math.min(state.money, nextInt(state.rng.staff, 1, 3));
+      state.money -= taken;
+      state.stats.pilfered += taken;
+    }
   }
-  emit({ type: 'saleCompleted', orderId, productId, amount, customerId: customer.id, workerId: order.workerId });
+  state.money += tip;
+  state.stats.revenue += tip;
+  state.stats.tips += tip;
+  emit({ type: 'saleCompleted', orderId, productId, amount, tip, customerId: customer.id, workerId: order.workerId });
   dismissCustomer(state, customer, 'bought', emit);
 }

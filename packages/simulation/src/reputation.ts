@@ -4,6 +4,7 @@ import { REQUESTS } from './content/requests';
 import { REASONS, REVIEW_COMMENTS, type ComplaintResponse } from './content/reviews';
 import type { ArchetypeDef, ReasonCode, TraitId } from './content/types';
 import type { Emit } from './events';
+import { loseExperience } from './recruit';
 import { nextFloat, nextInt } from './rng';
 import type { Complaint, Customer, CustomerOutcome, DeepReadonly, InteractionFact, Order, Review, SimState } from './types';
 
@@ -47,11 +48,15 @@ export interface SatisfactionInput {
   wrongCount: number;
   price: number | null;
   referencePrice: number | null;
-  server: { communication: number; trait: TraitId | null } | null;
+  /** traits gồm cả đặc điểm ẩn (vẫn có tác dụng). */
+  server: { communication: number; traits: readonly TraitId[] } | null;
+  /** Khách quen quay lại (người "Được khách quen quý" phục vụ thì vui hơn). */
+  returning?: boolean;
 }
 
 const NEGATIVE_PRIORITY: ReasonCode[] = [
   'wrong-item',
+  'rude-staff',
   'unneeded-referral',
   'slow-service',
   'long-queue',
@@ -123,7 +128,20 @@ export function evaluateSatisfaction(input: SatisfactionInput): { satisfaction: 
     sat += (input.server.communication - 0.5) * 0.2;
     // Tính cách tác động theo ngữ cảnh: cùng một người hoạt ngôn, khách thích nghe giải thích thì vui,
     // khách đang vội thì phiền.
-    if (input.server.trait === 'talkative') {
+    const traits = input.server.traits;
+    if (traits.includes('silver-tongue')) {
+      sat += 0.15;
+      reasons.add('friendly-staff');
+    }
+    if (traits.includes('hot-tempered')) {
+      sat -= 0.2;
+      reasons.add('rude-staff');
+    }
+    if (traits.includes('regulars-favorite') && input.returning) {
+      sat += 0.15;
+      reasons.add('friendly-staff');
+    }
+    if (traits.includes('talkative')) {
       if (archetype.likesDetail) {
         sat += 0.08;
         reasons.add('friendly-staff');
@@ -235,7 +253,8 @@ export function recordInteraction(
     wrongCount: order?.rejectedProductIds.length ?? 0,
     price: product ? (order?.price ?? null) : null,
     referencePrice: product?.referencePrice ?? null,
-    server: worker ? { communication: worker.communication, trait: worker.trait } : null,
+    server: worker ? { communication: worker.communication, traits: [...worker.traits, ...worker.hiddenTraits] } : null,
+    returning: customer.loyaltyId !== null,
   });
 
   const interaction = {
@@ -282,6 +301,10 @@ export function recordInteraction(
     state.reviews.push(review);
     trim(state.reviews, config.keepReviews);
     emit({ type: 'reviewPosted', reviewId: review.id, stars, workerId: review.workerId });
+
+    // Bị chê do chính lỗi của mình: thỉnh thoảng mất chút kinh nghiệm (không tụt cấp).
+    const reviewed = review.workerId ? state.workers[review.workerId] : undefined;
+    if (reviewed && review.countsForStaff && stars <= 2) loseExperience(state, reviewed, emit);
 
     if (stars <= 2) {
       const complaint: Complaint = {

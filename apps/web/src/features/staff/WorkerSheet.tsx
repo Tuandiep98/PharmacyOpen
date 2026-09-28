@@ -3,7 +3,7 @@ import { useUi } from '../../ui/uiStore';
 import { DismissButton } from './DismissButton';
 import { WorkerPortrait } from '../../art/WorkerFigure';
 import { useServiceActions } from '../store/useServiceActions';
-import { StatBars, TraitTag, WageLine, WorkerMetrics, workerStatus } from './StaffPanel';
+import { LevelBar, StatBars, TraitTags, WageLine, WorkerMetrics, workerStatus } from './StaffPanel';
 import { GameButton } from '../../ui/primitives';
 
 export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>; workerId: string }) {
@@ -18,7 +18,8 @@ export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>
         <WorkerPortrait worker={worker} size={64} />
         <div className="service-who">
           <strong>
-            {worker.role === 'pharmacist' ? 'Dược sĩ' : 'Nhân viên'} {worker.name} <TraitTag trait={worker.trait} />
+            {worker.role === 'pharmacist' ? 'Dược sĩ' : 'Nhân viên'} {worker.name}{' '}
+            <TraitTags traits={worker.traits} hidden={worker.hiddenTraits.length} />
           </strong>
           <span className="muted small">
             {worker.controller === 'player' ? 'Do bạn điều khiển' : 'Nhân viên tự làm việc'} · đã bán {worker.served}
@@ -26,6 +27,7 @@ export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>
           <span className="small">{workerStatus(state, worker)}</span>
           <WorkerMetrics worker={worker} />
           <WageLine worker={worker} />
+          {worker.controller === 'ai' && <LevelBar worker={worker} />}
         </div>
       </div>
       {worker.controller === 'ai' && <StatBars speed={worker.speed} knowledge={worker.knowledge} communication={worker.communication} />}

@@ -61,7 +61,10 @@ function Head({ skin, hair, style, cap }: { skin: string; hair: string; style: n
     {style === 1 && <path d="M-23,-79 Q-25,-102 -6,-106 Q18,-109 23,-86 Q15,-95 6,-94 Q-3,-85 -13,-91Z" fill={hair} stroke={INK} strokeWidth={2} />}
     {style === 2 && <path d="M-23,-80 Q-28,-103 -6,-106 Q13,-109 23,-88 Q12,-90 8,-98 Q0,-87 -12,-88Z" fill={hair} stroke={INK} strokeWidth={2} />}
     {style === 3 && <path d="M-22,-81 Q-22,-105 0,-106 Q23,-105 23,-82 Q12,-88 2,-99 Q-3,-86 -22,-81Z" fill={hair} stroke={INK} strokeWidth={2} />}
-    {style >= 4 && <><path d="M-22,-83 Q-22,-102 0,-104 Q21,-103 22,-83Z" fill={hair} stroke={INK} strokeWidth={2} /><path d="M-25,-89 Q-22,-107 0,-109 Q23,-108 25,-89Z" fill={cap ?? ART.woodLight} stroke={INK} strokeWidth={2} /><path d="M-16,-89 Q8,-93 29,-86 Q8,-82 -16,-85Z" fill={cap ?? ART.woodLight} stroke={INK} strokeWidth={2} /></>}
+    {/* Kiểu tóc nam của nhân viên: 5 = rẽ ngôi, 6 = cắt ngắn sát. */}
+    {style === 5 && <path d="M-23,-81 Q-26,-104 -3,-107 Q20,-108 24,-86 Q21,-92 12,-96 Q2,-99 -9,-94 Q-17,-90 -23,-81Z" fill={hair} stroke={INK} strokeWidth={2} />}
+    {style === 6 && <path d="M-22,-85 Q-21,-103 0,-104 Q21,-103 22,-85 Q12,-94 0,-95 Q-12,-94 -22,-85Z" fill={hair} stroke={INK} strokeWidth={2} />}
+    {style === 4 && <><path d="M-22,-83 Q-22,-102 0,-104 Q21,-103 22,-83Z" fill={hair} stroke={INK} strokeWidth={2} /><path d="M-25,-89 Q-22,-107 0,-109 Q23,-108 25,-89Z" fill={cap ?? ART.woodLight} stroke={INK} strokeWidth={2} /><path d="M-16,-89 Q8,-93 29,-86 Q8,-82 -16,-85Z" fill={cap ?? ART.woodLight} stroke={INK} strokeWidth={2} /></>}
   </g>;
 }
 
@@ -108,7 +111,33 @@ function Uniform({ role, skin, pants }: { role: StaffRole; skin: string; pants: 
 export function StaffFigure({ look, role, expression }: { look: StaffLook; role: StaffRole; expression: FaceExpression }) {
   const skin = pick(SKIN, look.skin);
   const hair = pick(HAIR, look.hair);
-  return <g><BackHair hair={hair} style={look.hairStyle} /><Uniform role={role} skin={skin} pants="#56695D" /><Head skin={skin} hair={hair} style={look.hairStyle} cap={ART.leaf} /><Face expression={expression} /></g>;
+  return <g>
+    <BackHair hair={hair} style={look.hairStyle} />
+    <Uniform role={role} skin={skin} pants="#56695D" />
+    {look.messy && <MessyClothes />}
+    <Head skin={skin} hair={hair} style={look.hairStyle} cap={ART.leaf} />
+    {look.messy && <MessyHair hair={hair} />}
+    <Face expression={expression} />
+    {look.gender === 'female' && <Lashes />}
+  </g>;
+}
+
+/** Lông mi nhỏ ở đuôi mắt: nhận ra giới tính mà không đổi khuôn mặt chung. */
+function Lashes() {
+  return <path d="M-11,-80 L-14,-83 M-9,-81 L-11,-85 M11,-80 L14,-83 M9,-81 L11,-85" {...line} strokeWidth={1.4} />;
+}
+
+/** Ngoại hình "luộm thuộm" hiếm gặp: tóc dựng, áo nhàu có vết bẩn. Chỉ để vui, không phải chê ngoại hình. */
+function MessyHair({ hair }: { hair: string }) {
+  return <path d="M-18,-100 L-22,-111 L-12,-104 L-8,-116 L-2,-105 L5,-117 L8,-104 L17,-112 L15,-99" fill={hair} stroke={INK} strokeWidth={2} strokeLinejoin="round" />;
+}
+
+function MessyClothes() {
+  return <g>
+    <path d="M-13,-44 Q-9,-41 -12,-37 M9,-33 Q13,-30 10,-26 M-3,-30 Q1,-27 -2,-24" {...line} strokeWidth={1.2} />
+    <ellipse cx={-6} cy={-35} rx={3.5} ry={2.5} fill="#A98B6A" opacity={0.7} />
+    <path d="M-20,-23 L-17,-19 L-14,-23" fill={ART.paper} stroke={INK} strokeWidth={1.2} />
+  </g>;
 }
 
 /** An có kiểu tóc và áo blouse riêng để nhận ra ngay trên quầy. */

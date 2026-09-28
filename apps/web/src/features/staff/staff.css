@@ -1,0 +1,175 @@
+/* Nhân sự: độ hiếm (xám → xanh lá → xanh dương → vàng), đặc điểm theo lợi/hại, tay nghề và mệt mỏi. */
+
+.rarity-chip {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1.5px solid currentColor;
+  vertical-align: middle;
+}
+.rarity-common {
+  color: #6b7570;
+  background: #eef0ec;
+}
+.rarity-good {
+  color: #2f7d4c;
+  background: #e2f3e6;
+}
+.rarity-rare {
+  color: #2e64a6;
+  background: #e3edf9;
+}
+.rarity-legendary {
+  color: #8a5a00;
+  background: linear-gradient(90deg, #fff1c2, #ffdf8a);
+}
+
+.staff-card.rarity-border-common {
+  border-left: 5px solid #b8bfbb;
+}
+.staff-card.rarity-border-good {
+  border-left: 5px solid #4eaa72;
+}
+.staff-card.rarity-border-rare {
+  border-left: 5px solid #4a86d0;
+}
+.staff-card.rarity-border-legendary {
+  border-left: 5px solid #e0a82e;
+  box-shadow: 0 0 0 2px rgb(224 168 46 / 25%);
+}
+
+.trait-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tag.trait.tone-good {
+  color: #1f6b3e;
+  background: var(--good-soft);
+  border-color: #7cc497;
+}
+.tag.trait.tone-bad {
+  color: #8e2f28;
+  background: var(--danger-soft);
+  border-color: #de958c;
+}
+.tag.trait.tone-mixed {
+  color: #75500f;
+  background: var(--warn-soft);
+  border-color: #e4bf6a;
+}
+.tag.trait.tone-hidden {
+  color: var(--ink-soft);
+  background: var(--surface-soft);
+  border-style: dashed;
+}
+
+.trait-details {
+  margin: 4px 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.trait-details .tone-good b {
+  color: #1f6b3e;
+}
+.trait-details .tone-bad b {
+  color: #8e2f28;
+}
+.trait-details .tone-mixed b {
+  color: #75500f;
+}
+
+.meter-line {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.meter-line .progress-track {
+  min-width: 0;
+}
+.level-badge {
+  font-size: 12px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.fatigue-low .progress-fill {
+  background: #58c68a;
+}
+.fatigue-mid .progress-fill {
+  background: var(--sun);
+}
+.fatigue-high .progress-fill {
+  background: var(--danger);
+}
+
+.resign-notice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px;
+  align-items: start;
+}
+.resign-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.shift-coverage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+.coverage-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  background: var(--good-soft);
+  border: 1.5px solid var(--line);
+}
+.coverage-chip.empty {
+  background: var(--warn-soft);
+  border-color: var(--sun);
+}
+
+.recruit-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recruit-card {
+  display: grid;
+  gap: 6px;
+}
+.recruit-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.lock-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+.lock-btn.locked {
+  background: var(--warn-soft);
+  border-color: var(--sun);
+}
+.lock-btn:hover {
+  background: var(--surface-tint);
+}

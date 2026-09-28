@@ -1,6 +1,8 @@
 import { cloneConfig, DEFAULT_CONFIG } from './config';
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
-import { STAFF_CANDIDATES } from './content/staff';
+import { STAFF_CANDIDATES, TRAITS } from './content/staff';
+import { levelFor, refreshRecruits } from './recruit';
+import { createStream } from './rng';
 import { PREP_TASK_IDS, SAVE_VERSION, SHIFT_IDS, type DeepReadonly, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /*
@@ -46,6 +48,7 @@ export function loadSave(raw: unknown): LoadResult {
     mergeConfig(state);
     state.version = SAVE_VERSION;
     if (!isValidState(state)) return { ok: false, error: 'corrupt' };
+    if (state.recruits.length === 0) refreshRecruits(state);
     return { ok: true, state, savedAtWallMs: isNum(raw.savedAtWallMs) ? raw.savedAtWallMs : 0 };
   } catch {
     return { ok: false, error: 'corrupt' };
@@ -75,7 +78,8 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       for (const worker of Object.values(state.workers)) {
         if (!isObject(worker)) continue;
         const candidateId = typeof worker.id === 'string' ? worker.id.replace(/^w-/, '') : '';
-        worker.wage = worker.controller === 'ai' ? (STAFF_CANDIDATES[candidateId]?.wage ?? 0) : 0;
+        // Hồ sơ cố định giờ ghi lương mỗi ca; save v1 dùng lương trọn ngày (hai ca), migration v6 chia lại.
+        worker.wage = worker.controller === 'ai' ? (STAFF_CANDIDATES[candidateId]?.wage ?? 0) * 2 : 0;
         worker.wageOwed = 0;
       }
     }
@@ -189,6 +193,49 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       }
     }
   },
+  5: (state) => {
+    // v6: nhân viên mới — nhiều đặc điểm, độ hiếm, giới tính, tay nghề, mệt mỏi; lương tính theo ca;
+    // danh sách ứng viên hằng ngày (sinh sau khi tải, xem loadSave).
+    if (isObject(state.rng)) state.rng.staff = createStream(isNum(state.seed) ? state.seed : 0, 'staff');
+    const config = isObject(state.config) ? state.config : {};
+    if (config.maxStaff === 2) config.maxStaff = DEFAULT_CONFIG.maxStaff;
+    for (const stats of [
+      state.stats,
+      isObject(state.dayStart) ? state.dayStart.stats : null,
+      isObject(state.shiftMark) ? state.shiftMark.stats : null,
+    ]) {
+      if (!isObject(stats)) continue;
+      if (!isNum(stats.tips)) stats.tips = 0;
+      if (!isNum(stats.pilfered)) stats.pilfered = 0;
+    }
+    if (Array.isArray(state.dayReports)) {
+      for (const report of state.dayReports) if (isObject(report)) Object.assign(report, { tips: 0, pilfered: 0 }, { ...report });
+    }
+    if (isObject(state.workers)) {
+      for (const worker of Object.values(state.workers)) {
+        if (!isObject(worker)) continue;
+        const preset = typeof worker.id === 'string' ? STAFF_CANDIDATES[worker.id.replace(/^w-/, '')] : undefined;
+        if (!Array.isArray(worker.traits)) worker.traits = typeof worker.trait === 'string' ? [worker.trait] : [];
+        delete worker.trait;
+        if (!Array.isArray(worker.hiddenTraits)) worker.hiddenTraits = [];
+        if (typeof worker.rarity !== 'string') worker.rarity = preset?.rarity ?? 'common';
+        const look = isObject(worker.look) ? worker.look : {};
+        if (typeof look.gender !== 'string') look.gender = preset?.look.gender ?? 'female';
+        if (typeof look.messy !== 'boolean') look.messy = false;
+        worker.look = look;
+        // Lương cũ là lương trọn ngày (hai ca) → lương mỗi ca bằng một nửa, tổng mỗi ngày không đổi.
+        if (worker.controller === 'ai' && isNum(worker.wage)) worker.wage = Math.max(1, Math.round(worker.wage / 2));
+        const served = isNum(worker.served) ? worker.served : 0;
+        if (!isNum(worker.xp)) worker.xp = worker.controller === 'ai' ? served : 0;
+        if (!isNum(worker.level)) worker.level = worker.controller === 'ai' ? levelFor(served) : 1;
+        if (!isNum(worker.fatigue)) worker.fatigue = 0;
+        if (typeof worker.resigning !== 'boolean') worker.resigning = false;
+        if (!isNum(worker.arrivesAtMs)) worker.arrivesAtMs = 0;
+      }
+    }
+    if (!Array.isArray(state.recruits)) state.recruits = [];
+    if (!isNum(state.recruitRerollDay)) state.recruitRerollDay = 0;
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -203,13 +250,19 @@ function mergeConfig(state: Loose): void {
   };
 }
 
+const isTraitList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => typeof id === 'string' && id in TRAITS);
+
 const isShiftList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => SHIFT_IDS.includes(id as ShiftId));
 
 function isValidState(state: Loose): state is SimState & Loose {
   const s = state as Partial<Record<keyof SimState, unknown>>;
   if (![s.seed, s.tick, s.timeMs, s.nextId, s.money, s.nextSpawnAtMs, s.day, s.dayStartedAtMs].every(isNum)) return false;
   if ((s.money as number) < 0) return false;
-  if (!isObject(s.rng) || !['spawn', 'customer', 'ai', 'review'].every((k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s))) return false;
+  if (
+    !isObject(s.rng) ||
+    !['spawn', 'customer', 'ai', 'review', 'staff'].every((k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s))
+  )
+    return false;
   if (!isObject(s.stock) || !isObject(s.prices)) return false;
   for (const id of PRODUCT_IDS) {
     const entry = s.stock[id];
@@ -229,7 +282,15 @@ function isValidState(state: Loose): state is SimState & Loose {
       !isNum(worker.wage) ||
       !isNum(worker.wageOwed) ||
       !isShiftList(worker.shifts) ||
-      !isShiftList(worker.shiftsToday)
+      !isShiftList(worker.shiftsToday) ||
+      !isTraitList(worker.traits) ||
+      !isTraitList(worker.hiddenTraits) ||
+      !isNum(worker.level) ||
+      !isNum(worker.xp) ||
+      !isNum(worker.fatigue) ||
+      typeof worker.resigning !== 'boolean' ||
+      !isObject(worker.look) ||
+      (worker.look.gender !== 'female' && worker.look.gender !== 'male')
     )
       return false;
   }
@@ -249,6 +310,14 @@ function isValidState(state: Loose): state is SimState & Loose {
     !Array.isArray(s.ratingMilestones)
   )
     return false;
+  if (!Array.isArray(s.recruits) || !isNum(s.recruitRerollDay) || !isNum(s.stats.tips) || !isNum(s.stats.pilfered)) return false;
+  if (
+    !s.recruits.every(
+      (r: unknown) => r === null || (isObject(r) && typeof r.id === 'string' && isTraitList(r.traits) && isTraitList(r.hiddenTraits)),
+    )
+  ) {
+    return false;
+  }
   if (!isNum(s.stats.costOfSales) || !isNum(s.stats.expiredCost) || !isNum(s.stats.waitMsSum) || !isNum(s.stats.servedCount)) return false;
   for (const customer of Object.values(s.customers)) {
     if (!isObject(customer) || typeof customer.id !== 'string' || !(customer.loyaltyId === null || typeof customer.loyaltyId === 'string')) return false;
