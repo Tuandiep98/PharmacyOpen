@@ -1,0 +1,31 @@
+{
+  "name": "idle-pharmacy",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @pharmacy/web",
+    "build": "npm run build -w @pharmacy/web",
+    "preview": "npm run preview -w @pharmacy/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p packages/simulation && tsc -p apps/web && tsc -p tools",
+    "content:check": "vitest run tools/content-safety",
+    "lint": "eslint .",
+    "check": "npm run typecheck && npm run lint && npm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "@types/node": "^24.19.0",
+    "eslint": "^9.39.0",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.0.0",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vitest": "^5.0.2",
+    "zod": "^4.6.5"
+  }
+}

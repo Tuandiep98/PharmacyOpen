@@ -1,0 +1,28 @@
+import type { RejectReason } from '@pharmacy/simulation';
+
+export const REJECT_TEXT: Record<RejectReason, string> = {
+  'unknown-worker': 'Không tìm thấy nhân viên.',
+  'worker-busy': 'Dược sĩ đang bận, đợi xong việc hiện tại nhé.',
+  'unknown-customer': 'Khách đã rời đi.',
+  'customer-not-at-counter': 'Khách chưa tới quầy.',
+  'customer-already-served': 'Khách này đang được phục vụ.',
+  'unknown-order': 'Lượt phục vụ không còn nữa.',
+  'invalid-order-state': 'Đợi dược sĩ làm xong bước hiện tại.',
+  'unknown-product': 'Không có sản phẩm này.',
+  'out-of-stock': 'Kệ đã hết món này — chạm vào ô hết hàng để nhập thêm.',
+  'safety-referral-required': 'Khách đang mô tả triệu chứng. Hãy khuyên khách đi khám.',
+  'insufficient-funds': 'Không đủ xu.',
+  'shelf-full': 'Kệ đã đầy.',
+  'counter-assigned-elsewhere': 'Quầy đang giao cho nhân viên khác — chạm “Tự phục vụ” để nhận lại.',
+  'not-your-order': 'Khách này đang do nhân viên khác phục vụ.',
+  'unknown-candidate': 'Không tìm thấy ứng viên.',
+  'already-hired': 'Người này đã làm ở tiệm rồi.',
+  'staff-full': 'Đã đủ số nhân viên tối đa.',
+  'unknown-counter': 'Không tìm thấy quầy.',
+  'unknown-upgrade': 'Không có nâng cấp này.',
+  'already-owned': 'Đã có nâng cấp này.',
+  'unknown-complaint': 'Không tìm thấy khiếu nại.',
+  'complaint-closed': 'Khiếu nại này đã được phản hồi.',
+  'price-out-of-range': 'Giá phải cao hơn giá vốn và không vượt quá 1,5 lần giá tham khảo.',
+  'cannot-dismiss-player': 'Bạn là chủ tiệm, không thể tự cho mình nghỉ.',
+};

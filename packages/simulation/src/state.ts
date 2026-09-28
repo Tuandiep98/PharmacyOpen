@@ -1,0 +1,177 @@
+import { cloneConfig, DEFAULT_CONFIG } from './config';
+import { PRODUCT_IDS, PRODUCTS } from './content/products';
+import type { ProductId, StaffCandidateDef } from './content/types';
+import type { Emit } from './events';
+import { recordInteraction } from './reputation';
+import { createStream } from './rng';
+import {
+  SAVE_VERSION,
+  type Customer,
+  type CustomerOutcome,
+  type SimConfig,
+  type SimState,
+  type SimStats,
+  type StockEntry,
+  type Worker,
+} from './types';
+
+export const PLAYER_WORKER_ID = 'w-player';
+
+export function createInitialState(seed: number, config: SimConfig = DEFAULT_CONFIG): SimState {
+  const stock = {} as Record<ProductId, StockEntry>;
+  for (const id of PRODUCT_IDS) stock[id] = { shelf: PRODUCTS[id].shelfCapacity, capacity: PRODUCTS[id].shelfCapacity };
+
+  const player: Worker = {
+    id: PLAYER_WORKER_ID,
+    name: 'An',
+    role: 'pharmacist',
+    controller: 'player',
+    speed: 1,
+    // Người chơi tự chọn món nên knowledge không dùng; communication áp dụng như mọi nhân viên.
+    knowledge: 1,
+    communication: 0.7,
+    trait: null,
+    look: { skin: 1, hair: 0, hairStyle: 0 },
+    wage: 0,
+    wageOwed: 0,
+    orderId: null,
+    task: null,
+    thinkUntilMs: 0,
+    expression: 'neutral',
+    emoteUntilMs: 0,
+    served: 0,
+    perfSum: 0,
+    perfCount: 0,
+    repStarsSum: 0,
+    repCount: 0,
+  };
+
+  const prices = {} as Record<ProductId, number>;
+  for (const id of PRODUCT_IDS) prices[id] = PRODUCTS[id].price;
+
+  const stats: SimStats = {
+    customersArrived: 0,
+    sales: 0,
+    revenue: 0,
+    referrals: 0,
+    leftAngry: 0,
+    wrongItems: 0,
+    safetyWarnings: 0,
+    spentOnStock: 0,
+    spentOnStaff: 0,
+    spentOnUpgrades: 0,
+    spentOnVouchers: 0,
+    spentOnWages: 0,
+    turnedAway: 0,
+  };
+
+  const ownConfig = cloneConfig(config);
+  return {
+    version: SAVE_VERSION,
+    seed,
+    tick: 0,
+    timeMs: 0,
+    nextId: 1,
+    money: ownConfig.startingMoney,
+    config: ownConfig,
+    rng: {
+      spawn: createStream(seed, 'spawn'),
+      customer: createStream(seed, 'customer'),
+      ai: createStream(seed, 'ai'),
+      review: createStream(seed, 'review'),
+    },
+    nextSpawnAtMs: ownConfig.firstSpawnMs,
+    customers: {},
+    queue: [],
+    counters: [{ id: 'counter-1', customerId: null, operatorId: PLAYER_WORKER_ID }],
+    workers: { [PLAYER_WORKER_ID]: player },
+    orders: {},
+    stock,
+    prices,
+    day: 1,
+    dayStartedAtMs: 0,
+    dayReports: [],
+    upgrades: [],
+    interactions: [],
+    reviews: [],
+    complaints: [],
+    reputation: { starsSum: 0, count: 0, histogram: [0, 0, 0, 0, 0] },
+    stats,
+    dayStart: { money: ownConfig.startingMoney, stats: { ...stats }, starsSum: 0, reviewCount: 0 },
+  };
+}
+
+export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
+  return {
+    id: `w-${candidate.id}`,
+    name: candidate.name,
+    role: candidate.role,
+    controller: 'ai',
+    speed: candidate.speed,
+    knowledge: candidate.knowledge,
+    communication: candidate.communication,
+    trait: candidate.trait,
+    look: { ...candidate.look },
+    wage: candidate.wage,
+    wageOwed: 0,
+    orderId: null,
+    task: null,
+    thinkUntilMs: 0,
+    expression: 'neutral',
+    emoteUntilMs: 0,
+    served: 0,
+    perfSum: 0,
+    perfCount: 0,
+    repStarsSum: 0,
+    repCount: 0,
+  };
+}
+
+export function newId(state: SimState, prefix: string): string {
+  return `${prefix}${state.nextId++}`;
+}
+
+/** Trả hàng đã lấy về kệ (khi khách từ chối hoặc bỏ đi). */
+export function returnReservedStock(state: SimState, orderId: string): void {
+  const order = state.orders[orderId];
+  if (!order?.productId) return;
+  state.stock[order.productId].shelf += 1;
+  order.productId = null;
+}
+
+/**
+ * Kết thúc lượt của khách: ghi nhận tương tác (hiệu suất, đánh giá, danh tiếng), giải phóng quầy,
+ * nhân viên và cho khách rời cửa hàng.
+ */
+export function dismissCustomer(state: SimState, customer: Customer, outcome: CustomerOutcome, emit: Emit): void {
+  recordInteraction(state, customer, customer.orderId ? state.orders[customer.orderId] : undefined, outcome, emit);
+  if (customer.orderId) {
+    const order = state.orders[customer.orderId];
+    if (order) {
+      const worker = state.workers[order.workerId];
+      if (worker && worker.orderId === order.id) {
+        worker.orderId = null;
+        worker.thinkUntilMs = 0;
+      }
+      // Đơn đã xong hoặc đã hủy không giữ lại trong state để save gọn.
+      delete state.orders[order.id];
+    }
+    customer.orderId = null;
+  }
+  for (const counter of state.counters) {
+    if (counter.customerId === customer.id) counter.customerId = null;
+  }
+  state.queue = state.queue.filter((id) => id !== customer.id);
+  customer.phase = 'leaving';
+  customer.outcome = outcome;
+  customer.leaveAtMs = state.timeMs + state.config.leaveMs;
+  const waitedTooLong = customer.patienceMs / customer.patienceMaxMs < 0.35;
+  customer.expression =
+    outcome === 'bought'
+      ? waitedTooLong ? 'neutral' : 'happy'
+      : outcome === 'referred'
+        ? 'grateful'
+        : outcome === 'left-angry'
+          ? 'angry'
+          : 'neutral';
+}

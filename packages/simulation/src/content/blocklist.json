@@ -1,0 +1,15 @@
+{
+  "_comment": "Bộ lọc an toàn nội dung, kiểm tra bởi tools/content-safety. Chữ thường, Unicode NFC, so khớp nguyên từ. nowhere: cấm ở mọi nội dung game và mã nguồn UI. gameVoice: cấm trong lời của game (tên/nhãn sản phẩm, câu tư vấn, UI) và trong yêu cầu named/need. symptoms: chỉ được xuất hiện trong yêu cầu kind = refer. healthOutcome: cấm trong lời bình đánh giá và phản hồi khiếu nại (kết quả sức khoẻ không phải thước đo năng lực nhân viên).",
+  "nowhere": {
+    "realBrands": ["pharmacity", "long châu", "an khang", "guardian", "medicare", "watsons", "nhà thuốc 365"],
+    "drugNames": [
+      "paracetamol", "acetaminophen", "panadol", "efferalgan", "ibuprofen", "aspirin", "amoxicillin", "augmentin",
+      "azithromycin", "cefuroxim", "diclofenac", "loratadin", "cetirizin", "omeprazol", "dexamethason", "prednisolon",
+      "berberin", "smecta", "oresol", "kháng sinh", "thuốc hạ sốt", "thuốc giảm đau", "thuốc ngủ", "thuốc an thần", "corticoid"
+    ],
+    "dosage": ["mg", "mcg", "ml", "liều", "liều dùng", "liều lượng", "viên/ngày", "lần/ngày", "uống ngày"]
+  },
+  "gameVoice": ["chữa", "chữa khỏi", "điều trị", "đặc trị", "trị dứt điểm", "khỏi bệnh", "khỏi hẳn", "hết bệnh", "thần dược", "cam kết hiệu quả", "kê đơn cho"],
+  "healthOutcome": ["khỏi bệnh", "đỡ bệnh", "hết ốm", "khỏi ốm", "hết đau", "hết sốt", "đỡ sốt", "thuốc hay", "uống vào là", "dùng là khỏi"],
+  "symptoms": ["sốt", "ho", "đau", "chóng mặt", "buồn nôn", "nôn", "tiêu chảy", "khó thở", "ngứa", "phát ban", "sưng", "viêm", "co giật", "ngất"]
+}

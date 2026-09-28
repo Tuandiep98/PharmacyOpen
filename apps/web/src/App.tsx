@@ -1,0 +1,434 @@
+import { dayProgress, storeRating, UPGRADES, type DeepReadonly, type SimEvent, type SimState } from '@pharmacy/simulation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BRAND } from './brand';
+import { DandelionLogo } from './art/Furniture';
+import {
+  BoxIcon,
+  CheckIcon,
+  CoinIcon,
+  CrossMarkIcon,
+  InfoIcon,
+  MapIcon,
+  SpeakerIcon,
+  StaffIcon,
+  StarIcon,
+  StoreIcon,
+  WarningIcon,
+} from './art/Icons';
+import { InventoryPanel } from './features/inventory/InventoryPanel';
+import { ProductSheet } from './features/inventory/ProductSheet';
+import { CustomerInfo } from './features/store/CustomerInfo';
+import { ServiceTray } from './features/store/ServiceTray';
+import { PLAYER_WORKER_ID } from './features/store/useServiceActions';
+import { ProductIcon } from './art/Products';
+import { REGISTER_SPOT, StoreScene } from './features/store/StoreScene';
+import { WorkerSheet } from './features/staff/WorkerSheet';
+import { StaffPanel } from './features/staff/StaffPanel';
+import { UpgradePanel } from './features/expansion/UpgradePanel';
+import { ReviewsPanel } from './features/reviews/ReviewsPanel';
+import { LedgerSheet } from './features/ledger/LedgerSheet';
+import { OfflineDialog } from './features/ledger/OfflineDialog';
+import { SaveSection } from './features/save/SaveSection';
+import { formatRating, starText } from './ui/Stars';
+import { useBridge, useGameEvents, useGameState } from './game/useGame';
+import { useUi, type Tab, type Toast } from './ui/uiStore';
+import { useSettings } from './ui/settings';
+import { GameButton, IconButton } from './ui/primitives';
+import { playSfx } from './audio/sfx';
+import { burst, celebrate } from './fx/confetti';
+
+const WELCOME_KEY = 'idle-pharmacy.welcome.v1';
+/** Cột mốc số lượt bán được chúc mừng (giá trị tạm, sẽ chuyển thành nhiệm vụ ở bước tiến trình). */
+const SALE_MILESTONES = [5, 10, 25, 50, 100, 200, 500];
+
+function readFlag(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string): void {
+  try {
+    localStorage.setItem(key, '1');
+  } catch {
+    // Chế độ riêng tư/chặn lưu trữ: bỏ qua, lần sau chỉ hiện lại lời chào.
+  }
+}
+
+export function App() {
+  const bridge = useBridge();
+  const state = useGameState();
+  const [firstVisit] = useState(() => !readFlag(WELCOME_KEY));
+  const [showInfo, setShowInfo] = useState(firstVisit);
+  const offline = useUi((s) => s.offline);
+  const setOffline = useUi((s) => s.setOffline);
+  // Hộp thoại che màn hình thì tạm dừng mô phỏng.
+  const paused = showInfo || offline !== null;
+
+  useEffect(() => {
+    bridge.setRunning(!paused);
+  }, [bridge, paused]);
+  useEffect(() => () => bridge.setRunning(false), [bridge]);
+
+  useEventFeedback();
+
+  return (
+    <div className="app">
+      <Hud state={state} onInfo={() => setShowInfo(true)} />
+      <main className="stage">
+        <div className="scene-wrap">
+          <StoreScene state={state} />
+          <Toasts />
+        </div>
+        <div className="side">
+          <ServiceTray state={state} />
+          <Inspector state={state} />
+        </div>
+      </main>
+      <BottomNav state={state} />
+      <DragGhost />
+      {offline && !showInfo && <OfflineDialog summary={offline} onClose={() => setOffline(null)} />}
+      {showInfo && (
+        <WelcomeDialog
+          seed={state.seed}
+          showSave={!firstVisit || state.tick > 0}
+          onClose={() => {
+            writeFlag(WELCOME_KEY);
+            setShowInfo(false);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function useEventFeedback() {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
+  const pushFloater = useUi((s) => s.pushFloater);
+  const lastTurnedAwayToast = useRef(-Infinity);
+  const handler = useCallback(
+    (events: SimEvent[]) => {
+      for (const e of events) {
+        switch (e.type) {
+          case 'customerArrived':
+            playSfx('arrive');
+            break;
+          case 'saleCompleted': {
+            pushFloater(`+${e.amount} ${BRAND.currency}`, REGISTER_SPOT.x, REGISTER_SPOT.y);
+            const sales = bridge.state.stats.sales;
+            if (SALE_MILESTONES.includes(sales)) {
+              playSfx('milestone');
+              celebrate();
+              pushToast('good', `Cột mốc: ${sales} lượt bán! Tiệm đang đông khách dần.`);
+            } else {
+              playSfx('sale');
+            }
+            break;
+          }
+          case 'wrongProduct':
+            playSfx('wrong');
+            pushToast('bad', 'Khách: “Đây không phải thứ mình cần.” Hàng đã được trả về kệ.');
+            break;
+          case 'safetyWarning': {
+            playSfx('warn');
+            const worker = bridge.state.workers[e.workerId];
+            pushToast(
+              'warn',
+              e.workerId === PLAYER_WORKER_ID
+                ? 'Không bán cho khách đang mô tả triệu chứng — hãy khuyên khách đi khám.'
+                : `${worker?.name ?? 'Nhân viên'} định bán hàng cho khách có triệu chứng — hệ thống đã chặn, sẽ khuyên khách đi khám.`,
+            );
+            break;
+          }
+          case 'customerTurnedAway': {
+            // Nhắc tối đa mỗi 20 giây để không làm phiền.
+            const now = performance.now();
+            if (now - lastTurnedAwayToast.current > 20_000) {
+              lastTurnedAwayToast.current = now;
+              pushToast('warn', 'Hàng chờ đầy — một khách đã bỏ đi. Giao quầy cho nhân viên hoặc nâng cấp để phục vụ kịp.');
+            }
+            break;
+          }
+          case 'staffHired': {
+            const worker = bridge.state.workers[e.workerId];
+            playSfx('milestone');
+            burst(0.5, 0.4);
+            pushToast('good', `${worker?.name ?? 'Nhân viên mới'} đã vào làm! Giao quầy trong khay phục vụ hoặc tab Nhân sự.`);
+            break;
+          }
+          case 'upgradeBought':
+            playSfx('restock');
+            burst(0.5, 0.35);
+            pushToast('good', `Đã lắp: ${UPGRADES[e.upgradeId]?.name ?? 'nâng cấp'}.`);
+            break;
+          case 'counterAssigned': {
+            const worker = bridge.state.workers[e.workerId];
+            pushToast('info', e.workerId === PLAYER_WORKER_ID ? 'Bạn đứng quầy.' : `${worker?.name} đứng quầy — bạn có thể để tiệm tự chạy.`);
+            break;
+          }
+          case 'referralCompleted':
+            if (e.appropriate) {
+              playSfx('refer');
+              // Khen lần đầu làm đúng quy trình an toàn để người chơi nhớ hành vi này.
+              if (bridge.state.stats.referrals === 1) {
+                burst(0.3, 0.55);
+                pushToast('good', 'Lần đầu khuyên khách đi khám — đúng quy trình an toàn!');
+                break;
+              }
+            }
+            pushToast(
+              e.appropriate ? 'good' : 'info',
+              e.appropriate ? 'Khách cảm ơn lời khuyên và sẽ đi khám.' : 'Khách chỉ cần mua đồ nên rời đi tay không.',
+            );
+            break;
+          case 'reviewPosted': {
+            // Sao bay lên phía trên khách vừa rời quầy.
+            pushFloater(starText(e.stars), 160, 262);
+            if (e.stars <= 2) playSfx('wrong');
+            break;
+          }
+          case 'complaintOpened':
+            pushToast('warn', 'Có khách vừa để lại đánh giá thấp — mở tab Đánh giá để xem lý do và phản hồi.');
+            break;
+          case 'complaintResolved':
+            pushToast(
+              e.improved ? 'good' : 'info',
+              e.improved ? 'Khách đã đọc phản hồi và nâng đánh giá thêm 1 sao.' : 'Khách đã đọc phản hồi nhưng giữ nguyên đánh giá.',
+            );
+            break;
+          case 'customerLeft':
+            playSfx('leave');
+            pushToast('bad', 'Một khách đã bỏ về vì chờ quá lâu.');
+            break;
+          case 'restocked':
+            playSfx('restock');
+            break;
+          case 'dayEnded': {
+            const r = e.report;
+            playSfx('milestone');
+            pushToast(
+              r.wagesOwed > 0 ? 'warn' : r.profit >= 0 ? 'good' : 'info',
+              r.wagesOwed > 0
+                ? `Hết ngày ${r.day}: thiếu xu trả lương, còn nợ ${r.wagesOwed} ${BRAND.currency}. Chạm vào số xu để xem sổ sách.`
+                : `Hết ngày ${r.day}: ${r.profit >= 0 ? 'lãi' : 'lỗ'} ${Math.abs(r.profit)} ${BRAND.currency}. Chạm vào số xu để xem sổ sách.`,
+            );
+            break;
+          }
+          case 'staffDismissed':
+            pushToast('info', `${e.name} đã nghỉ việc. Có thể tuyển lại ở tab Nhân sự.`);
+            break;
+          case 'productReady': {
+            // Khách nhận đúng món thì tự thanh toán (vẫn qua lệnh checkout có kiểm tra) để bớt một lần chạm.
+            const order = bridge.state.orders[e.orderId];
+            if (order?.workerId === PLAYER_WORKER_ID) {
+              queueMicrotask(() => bridge.dispatch({ type: 'checkout', workerId: PLAYER_WORKER_ID, orderId: e.orderId }));
+            }
+            break;
+          }
+        }
+      }
+    },
+    [bridge, pushToast, pushFloater],
+  );
+  useGameEvents(handler);
+}
+
+function Hud({ state, onInfo }: { state: DeepReadonly<SimState>; onInfo: () => void }) {
+  const select = useUi((s) => s.select);
+  const setTab = useUi((s) => s.setTab);
+  const progress = dayProgress(state);
+  const owed = Object.values(state.workers).some((w) => w.wageOwed > 0);
+  const openLedger = () => {
+    setTab('store');
+    select({ kind: 'ledger' });
+  };
+  return (
+    <header className="hud">
+      <div className="hud-brand">
+        <svg width={30} height={30} viewBox="-15 -15 30 30" aria-hidden>
+          <DandelionLogo r={14} />
+        </svg>
+        <span>{BRAND.short}</span>
+      </div>
+      <div className="hud-stats">
+        <button
+          className={`chip chip-btn ${owed ? 'alert' : ''}`}
+          onClick={openLedger}
+          aria-label={`${state.money} ${BRAND.currency}, ngày ${state.day}. Mở sổ sách`}
+        >
+          <CoinIcon size={20} />
+          <b>{state.money}</b>
+          <span className="chip-day" aria-hidden>
+            N{state.day}
+            <i style={{ width: `${progress * 100}%` }} />
+          </span>
+        </button>
+        <span className="chip" aria-label={`Đánh giá cửa hàng ${formatRating(storeRating(state))} trên 5 sao`}>
+          <StarIcon size={20} />
+          <b>{formatRating(storeRating(state))}</b>
+        </span>
+        <SoundToggle />
+        <IconButton onClick={onInfo} aria-label="Thông tin trò chơi">
+          <InfoIcon size={24} />
+        </IconButton>
+      </div>
+    </header>
+  );
+}
+
+function SoundToggle() {
+  const sound = useSettings((s) => s.sound);
+  const toggle = useSettings((s) => s.toggleSound);
+  return (
+    <IconButton onClick={toggle} aria-pressed={sound} aria-label={sound ? 'Tắt âm thanh' : 'Bật âm thanh'}>
+      <SpeakerIcon size={24} muted={!sound} />
+    </IconButton>
+  );
+}
+
+function Inspector({ state }: { state: DeepReadonly<SimState> }) {
+  const tab = useUi((s) => s.tab);
+  const selection = useUi((s) => s.selection);
+  const select = useUi((s) => s.select);
+  const setTab = useUi((s) => s.setTab);
+
+  let content: React.ReactNode = null;
+  if (tab === 'inventory') content = <InventoryPanel state={state} />;
+  else if (tab === 'staff') content = <StaffPanel state={state} />;
+  else if (tab === 'expansion') content = <UpgradePanel state={state} />;
+  else if (tab === 'reviews') content = <ReviewsPanel state={state} />;
+  else if (selection?.kind === 'customer') content = <CustomerInfo state={state} customerId={selection.id} />;
+  else if (selection?.kind === 'product') content = <ProductSheet state={state} productId={selection.id} />;
+  else if (selection?.kind === 'worker') content = <WorkerSheet state={state} workerId={selection.id} />;
+  else if (selection?.kind === 'ledger') content = <LedgerSheet state={state} />;
+
+  const close = () => (tab === 'store' ? select(null) : setTab('store'));
+  return (
+    <aside className={`inspector ${content ? 'open' : 'empty'}`} data-size={tab === 'store' ? 'auto' : 'full'} aria-label="Chi tiết">
+      {content && <div className="sheet-backdrop" onClick={close} aria-hidden />}
+      {content ? (
+        <div className="sheet">
+          <div className="sheet-bar">
+            <span className="sheet-grip" aria-hidden />
+            <IconButton
+              className="close"
+              aria-label="Đóng"
+              onClick={close}
+            >
+              <CrossMarkIcon size={22} />
+            </IconButton>
+          </div>
+          <div className="sheet-body">{content}</div>
+        </div>
+      ) : (
+        <p className="muted inspector-hint">Chạm vào kệ hàng, khách đang xếp hàng hoặc nhân viên để xem chi tiết.</p>
+      )}
+    </aside>
+  );
+}
+
+const NAV: { tab: Tab; label: string; icon: React.ReactNode }[] = [
+  { tab: 'store', label: 'Cửa hàng', icon: <StoreIcon /> },
+  { tab: 'staff', label: 'Nhân sự', icon: <StaffIcon /> },
+  { tab: 'inventory', label: 'Kho', icon: <BoxIcon /> },
+  { tab: 'reviews', label: 'Đánh giá', icon: <StarIcon /> },
+  { tab: 'expansion', label: 'Mở rộng', icon: <MapIcon /> },
+];
+
+function BottomNav({ state }: { state: DeepReadonly<SimState> }) {
+  const tab = useUi((s) => s.tab);
+  const setTab = useUi((s) => s.setTab);
+  const openComplaints = state.complaints.filter((c) => c.status === 'open').length;
+  return (
+    <nav className="bottom-nav">
+      {NAV.map((item) => {
+        const badge = item.tab === 'reviews' ? openComplaints : 0;
+        return (
+          <button
+            key={item.tab}
+            className={`nav-item ${tab === item.tab ? 'active' : ''}`}
+            aria-current={tab === item.tab ? 'page' : undefined}
+            aria-label={badge ? `${item.label}, ${badge} khiếu nại chờ phản hồi` : undefined}
+            onClick={() => setTab(item.tab)}
+          >
+            <span className="nav-icon">
+              {item.icon}
+              {badge > 0 && <span className="nav-badge">{badge}</span>}
+            </span>
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Hình sản phẩm bay theo ngón tay khi kéo; đặt cao hơn điểm chạm để ngón tay không che. */
+function DragGhost() {
+  const drag = useUi((s) => s.drag);
+  if (!drag) return null;
+  return (
+    <div className={`drag-ghost ${drag.over ? 'over' : ''}`} style={{ left: drag.x, top: drag.y }} aria-hidden>
+      <ProductIcon id={drag.productId} size={48} />
+    </div>
+  );
+}
+
+function Toasts() {
+  const toasts = useUi((s) => s.toasts);
+  return (
+    <div className="toasts" aria-live="polite">
+      {toasts.map((t) => (
+        <ToastItem key={t.id} toast={t} />
+      ))}
+    </div>
+  );
+}
+
+function ToastItem({ toast }: { toast: Toast }) {
+  const dismiss = useUi((s) => s.dismissToast);
+  useEffect(() => {
+    const id = window.setTimeout(() => dismiss(toast.id), 3200);
+    return () => window.clearTimeout(id);
+  }, [dismiss, toast.id]);
+  const icon =
+    toast.tone === 'good' ? <CheckIcon size={20} /> : toast.tone === 'info' ? <InfoIcon size={20} /> : toast.tone === 'warn' ? <WarningIcon size={20} /> : <CrossMarkIcon size={20} />;
+  return (
+    <div className={`toast ${toast.tone}`} onClick={() => dismiss(toast.id)}>
+      {icon}
+      <span>{toast.text}</span>
+    </div>
+  );
+}
+
+function WelcomeDialog({ seed, showSave, onClose }: { seed: number; showSave: boolean; onClose: () => void }) {
+  return (
+    <div className="modal-backdrop">
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="welcome-title">
+        <svg width={56} height={56} viewBox="-15 -15 30 30" aria-hidden>
+          <DandelionLogo r={14} />
+        </svg>
+        <h1 id="welcome-title">{BRAND.name}</h1>
+        <p>Chạm vào khách ở quầy, lắng nghe nhu cầu và chọn đúng món. Nhớ nhập hàng khi kệ vơi!</p>
+        <p className="small muted">Tuyển nhân viên và giao quầy để tiệm tự bán — kể cả khi bạn rời game. Tiến trình tự lưu.</p>
+        <ul className="disclaimer">
+          <li>Đây là trò chơi mô phỏng. Cửa hàng, nhãn hiệu, sản phẩm và nhân vật đều là hư cấu.</li>
+          <li>Nội dung trong game không phải lời khuyên y tế và không thay thế bác sĩ hay dược sĩ.</li>
+          <li>Khi khách mô tả triệu chứng, hành động đúng trong game luôn là khuyên khách đi khám.</li>
+        </ul>
+        <GameButton tone="primary" size="large" onClick={onClose} autoFocus>
+          {showSave ? 'Tiếp tục' : 'Mở cửa tiệm'}
+        </GameButton>
+        {showSave && <SaveSection />}
+        <p className="muted small">
+          Bản thử nghiệm · seed {seed}
+          <br />
+          Font Nunito (SIL OFL 1.1) · canvas-confetti (ISC)
+        </p>
+      </div>
+    </div>
+  );
+}

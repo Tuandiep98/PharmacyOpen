@@ -1,0 +1,17 @@
+---
+description: Visual system and interaction rules for the Bồ Công Anh game UI
+alwaysApply: true
+---
+
+# UI style
+
+- Follow `docs/ui-style.md` for the game's palette, component states, art and layout rules.
+- Use tokens in `apps/web/src/ui/theme.css` for CSS; add new tokens there rather than introducing one-off colours in a screen.
+- Use `GameButton`, `IconButton`, `PanelHeading` and `EmptyState` from `apps/web/src/ui/primitives.tsx` for new panels and actions.
+- Use `ART`, `INK` and `STROKE` from `apps/web/src/art/palette.ts` for new SVG art. Keep the 2 px dark-green outline and restrained fill palette.
+- Keep characters in the existing scene coordinates and products in the 40×48 frame. Give every new upgrade its own `UpgradeArt` illustration.
+- Preserve the fixed-step simulation and command path. UI reads state and dispatches commands; it does not change game rules.
+- Make important controls at least 44 px tall, give keyboard focus a visible ring, and show status with text or shape as well as colour.
+- Keep the main service tray available on portrait phones and the scene beside the tray on landscape tablets.
+- Never draw a red cross, green cross logo, real pharmacy brand, real drug or dosage. Read `docs/content-rules.md` before adding game content.
+- Run `npm run check` and `npm run build` after UI changes.

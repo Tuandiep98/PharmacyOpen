@@ -1,0 +1,13 @@
+{
+  "name": "Tiệm thuốc Bồ Công Anh",
+  "short_name": "Bồ Công Anh",
+  "description": "Game mô phỏng quản lý tiệm thuốc hư cấu.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#FBF6EE",
+  "theme_color": "#2F9E7A",
+  "lang": "vi",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
