@@ -36,6 +36,7 @@ import { catalogPageProducts, catalogPageSize } from "../../ui/catalog";
 import { useServiceActions } from "./useServiceActions";
 import { SceneOverlay, type OverlayItem } from "./SceneOverlay";
 import { customerLine, customerNeed, familiarity, staffLine } from "./dialogue";
+import { customerAction, workerAction } from "./idleActions";
 import { PLAYER_WORKER_ID } from "@pharmacy/simulation";
 import "./scene.css";
 
@@ -204,7 +205,13 @@ function useSceneViewBox(sceneWidth: number) {
   return { ref, viewBox: `0 ${vy} ${sceneWidth} ${vh}`, toPx, scale, size };
 }
 
-export function StoreScene({ state }: { state: State }) {
+export function StoreScene({
+  state,
+  paused = false,
+}: {
+  state: State;
+  paused?: boolean;
+}) {
   const brandIdentity = useBrandIdentity();
   const layout = sceneLayout(state.counters.length);
   const { ref, viewBox, toPx, scale, size } = useSceneViewBox(layout.width);
@@ -386,7 +393,7 @@ export function StoreScene({ state }: { state: State }) {
           cx={layout.shelfCx}
           width={Math.max(256, shelfWidth(shelfLevel))}
           level={ownedLevel("signboard")}
-          phase={dayPhase(state)}
+          phase={paused ? "paused" : dayPhase(state)}
         />
         <StaticShelfUnit
           level={shelfLevel}
@@ -430,6 +437,7 @@ export function StoreScene({ state }: { state: State }) {
         {workerSpots.map(({ worker, spot }) => {
           const selected =
             selection?.kind === "worker" && selection.id === worker.id;
+          const action = workerAction(worker, state.timeMs);
           return (
             <g
               key={worker.id}
@@ -442,10 +450,10 @@ export function StoreScene({ state }: { state: State }) {
               <g className="bob">
                 {selected && (
                   <g className="hl-underlay" filter="url(#fx-ring-gold)">
-                    <WorkerFigure worker={worker} />
+                    <WorkerFigure worker={worker} action={action} />
                   </g>
                 )}
-                <WorkerFigure worker={worker} />
+                <WorkerFigure worker={worker} action={action} />
               </g>
               <rect
                 x={-30}
@@ -538,6 +546,7 @@ export function StoreScene({ state }: { state: State }) {
                 ? "fx-ring-gold"
                 : null;
           const seated = "seated" in spot && spot.seated;
+          const action = customerAction(c, state.timeMs);
           return (
             <g
               key={c.id}
@@ -567,6 +576,7 @@ export function StoreScene({ state }: { state: State }) {
                         look={c.look}
                         expression={c.expression}
                         seated={seated}
+                        action={action}
                       />
                     </g>
                   )}
@@ -574,6 +584,7 @@ export function StoreScene({ state }: { state: State }) {
                     look={c.look}
                     expression={c.expression}
                     seated={seated}
+                    action={action}
                   />
                 </g>
                 {c.phase !== "leaving" && (

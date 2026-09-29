@@ -8,6 +8,25 @@ import type {
 import { ART, HAIR, INK, OUTFIT, PANTS, SKIN, pick } from "./palette";
 
 export type FaceExpression = CustomerExpression | WorkerExpression;
+export type CharacterAction =
+  "idle" | "phone" | "look-left" | "look-right" | "look-shelf" | "inspect";
+
+function headPose(action: CharacterAction) {
+  switch (action) {
+    case "phone":
+      return "translate(0 2) rotate(5 0 -78)";
+    case "look-left":
+      return "translate(-2 0) rotate(-5 0 -78)";
+    case "look-right":
+      return "translate(2 0) rotate(5 0 -78)";
+    case "look-shelf":
+      return "translate(0 -2) rotate(-3 0 -78)";
+    case "inspect":
+      return "translate(1 -1) rotate(4 0 -78)";
+    default:
+      return undefined;
+  }
+}
 const line = {
   fill: "none",
   stroke: INK,
@@ -17,11 +36,20 @@ const line = {
 };
 
 /** Mặt luôn nằm ở tâm (0,-78), đủ nét để đọc ở chân dung 56 px. */
-export function Face({ expression }: { expression: FaceExpression }) {
+export function Face({
+  expression,
+  action = "idle",
+}: {
+  expression: FaceExpression;
+  action?: CharacterAction;
+}) {
+  const gazeX =
+    action === "look-left" ? -2.5 : action === "look-right" ? 2.5 : 0;
+  const gazeY = action === "phone" ? 2 : action === "look-shelf" ? -2 : 0;
   const eyes = (
     <>
-      <ellipse cx={-8} cy={-77} rx={2.1} ry={3} fill={INK} />
-      <ellipse cx={8} cy={-77} rx={2.1} ry={3} fill={INK} />
+      <ellipse cx={-8 + gazeX} cy={-77 + gazeY} rx={2.1} ry={3} fill={INK} />
+      <ellipse cx={8 + gazeX} cy={-77 + gazeY} rx={2.1} ry={3} fill={INK} />
     </>
   );
   const closed = (
@@ -165,6 +193,7 @@ function Body({
   skin,
   variant = 0,
   seated = false,
+  action = "idle",
   children,
 }: {
   shirt: string;
@@ -172,6 +201,7 @@ function Body({
   skin: string;
   variant?: number;
   seated?: boolean;
+  action?: CharacterAction;
   children?: React.ReactNode;
 }) {
   return (
@@ -207,13 +237,15 @@ function Body({
         strokeWidth={2}
         strokeLinejoin="round"
       />
-      <path
-        d="M-25,-28 Q-23,-24 -20,-27 M20,-27 Q23,-24 25,-28"
-        fill="none"
-        stroke={skin}
-        strokeWidth={7}
-        strokeLinecap="round"
-      />
+      {action !== "phone" && action !== "inspect" && (
+        <path
+          d="M-25,-28 Q-23,-24 -20,-27 M20,-27 Q23,-24 25,-28"
+          fill="none"
+          stroke={skin}
+          strokeWidth={7}
+          strokeLinecap="round"
+        />
+      )}
       <path
         d="M-17,-49 Q0,-54 17,-49"
         fill="none"
@@ -236,6 +268,45 @@ function Body({
         />
       )}
       {children}
+      {action === "phone" && (
+        <g>
+          <path
+            d="M-24,-31 Q-24,-37 -16,-38 L-3,-42 M23,-31 Q19,-39 8,-42"
+            {...line}
+            stroke={skin}
+            strokeWidth={7}
+          />
+          <rect
+            x={-5}
+            y={-53}
+            width={14}
+            height={21}
+            rx={2.5}
+            fill={INK}
+            stroke={INK}
+            strokeWidth={1.5}
+          />
+          <rect x={-3} y={-50} width={10} height={14} rx={1} fill={ART.sky} />
+          <path
+            d="M-1,-44 H5 M-1,-41 H3"
+            stroke={ART.paper}
+            strokeWidth={1.3}
+            strokeLinecap="round"
+          />
+          <circle cx={2} cy={-34} r={1} fill={ART.paper} />
+        </g>
+      )}
+      {action === "inspect" && (
+        <g>
+          <path
+            d="M-24,-29 Q-24,-35 -12,-41 M23,-30 Q25,-39 16,-48"
+            {...line}
+            stroke={skin}
+            strokeWidth={7}
+          />
+          <circle cx={15} cy={-49} r={4} fill={skin} />
+        </g>
+      )}
     </g>
   );
 }
@@ -470,10 +541,12 @@ export function CustomerFigure({
   look,
   expression,
   seated = false,
+  action = "idle",
 }: {
   look: CustomerLook;
   expression: FaceExpression;
   seated?: boolean;
+  action?: CharacterAction;
 }) {
   const skin = pick(SKIN, look.skin);
   const shirt = pick(OUTFIT, look.outfit);
@@ -487,11 +560,14 @@ export function CustomerFigure({
         skin={skin}
         variant={look.outfit}
         seated={seated}
+        action={action}
       >
         <CustomerAccessory variant={look.outfit} />
       </Body>
-      <Head skin={skin} hair={hair} style={look.hairStyle} cap={shirt} />
-      <Face expression={expression} />
+      <g transform={headPose(action)}>
+        <Head skin={skin} hair={hair} style={look.hairStyle} cap={shirt} />
+        <Face expression={expression} action={action} />
+      </g>
     </g>
   );
 }
@@ -500,10 +576,12 @@ function Uniform({
   role,
   skin,
   pants,
+  action = "idle",
 }: {
   role: StaffRole;
   skin: string;
   pants: string;
+  action?: CharacterAction;
 }) {
   const pharmacist = role === "pharmacist";
   return (
@@ -511,6 +589,7 @@ function Uniform({
       shirt={pharmacist ? ART.paper : ART.leafLight}
       pants={pants}
       skin={skin}
+      action={action}
     >
       {pharmacist ? (
         <>
@@ -570,22 +649,26 @@ export function StaffFigure({
   look,
   role,
   expression,
+  action = "idle",
 }: {
   look: StaffLook;
   role: StaffRole;
   expression: FaceExpression;
+  action?: CharacterAction;
 }) {
   const skin = pick(SKIN, look.skin);
   const hair = pick(HAIR, look.hair);
   return (
     <g>
       <BackHair hair={hair} style={look.hairStyle} />
-      <Uniform role={role} skin={skin} pants="#56695D" />
+      <Uniform role={role} skin={skin} pants="#56695D" action={action} />
       {look.messy && <MessyClothes />}
-      <Head skin={skin} hair={hair} style={look.hairStyle} cap={ART.leaf} />
-      {look.messy && <MessyHair hair={hair} />}
-      <Face expression={expression} />
-      {look.gender === "female" && <Lashes />}
+      <g transform={headPose(action)}>
+        <Head skin={skin} hair={hair} style={look.hairStyle} cap={ART.leaf} />
+        {look.messy && <MessyHair hair={hair} />}
+        <Face expression={expression} action={action} />
+        {look.gender === "female" && <Lashes />}
+      </g>
     </g>
   );
 }
@@ -643,22 +726,26 @@ function MessyClothes() {
 /** An có kiểu tóc và áo blouse riêng để nhận ra ngay trên quầy. */
 export function PharmacistFigure({
   expression,
+  action = "idle",
 }: {
   expression: FaceExpression;
+  action?: CharacterAction;
 }) {
   const skin = SKIN[1];
   return (
     <g>
-      <Uniform role="pharmacist" skin={skin} pants="#596C69" />
-      <Head skin={skin} hair={HAIR[0]} style={0} />
-      <path
-        d="M-22,-89 Q-13,-103 -2,-101 Q5,-97 9,-99"
-        fill="none"
-        stroke={HAIR[0]}
-        strokeWidth={4}
-        strokeLinecap="round"
-      />
-      <Face expression={expression} />
+      <Uniform role="pharmacist" skin={skin} pants="#596C69" action={action} />
+      <g transform={headPose(action)}>
+        <Head skin={skin} hair={HAIR[0]} style={0} />
+        <path
+          d="M-22,-89 Q-13,-103 -2,-101 Q5,-97 9,-99"
+          fill="none"
+          stroke={HAIR[0]}
+          strokeWidth={4}
+          strokeLinecap="round"
+        />
+        <Face expression={expression} action={action} />
+      </g>
     </g>
   );
 }

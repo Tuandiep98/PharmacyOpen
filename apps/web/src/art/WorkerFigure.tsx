@@ -3,17 +3,28 @@ import {
   type DeepReadonly,
   type Worker,
 } from "@pharmacy/simulation";
-import { PharmacistFigure, StaffFigure } from "./Character";
+import {
+  PharmacistFigure,
+  StaffFigure,
+  type CharacterAction,
+} from "./Character";
 
 /** Vẽ đúng nhân vật cho một nhân viên: An có hình riêng, NPC dựng từ look + vai trò. */
-export function WorkerFigure({ worker }: { worker: DeepReadonly<Worker> }) {
+export function WorkerFigure({
+  worker,
+  action = "idle",
+}: {
+  worker: DeepReadonly<Worker>;
+  action?: CharacterAction;
+}) {
   if (worker.id === PLAYER_WORKER_ID)
-    return <PharmacistFigure expression={worker.expression} />;
+    return <PharmacistFigure expression={worker.expression} action={action} />;
   return (
     <StaffFigure
       look={worker.look}
       role={worker.role}
       expression={worker.expression}
+      action={action}
     />
   );
 }

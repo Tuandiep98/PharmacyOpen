@@ -133,8 +133,8 @@ export function StoreSign({
   cx: number;
   width: number;
   level?: number;
-  /** Có thì vẽ dải chéo OPEN/CLOSED ở góc phải bảng hiệu (chừa chỗ cho tên tiệm). */
-  phase?: DayPhase;
+  /** Dải trạng thái ở góc phải bảng hiệu (chừa chỗ cho tên tiệm). */
+  phase?: DayPhase | "paused";
 }) {
   const x = cx - width / 2;
   const textWidth = width - 76 - (phase ? 38 : 0);
@@ -193,7 +193,7 @@ export function StoreSign({
 }
 
 const BANNER: Record<
-  DayPhase,
+  DayPhase | "paused",
   { text: string; fill: string; ink: string; bulb: string }
 > = {
   open: { text: "OPEN", fill: "#FFD56F", ink: "#6A3F06", bulb: "#FFF6C4" },
@@ -204,6 +204,7 @@ const BANNER: Record<
     bulb: "#FFE1B8",
   },
   prep: { text: "CLOSED", fill: "#B95D50", ink: "#FFFFFF", bulb: "#6E3A33" },
+  paused: { text: "PAUSED", fill: "#476E78", ink: "#FFFFFF", bulb: "#C6E3E3" },
 };
 
 /**
@@ -215,7 +216,7 @@ function OpenBanner({
   x,
   y,
 }: {
-  phase: DayPhase;
+  phase: DayPhase | "paused";
   x: number;
   y: number;
 }) {

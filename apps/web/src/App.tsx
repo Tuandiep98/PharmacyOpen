@@ -161,7 +161,7 @@ export function App() {
   }, [level]);
 
   return (
-    <div className="app">
+    <div className={`app${userPaused ? " user-paused" : ""}`}>
       <Hud
         state={state}
         paused={userPaused}
@@ -169,30 +169,36 @@ export function App() {
         onInfo={() => setShowInfo(true)}
         onBrand={() => setShowBrand(true)}
       />
-      <main className="stage">
+      <main className="stage" inert={userPaused}>
         <div className="scene-wrap">
-          <StoreScene state={state} />
+          <StoreScene state={state} paused={userPaused} />
           <OpeningPanel state={state} />
           <DeliveryChip state={state} />
           <Toasts />
-          {userPaused && (
-            <div className="pause-veil">
-              <button
-                className="btn primary pause-resume"
-                onClick={() => setUserPaused(false)}
-              >
-                <PauseIcon size={26} paused /> Tiếp tục
-              </button>
-            </div>
-          )}
         </div>
         <div className="side">
           <ServiceTray state={state} />
           <Inspector state={state} />
         </div>
       </main>
-      <PrimaryNav state={state} />
+      <PrimaryNav state={state} paused={userPaused} />
       <DragGhost />
+      {userPaused && (
+        <div
+          className="pause-veil"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Trò chơi đang tạm dừng"
+        >
+          <button
+            className="btn primary pause-resume"
+            onClick={() => setUserPaused(false)}
+            autoFocus
+          >
+            <PauseIcon size={26} paused /> Tiếp tục
+          </button>
+        </div>
+      )}
       {offline && !showInfo && (
         <OfflineDialog summary={offline} onClose={() => setOffline(null)} />
       )}
@@ -647,7 +653,7 @@ function Hud({
     select({ kind: "ledger" });
   };
   return (
-    <header className="hud">
+    <header className="hud" inert={paused}>
       <button
         className="hud-brand hud-brand-button"
         onClick={onBrand}
@@ -866,7 +872,13 @@ const NAV: { tab: Tab; label: string; icon: React.ReactNode }[] = [
   { tab: "expansion", label: "Mở rộng", icon: <MapIcon /> },
 ];
 
-function PrimaryNav({ state }: { state: DeepReadonly<SimState> }) {
+function PrimaryNav({
+  state,
+  paused,
+}: {
+  state: DeepReadonly<SimState>;
+  paused: boolean;
+}) {
   const tab = useUi((s) => s.tab);
   const setTab = useUi((s) => s.setTab);
   const openComplaints = state.complaints.filter(
@@ -876,7 +888,7 @@ function PrimaryNav({ state }: { state: DeepReadonly<SimState> }) {
     (w) => w.resigning,
   ).length;
   return (
-    <nav className="bottom-nav" aria-label="Điều hướng chính">
+    <nav className="bottom-nav" aria-label="Điều hướng chính" inert={paused}>
       <div className="nav-items">
         {NAV.map((item) => {
           const badge =
