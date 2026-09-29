@@ -2,6 +2,7 @@ import {
   ARCHETYPES,
   COMPLAINT_RESPONSES,
   demandMultiplier,
+  PLAYER_WORKER_ID,
   PRODUCTS,
   REASONS,
   storeRating,
@@ -219,7 +220,13 @@ function Timeline({ state, interaction: i }: { state: State; interaction: DeepRe
       {i.wrongProductIds.map((p, n) => (
         <li key={n}>Đưa nhầm: {PRODUCTS[p].name}.</li>
       ))}
-      {i.safetyWarnings > 0 && <li>Hệ thống chặn bán hàng cho khách có triệu chứng ({i.safetyWarnings} lần).</li>}
+      {i.safetyWarnings > 0 && (
+        <li>
+          {i.workerId === PLAYER_WORKER_ID
+            ? `Bạn định bán hàng cho khách có triệu chứng rồi kịp dừng lại (${i.safetyWarnings} lần).`
+            : `Bạn đã ngăn ${worker?.name ?? 'nhân viên'} bán hàng cho khách có triệu chứng (${i.safetyWarnings} lần).`}
+        </li>
+      )}
       <li>
         Kết quả: {OUTCOME[i.outcome]}
         {i.productId && ` — ${PRODUCTS[i.productId].name}, ${i.price} ${BRAND.currency}`}

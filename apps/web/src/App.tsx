@@ -201,7 +201,7 @@ function useEventFeedback() {
               'warn',
               e.workerId === PLAYER_WORKER_ID
                 ? 'Không bán cho khách đang mô tả triệu chứng — hãy khuyên khách đi khám.'
-                : `${worker?.name ?? 'Nhân viên'} định bán hàng cho khách có triệu chứng — hệ thống đã chặn, sẽ khuyên khách đi khám.`,
+                : `Bạn đã ngăn ${worker?.name ?? 'nhân viên'} bán hàng cho khách có triệu chứng — sẽ khuyên khách đi khám.`,
             );
             break;
           }
