@@ -127,6 +127,7 @@ export function App() {
   const daySummary = useUi((s) => s.daySummary);
   const setDaySummary = useUi((s) => s.setDaySummary);
   const detailSelection = useUi((s) => s.selection);
+  const activeTab = useUi((s) => s.tab);
   const incidentPending =
     dailyOperationsCase(state) !== null && state.operations.choice === null;
   // Người chơi tự bấm tạm dừng từ menu tuỳ chọn.
@@ -166,7 +167,10 @@ export function App() {
   }, [level]);
 
   return (
-    <div className={`app${userPaused ? " user-paused" : ""}`}>
+    <div
+      className={`app${userPaused ? " user-paused" : ""}`}
+      data-tab={activeTab}
+    >
       <Hud
         state={state}
         paused={userPaused}

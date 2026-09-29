@@ -1589,9 +1589,21 @@ button:disabled {
   }
 }
 
-/* Các tab quản lý là màn hình cấp ứng dụng trên điện thoại. Không để chiều cao của
- * cảnh/khay nhân viên làm co panel khi chuyển từ Cửa hàng sang Kho, Nhân sự… */
-@media (max-width: 819px) {
+/* Lớp chữ, toast, bảng mở cửa… của cảnh giữ z-index bên trong cảnh, không nổi lên tab quản lý.
+ * (.side không dùng -webkit-overflow-scrolling: Safari iOS tạo stacking context riêng khiến
+ * tab toàn màn hình nằm dưới bong bóng thoại.) */
+.scene-wrap {
+  isolation: isolate;
+}
+
+/* Các tab quản lý là màn hình cấp ứng dụng trên điện thoại (dọc và xoay ngang). Không để chiều cao
+ * của cảnh/khay nhân viên làm co panel khi chuyển từ Cửa hàng sang Kho, Nhân sự… */
+@media (max-width: 819px), (max-height: 560px) {
+  /* Cảnh và khay bị che hoàn toàn: ẩn để không vẽ thừa và không lộ bong bóng khi tab trượt vào. */
+  .app[data-tab]:not([data-tab="store"]) .scene-wrap,
+  .app[data-tab]:not([data-tab="store"]) .side > :not(.inspector) {
+    visibility: hidden;
+  }
   .inspector[data-size="full"] {
     position: fixed;
     inset: 0;
@@ -1917,7 +1929,6 @@ button:disabled {
 }
 .sheet-body,
 .modal,
-.side,
 .tray-items,
 .catalog-categories,
 .counter-tabs {
@@ -2336,5 +2347,17 @@ button:disabled {
 @media (prefers-reduced-motion: reduce) {
   .activity-badge[data-kind="serving"] .activity-icon {
     animation: none;
+  }
+}
+
+/* Tablet ngang / màn rộng: cảnh vẫn ở bên trái, tab quản lý chiếm trọn cột phải thay vì bị khay đẩy xuống. */
+@media (min-width: 820px) and (min-height: 561px) and (orientation: landscape),
+  (min-width: 1100px) and (min-height: 561px) {
+  .app[data-tab]:not([data-tab="store"]) .side > :not(.inspector) {
+    display: none;
+  }
+  .app[data-tab]:not([data-tab="store"]) .inspector.open {
+    flex: 1;
+    min-height: 0;
   }
 }
