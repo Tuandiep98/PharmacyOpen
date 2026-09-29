@@ -26,6 +26,8 @@ export const REASONS: Record<ReasonCode, { label: string; scope: ReasonScope }> 
   'out-of-stock': { label: 'Hết hàng', scope: 'store' },
   'late-delivery': { label: 'Giao hàng trễ', scope: 'store' },
   'on-time-delivery': { label: 'Giao đúng hẹn', scope: 'praise' },
+  'awkward-talk': { label: 'Nói chuyện lúng túng', scope: 'staff' },
+  'patient-advice': { label: 'Tư vấn kiên nhẫn', scope: 'praise' },
 };
 
 /**
@@ -52,6 +54,8 @@ export const REVIEW_COMMENTS: Record<ReasonCode, string[]> = {
   'out-of-stock': ['Tới nơi thì món mình cần lại hết hàng.', 'Tiệm hay hết hàng, phải đi chỗ khác mua.'],
   'late-delivery': ['Hẹn giao mà đợi mãi không thấy hàng.', 'Đơn giao trễ hẹn, lần sau chắc mua chỗ khác.', 'Đặt hàng xong bị huỷ, mất cả buổi chờ.'],
   'on-time-delivery': ['Giao đúng hẹn, gói hàng cẩn thận.', 'Đặt online mà nhận nhanh, tiện ghê.'],
+  'awkward-talk': ['Nhân viên ấp úng, hỏi mãi mới hiểu.', 'Bạn bán hàng hơi rụt rè, trả lời không rõ.'],
+  'patient-advice': ['Hỏi nhiều mà nhân viên vẫn giải thích từ tốn.', 'Được gợi ý đúng thứ mình cần, dễ hiểu lắm.'],
 };
 
 /** Mẫu câu chủ tiệm phản hồi khiếu nại. */

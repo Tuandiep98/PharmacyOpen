@@ -15,7 +15,9 @@ export {
   performanceScore,
   responseSuccessChance,
   reviewProbability,
+  serviceTone,
   starsFrom,
+  type ServiceTone,
   storeRating,
 } from './reputation';
 export { Simulation, replay, type RecordedCommand } from './simulation';
@@ -49,6 +51,7 @@ export {
 export { effectiveKnowledge, hasTrait, LEVEL_XP, levelFor, MAX_LEVEL, QUIT_FATIGUE, retainWage } from './recruit';
 export { createSave, loadSave, SAVE_FORMAT, type LoadError, type LoadResult, type SaveFile } from './save';
 export { runOffline, type OfflineSummary } from './offline';
+export { customerName } from './loyalty';
 export { nextExpiry } from './stock';
 export { deliveryCap, deliveryTimeLeft, dueAtFor, isOpenDelivery, nextPackItem } from './delivery';
 export * from './progression';

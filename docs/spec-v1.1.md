@@ -208,6 +208,12 @@ Logic ở `packages/simulation/src/delivery.ts`, lệnh ở `commands.ts`, NPC �
 - **Trễ và huỷ:** giao sau hạn là trễ, khách gần như chắc chắn đánh giá 1–2★ (`late-delivery`, lỗi cửa hàng) và có thể mở khiếu nại. Quá hạn `deliveryGraceMs` mà chưa gửi thì khách huỷ (đánh giá 1★). Tiệm tự huỷ đơn chưa gửi cũng bị chê; món đã gói trả lại kệ (hết hạn hoặc kệ đầy thì tính hàng huỷ).
 - Tổng kết ngày và màn hình vắng mặt ghi số đơn đã giao, trễ, bị huỷ, và số khách hẹn giao / đi chỗ khác.
 
+## 3j. Khách quen có tên, giọng giao tiếp và tiêu chí đánh giá nhân viên
+
+- Hồ sơ khách quen có `name` (`content/names.ts`): cách gọi theo kiểu khách (vội/khó tính: anh/chị, cẩn thận: cô/chú, tiết kiệm: bác, hay hỏi: gọi tên) và dáng tóc; chọn bằng băm id, không tốn RNG. Save v12 đặt tên cho hồ sơ cũ.
+- `serviceTone` (reputation.ts) suy giọng người bán từ kỹ năng/tính cách: niềm nở, bình thường, cộc lốc (Nóng tính), nói nhiều (Hoạt ngôn), lúng túng (giao tiếp < 0,45). Giao diện dùng giọng này cho lời thoại; khách dùng cùng tiêu chí để chấm.
+- Tiêu chí mới trong đánh giá: “Nói chuyện lúng túng” (lỗi nhân viên, −0,08 hài lòng) và “Tư vấn kiên nhẫn” (khen: khách thích nghe giải thích, kể nhu cầu, được gợi ý đúng ngay bởi người giao tiếp ≥ 0,6, +0,05). Thẻ nhân viên hiện giọng giao tiếp và các lời khen/chê khách nhắc nhiều nhất.
+
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 
 - Bước 6 đã thêm kho theo lô: mỗi lô có số lượng và hạn theo thời gian game; lấy hàng theo hạn gần nhất trước, hàng hết hạn rời kệ. Món đã cầm mà hết hạn trước lúc thanh toán cũng bị loại và nhân viên phải chọn lại. Save v2 được nâng lên v3; hàng cũ nhận hạn mới, không bị mất.

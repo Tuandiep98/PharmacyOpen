@@ -43,6 +43,21 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 - Giao quầy dùng một bộ chọn chung `CounterStaffPicker` (`features/staff/CounterAssign.tsx`): ô vuông ≥ 44 px gồm chân dung, cấp, tên ngắn và việc đang làm; người đang đứng quầy đó hiện “✓ Đang đứng”, người bận có thanh tiến độ. Chạm mặt quầy trong cảnh mở thẻ quầy (`CounterCard`) có bộ chọn này; khay phục vụ và tab Nhân sự dùng lại đúng component, không thêm nút “Giao cho …” riêng.
 - Trên thẻ nhân viên, lịch ca và vị trí chỉ hiện tóm tắt; chạm mới mở lựa chọn. Thanh cấp độ/mệt có nền và phần tô đúng tỉ lệ giá trị, kèm số đọc được.
 
+## Cảnh, bảng tên, lời thoại và điểm nhấn
+
+- Bố cục cảnh lấy từ `sceneLayout(counterCount)` trong `StoreScene.tsx`: kệ và bảng hiệu canh giữa cảnh, mỗi quầy có vị trí người đứng quầy (lệch trái), máy quét + máy tính tiền (đầu phải) và chỗ khách đứng (ngay bên trái quầy). Không đặt toạ độ cứng ở nơi khác; thêm quầy thì sửa hàm này.
+- Người không đứng quầy đứng thành hàng trước kệ, tránh vùng ±58 đơn vị quanh người đứng quầy.
+- Bảng hiệu và mọi logo tiệm dùng avatar thương hiệu người chơi chọn (`BrandAvatarArt` trong SVG, `BrandAvatarImage` trong HTML). Mặt quầy ghi “QUẦY 1”, “QUẦY 2”, không vẽ logo.
+- Chữ trên cảnh (bảng tên, bong bóng thoại) là lớp HTML `SceneOverlay`, không vẽ bằng SVG, để luôn ≥ 11 px dù cảnh co nhỏ. Lớp này không nhận chạm.
+- Bảng tên: viên thuốc viền mực 2 px, bóng đặc; màu theo vai trò: bạn (mật ong), dược sĩ (xanh lá), nhân viên bán hàng (xanh dương), khách quen (nền hồng nhạt, chữ gạch). Nhân viên hiện một chữ (tên riêng); khách quen hiện cách gọi, vd. “Chị Dung”.
+- Bong bóng khách ở quầy luôn có dòng đầu “CẦN …” một dòng (tên món + hình nếu khách gọi tên; nhãn `short` của yêu cầu nếu kể nhu cầu — không lộ món đúng; khách có triệu chứng chỉ ghi không khoẻ). Quầy không được chọn trên màn hẹp chỉ hiện dòng này. Đổi câu thì chữ hiện dần; bảng tên và bong bóng trượt theo nhân vật cùng nhịp 450 ms.
+- Điện thoại dọc: khay giữ chiều cao tự nhiên (thấy khách, hai nút và hàng hoá), cảnh nhận phần còn lại nhưng không dưới ~34% màn hình; khay quá cao thì cuộn bên trong. Khi tự đứng quầy, gợi ý/tiến độ nằm trong thẻ khách, “Khuyên đi khám” và “Báo hết hàng” là một hàng hai nút.
+- Bong bóng thoại: khách mọc sang trái, người bán mọc sang phải; nền người bán xanh nhạt, khách giấy trắng, sốt ruột nền đỏ nhạt. Lời thoại ở `features/store/dialogue.ts`, theo nhịp chào → hỏi hàng → số lượng → thanh toán, đổi theo kiểu khách và giọng giao tiếp của người bán (`serviceTone`, cùng tiêu chí khách chấm điểm). Hai quầy trên màn hẹp thì chỉ quầy đang chọn hiện câu đầy đủ.
+- Điểm nhấn ôm sát hình bằng bộ lọc SVG (`fx-ring-gold`, `fx-ring-mint`): vàng = đang chọn / đang thả vào; xanh bạc hà nhấp nháy = khách chờ bạn phục vụ hoặc thả hàng được. Không dùng elip hay khung nét đứt rời khỏi chủ thể.
+- Ô “Bán chạy”: khung cam đỏ có quầng sáng + nhãn cam có ngôi sao và chữ “BÁN CHẠY” (ô hẹp chỉ còn ngôi sao). Ô đang chọn: viền vàng 4 px + viền trắng trong.
+- HUD: avatar + tên tiệm (co bằng dấu ba chấm, ẩn dưới 340 px), xu, chip ngày gồm icon buổi (sáng/trưa/chiều/tối) trong vòng tiến trình ngày; chạm chip để thả xuống giờ và ca.
+- Đổi người đứng quầy: nút tròn có mũi tên xoay đè góc chân dung người đang trực (cả chân dung là vùng chạm ≥ 44 px), mở bộ chọn ngay bên dưới.
+
 ## Nhân vật và icon
 
 Nhân vật chibi nhìn thẳng, cùng tỷ lệ đầu/thân, nét xanh đậm, bảng màu áo trầm vừa. Gốc SVG nằm ở giữa hai bàn chân `(0,0)`; đầu ở khoảng `(0,-78)`, toàn hình cao khoảng 110 đơn vị. Biểu cảm cần đọc được ở chân dung 56 px; giữ nhiều sắc độ da/tóc. Khách khác nhau nhờ tóc, áo và phụ kiện; nhân viên phân biệt được bằng blouse hoặc tạp dề. Không thay ngoại hình theo logic mô phỏng ngoài `look` và vai trò hiện có.

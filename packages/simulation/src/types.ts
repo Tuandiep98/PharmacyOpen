@@ -13,7 +13,7 @@ import type {
 } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 11;
+export const SAVE_VERSION = 12;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = 'morning' | 'afternoon';
@@ -360,6 +360,8 @@ export interface StockBatch {
 
 export interface LoyaltyProfile {
   id: string;
+  /** Tên gọi khi khách quay lại (vd. "Chị Dung", "Quân"). */
+  name: string;
   archetypeId: ArchetypeId;
   look: CustomerLook;
   visits: number;

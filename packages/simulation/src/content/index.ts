@@ -6,3 +6,4 @@ export * from './staff';
 export * from './upgrades';
 export * from './reviews';
 export * from './stations';
+export * from './names';

@@ -1,62 +1,121 @@
 import {
-  isPresent,
-  PRODUCTS,
-  isTrending,
+  customerName,
   facilityLevel,
-  REQUESTS,
+  isPresent,
+  isTrending,
+  PRODUCTS,
   type Customer,
   type DeepReadonly,
-  type Order,
   type ProductId,
   type SimState,
   type Worker,
-  type WorkerTask,
 } from '@pharmacy/simulation';
 import { useLayoutEffect, useRef, useState } from 'react';
 import { useBrandIdentity } from '../../brand';
 import { CustomerFigure } from '../../art/Character';
 import { WorkerFigure } from '../../art/WorkerFigure';
-import { Counter, CounterScanner, ExpandedStore, Plant, QueueLane, Register, ShelfUnit, StoreSign, WaitingBench, WallAndFloor } from '../../art/Furniture';
+import {
+  Counter,
+  CounterScanner,
+  ExpandedStore,
+  Plant,
+  QueueLane,
+  Register,
+  ShelfUnit,
+  shelfWidth,
+  StoreSign,
+  WaitingBench,
+  WallAndFloor,
+} from '../../art/Furniture';
 import { ART, INK } from '../../art/palette';
 import { ProductArt } from '../../art/Products';
 import { beginProductGesture } from '../../ui/drag';
 import { useUi } from '../../ui/uiStore';
 import { catalogPageProducts, catalogPageSize } from '../../ui/catalog';
-import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
+import { useServiceActions } from './useServiceActions';
+import { SceneOverlay, type OverlayItem } from './SceneOverlay';
+import { customerLine, customerNeed, staffLine } from './dialogue';
+import { PLAYER_WORKER_ID } from '@pharmacy/simulation';
+import './scene.css';
 
 type State = DeepReadonly<SimState>;
 
-// Bố cục cố định của cảnh (đơn vị viewBox). Hàng chờ nằm ngang bên trái quầy để cảnh thấp, gọn.
-const SCENE_W = 360;
-export const SECOND_OFFSET = 170;
+/*
+ * Bố cục cảnh (đơn vị viewBox, cao 420). Mọi vị trí suy ra từ `sceneLayout` theo số quầy, nên kệ,
+ * bảng hiệu, quầy, người đứng quầy và khách luôn khớp nhau ở mọi kích thước màn hình (SVG co giãn
+ * nguyên khối). Hàng chờ nằm bên trái; khách của mỗi quầy đứng ngay bên trái quầy đó.
+ */
 const SCENE_H = 420;
-const COUNTER_SPOT = { x: 160, y: 392 };
 const QUEUE_SPOTS = [112, 68, 24].map((x) => ({ x, y: 394 }));
-const EXIT_SPOT = { x: 160, y: 470 };
-export const REGISTER_SPOT = { x: 318, y: 246 };
-/** Vùng chạm mặt quầy (dưới người đứng quầy, cạnh khách ở quầy) để mở bộ chọn người đứng quầy. */
-const COUNTER_HIT = { x: 196, y: 288, w: 162, h: 86 };
+/** Chiều cao nhân vật tính từ chân tới đỉnh đầu (đơn vị cảnh, trước khi nhân scale). */
+const FIGURE_TOP = 110;
 
-// Vị trí nhân viên: đứng quầy, đứng chờ sau quầy, và ở kệ (đang bổ sung hàng). Không có đi bộ,
-// chỉ trượt nhẹ giữa các vị trí khi đổi việc.
 type Spot = { x: number; y: number; scale: number };
-const SERVE_SPOT: Spot = { x: 268, y: 334, scale: 1 };
-const BEHIND_SPOT: Spot = { x: 208, y: 336, scale: 0.92 };
-const SHELF_SPOT: Spot = { x: 100, y: 296, scale: 0.85 };
 
-function assignWorkerSpots(state: State): { worker: DeepReadonly<Worker>; spot: Spot }[] {
-  const operatorIds = state.counters.map((c) => c.operatorId).filter((id): id is string => id !== null);
-  const others = Object.values(state.workers).filter((w) => !operatorIds.includes(w.id) && (isPresent(state, w) || !!w.orderId || !!w.task));
-  const atShelf = (w: DeepReadonly<Worker>) => !!w.task || w.station === 'stock';
-  others.sort((a, b) => Number(atShelf(b)) - Number(atShelf(a)));
-  const free = others[0] && atShelf(others[0]) ? [SHELF_SPOT, BEHIND_SPOT] : [BEHIND_SPOT, SHELF_SPOT];
-  const result = others.map((worker, i) => ({ worker, spot: free[i] ?? SHELF_SPOT }));
+export interface CounterLayout {
+  x: number;
+  w: number;
+  serve: Spot;
+  customer: { x: number; y: number };
+  register: number;
+}
+
+export interface SceneLayout {
+  width: number;
+  shelfCx: number;
+  counters: CounterLayout[];
+}
+
+export function sceneLayout(counterCount: number): SceneLayout {
+  const two = counterCount > 1;
+  const width = two ? 566 : 360;
+  const boxes = two ? [{ x: 190, w: 150 }, { x: 406, w: 150 }] : [{ x: 196, w: 162 }];
+  return {
+    width,
+    shelfCx: two ? width / 2 : 180,
+    counters: boxes.map(({ x, w }) => ({
+      x,
+      w,
+      // Người đứng quầy lệch trái, máy quét + máy tính tiền dồn về đầu phải để không che mặt.
+      serve: { x: Math.round(x + w * 0.3), y: 334, scale: 1 },
+      customer: { x: x - 36, y: 392 },
+      register: x + w - 48,
+    })),
+  };
+}
+
+/** Chỗ tiền bay lên khi bán xong ở một quầy (dùng cho hiệu ứng "+xu"). */
+export function registerSpot(counterIndex: number, counterCount: number) {
+  const counter = sceneLayout(counterCount).counters[counterIndex] ?? sceneLayout(counterCount).counters[0]!;
+  return { x: counter.register + 22, y: 246 };
+}
+
+/**
+ * Người đứng quầy đứng sau quầy; những người còn lại đứng thành hàng trước kệ (lấy hàng, gói đơn,
+ * chờ việc), tránh chỗ ngay sau quầy để không đè lên người đứng quầy. Thứ tự theo id nên không nhảy chỗ.
+ */
+function assignWorkerSpots(state: State, layout: SceneLayout, shelfLevel: number): { worker: DeepReadonly<Worker>; spot: Spot; counterIndex: number }[] {
+  const visible = (w: DeepReadonly<Worker>) => isPresent(state, w) || !!w.orderId || !!w.task;
+  const result: { worker: DeepReadonly<Worker>; spot: Spot; counterIndex: number }[] = [];
+  const operatorIds = new Set<string>();
   state.counters.forEach((counter, index) => {
     const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
-    if (operator && (isPresent(state, operator) || operator.orderId)) {
-      result.push({ worker: operator, spot: { ...SERVE_SPOT, x: SERVE_SPOT.x + index * SECOND_OFFSET } });
+    if (operator && visible(operator)) {
+      operatorIds.add(operator.id);
+      result.push({ worker: operator, spot: layout.counters[index]!.serve, counterIndex: index });
     }
   });
+  const half = shelfWidth(shelfLevel) / 2 - 24;
+  const spots: Spot[] = [];
+  for (let x = layout.shelfCx - half; x <= layout.shelfCx + half; x += 52) {
+    if (layout.counters.some((c) => Math.abs(c.serve.x - x) < 58)) continue;
+    spots.push({ x, y: 300, scale: 0.85 });
+  }
+  for (const spot of [...spots]) spots.push({ x: spot.x + 28, y: 314, scale: 0.88 });
+  const others = Object.values(state.workers)
+    .filter((w) => !operatorIds.has(w.id) && visible(w))
+    .sort((a, b) => (a.id < b.id ? -1 : 1));
+  others.forEach((worker, i) => result.unshift({ worker, spot: spots[i] ?? spots[0] ?? { x: 60, y: 300, scale: 0.85 }, counterIndex: -1 }));
   return result;
 }
 
@@ -64,11 +123,11 @@ interface SlotDef {
   x: number;
   base: number;
 }
-function shelfSlots(count: number): SlotDef[] {
+function shelfSlots(count: number, cx: number): SlotDef[] {
   const columns = count / 2;
   const width = columns === 2 ? 256 : columns === 3 ? 314 : 332;
   return Array.from({ length: count }, (_, index) => ({
-    x: 180 - width / 2 + width * ((index % columns) + 0.5) / columns,
+    x: cx - width / 2 + (width * ((index % columns) + 0.5)) / columns,
     base: index < columns ? 126 : 200,
   }));
 }
@@ -76,7 +135,7 @@ function shelfSlots(count: number): SlotDef[] {
 /** Khung cao hơn tỉ lệ cảnh thì nới phần tường lên trên, để quầy và khay luôn sát nhau. */
 function useSceneViewBox(sceneWidth: number) {
   const ref = useRef<SVGSVGElement>(null);
-  const [size, setSize] = useState({ w: SCENE_W, h: SCENE_H });
+  const [size, setSize] = useState({ w: sceneWidth, h: SCENE_H });
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -87,13 +146,19 @@ function useSceneViewBox(sceneWidth: number) {
     return () => ro.disconnect();
   }, []);
   const vh = Math.max(SCENE_H, size.w > 0 ? (sceneWidth * size.h) / size.w : SCENE_H);
-  return { ref, viewBox: `0 ${SCENE_H - vh} ${sceneWidth} ${vh}` };
+  const vy = SCENE_H - vh;
+  // preserveAspectRatio="xMidYMax meet": đổi toạ độ cảnh sang pixel cho lớp chữ phủ lên trên.
+  const scale = Math.min(size.w / sceneWidth, size.h / vh) || 1;
+  const offsetX = (size.w - sceneWidth * scale) / 2;
+  const offsetY = size.h - vh * scale;
+  const toPx = (x: number, y: number) => ({ x: offsetX + x * scale, y: offsetY + (y - vy) * scale });
+  return { ref, viewBox: `0 ${vy} ${sceneWidth} ${vh}`, toPx, scale, size };
 }
 
 export function StoreScene({ state }: { state: State }) {
   const brandIdentity = useBrandIdentity();
-  const sceneWidth = state.counters.length > 1 ? SCENE_W + SECOND_OFFSET : SCENE_W;
-  const { ref, viewBox } = useSceneViewBox(sceneWidth);
+  const layout = sceneLayout(state.counters.length);
+  const { ref, viewBox, toPx, scale, size } = useSceneViewBox(layout.width);
   const activeCounterId = useUi((s) => s.activeCounterId);
   const selection = useUi((s) => s.selection);
   const select = useUi((s) => s.select);
@@ -102,20 +167,21 @@ export function StoreScene({ state }: { state: State }) {
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
   const visibleProducts = catalogPageProducts(catalogCategory, catalogPage, state);
-  const slots = shelfSlots(catalogPageSize(state));
+  const slots = shelfSlots(catalogPageSize(state), layout.shelfCx);
   const cellWidth = (slots.length === 4 ? 256 : slots.length === 6 ? 314 : 332) / (slots.length / 2);
   const ownedLevel = (base: string) => state.upgrades.filter((id) => id === base || id.startsWith(`${base}-`)).length;
+  const shelfLevel = facilityLevel(state, 'wide-shelf');
   const { give } = useServiceActions();
-  const customerCounter = (customerId: string) => state.counters.find((c) => c.customerId === customerId);
-  const counterCustomer = (counterId: string) => {
-    const id = state.counters.find((c) => c.id === counterId)?.customerId;
-    return id ? state.customers[id] : undefined;
-  };
-  const workerSpots = assignWorkerSpots(state);
+  const counterOfCustomer = (customerId: string) => state.counters.findIndex((c) => c.customerId === customerId);
+  const workerSpots = assignWorkerSpots(state, layout, shelfLevel);
+  const exit = { x: layout.counters[0]!.customer.x, y: 470 };
 
   const spotOf = (c: DeepReadonly<Customer>) => {
-    if (c.phase === 'counter') return { ...COUNTER_SPOT, x: COUNTER_SPOT.x + state.counters.findIndex((counter) => counter.customerId === c.id) * SECOND_OFFSET, scale: 1, hidden: false };
-    if (c.phase === 'leaving') return { ...EXIT_SPOT, scale: 0.9, hidden: false };
+    if (c.phase === 'counter') {
+      const at = layout.counters[Math.max(0, counterOfCustomer(c.id))]!.customer;
+      return { ...at, scale: 1, hidden: false, seated: false };
+    }
+    if (c.phase === 'leaving') return { ...exit, scale: 0.9, hidden: false, seated: false };
     const index = state.queue.indexOf(c.id);
     const benchLevel = ownedLevel('bench');
     if (index >= 0 && index < Math.min(benchLevel, 2)) return { x: index === 0 ? 45 : 98, y: 354, scale: 0.72, hidden: false, seated: true };
@@ -127,151 +193,255 @@ export function StoreScene({ state }: { state: State }) {
   const depth = (c: DeepReadonly<Customer>) => (c.phase === 'leaving' ? 0 : c.phase === 'counter' ? 100 : 50 - state.queue.indexOf(c.id));
   const customers = Object.values(state.customers).sort((a, b) => depth(a) - depth(b));
   const overflow = Math.max(0, state.queue.length - QUEUE_SPOTS.length);
+  const checkingOut = (counterIndex: number) => {
+    const id = state.counters[counterIndex]?.customerId;
+    const customer = id ? state.customers[id] : undefined;
+    return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false;
+  };
+
+  // Hai quầy trên màn hẹp: lời thoại đầy đủ chỉ ở quầy đang chọn, quầy kia hiện gọn để không chồng chữ.
+  const roomy = layout.counters.length === 1 || 200 * scale >= 230;
+  const overlay: OverlayItem[] = [];
+  const headAt = (spot: { x: number; y: number }, s: number) => toPx(spot.x, spot.y - FIGURE_TOP * s);
+
+  for (const { worker, spot, counterIndex } of workerSpots) {
+    const counter = counterIndex >= 0 ? state.counters[counterIndex] : undefined;
+    const customer = counter?.customerId ? state.customers[counter.customerId] : undefined;
+    const order = customer?.orderId ? state.orders[customer.orderId] : undefined;
+    const line = counter ? staffLine(state, worker, customer, order) : null;
+    const waiting = !!counter && !!customer && !customer.orderId && worker.controller === 'ai';
+    overlay.push({
+      key: `w-${worker.id}`,
+      at: headAt(spot, spot.scale),
+      tag: { text: worker.name.split(' ').pop() || worker.name, kind: worker.id === PLAYER_WORKER_ID ? 'player' : worker.role },
+      bubble: line
+        ? { ...line, speaker: 'staff', compact: !roomy && counter?.id !== activeCounterId }
+        : worker.task
+          ? { speaker: 'task', task: worker.task, compact: true }
+          : waiting
+            ? { speaker: 'staff', text: '!', compact: true, mood: 'urgent' }
+            : undefined,
+    });
+  }
+  for (const c of customers) {
+    const spot = spotOf(c);
+    if (spot.hidden) continue;
+    const name = customerName(state, c);
+    const index = counterOfCustomer(c.id);
+    const order = c.orderId ? state.orders[c.orderId] : undefined;
+    const line = c.phase === 'queue' ? null : customerLine(state, c, order);
+    const need = c.phase === 'counter' ? customerNeed(c) : null;
+    overlay.push({
+      key: `c-${c.id}`,
+      at: headAt(spot, spot.scale * (spot.seated ? 0.85 : 1)),
+      tag: name ? { text: name, kind: 'regular' } : undefined,
+      bubble: line || need
+        ? {
+            text: '',
+            ...line,
+            need,
+            speaker: 'customer',
+            compact: (c.phase === 'counter' && !roomy && state.counters[index]?.id !== activeCounterId) || !line,
+          }
+        : undefined,
+      fading: c.phase === 'leaving',
+    });
+  }
 
   return (
-    <svg
-      ref={ref}
-      className={`scene ${drag ? 'dragging' : ''}`}
-      viewBox={viewBox}
-      preserveAspectRatio="xMidYMax meet"
-      role="application"
-      aria-label="Cửa hàng"
-    >
-      <WallAndFloor />
-      <ExpandedStore warehouseLevel={facilityLevel(state, 'warehouse')} storeLevel={facilityLevel(state, 'storefront')} />
-      <StoreSign name={brandIdentity.name} level={ownedLevel('signboard')} />
-      <ShelfUnit level={facilityLevel(state, 'wide-shelf')} sorted={state.upgrades.includes('sorted-shelf')} />
-      {slots.map((slot, index) => {
-        const id = visibleProducts[index];
-        return id ? (
-          <ShelfSlot
-            key={`${index}-${id}`}
-            productId={id}
-            x={slot.x}
-            base={slot.base}
-            cellWidth={cellWidth}
-            count={state.stock[id].shelf}
-            capacity={state.stock[id].capacity}
-            trending={isTrending(state, id)}
-            selected={selection?.kind === 'product' && selection.id === id}
-            onPointerDown={(e) =>
-              beginProductGesture(e, id, {
-                onDrop: give,
-                onTap: (productId) => select({ kind: 'product', id: productId }),
-                draggable: state.stock[id].shelf > 0,
-              })
-            }
-          />
-        ) : (
-          <EmptySlot key={`empty-${index}`} x={slot.x} base={slot.base} cellWidth={cellWidth} />
-        );
-      })}
-      <Plant x={30} y={296} />
-      <WaitingBench level={ownedLevel('bench')} />
-
-      {workerSpots.map(({ worker, spot }) => (
-        <g
-          key={worker.id}
-          className="actor tappable"
-          style={{ transform: `translate(${spot.x}px, ${spot.y}px) scale(${spot.scale})` }}
-          onClick={() => select({ kind: 'worker', id: worker.id })}
-        >
-          {selection?.kind === 'worker' && selection.id === worker.id && (
-            <ellipse className="select-ring" cx={0} cy={-60} rx={30} ry={36} fill="none" />
-          )}
-          <g className="bob">
-            <WorkerFigure worker={worker} />
-          </g>
-          <rect x={-30} y={-110} width={60} height={spot.scale < 1 ? 112 : 60} fill="transparent" />
-        </g>
-      ))}
-      <Counter />
-      <CounterScanner level={ownedLevel('scanner')} />
-      <Register active={(() => { const customer = counterCustomer('counter-1'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} />
-      {state.counters.length > 1 && <g transform={`translate(${SECOND_OFFSET} 0)`}><Counter /><CounterScanner level={ownedLevel('scanner')} /><Register active={(() => { const customer = counterCustomer('counter-2'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} /></g>}
-      {state.counters.length > 1 && state.counters.map((counter, index) => <rect key={counter.id} x={194 + index * SECOND_OFFSET} y={285} width={166} height={91} rx={10} fill="none" stroke={counter.id === activeCounterId ? ART.honey : ART.leafLight} strokeWidth={counter.id === activeCounterId ? 4 : 2} strokeDasharray={counter.id === activeCounterId ? undefined : '5 4'} pointerEvents="none" />)}
-      {state.counters.length > 1 && state.counters.map((c, i) => <text key={c.id} x={272 + i * SECOND_OFFSET} y={287} fontSize={11} fontWeight={900} fill={INK} textAnchor="middle">QUẦY {i + 1}{!c.operatorId ? ' · CHƯA MỞ' : ''}</text>) }
-      {state.counters.map((counter, index) => (
-        <CounterHitArea
-          key={counter.id}
-          x={COUNTER_HIT.x + index * SECOND_OFFSET}
-          label={`Quầy ${index + 1}`}
-          unstaffed={!counter.operatorId}
-          selected={selection?.kind === 'counter' && selection.id === counter.id}
-          onSelect={() => {
-            setActiveCounterId(counter.id);
-            select({ kind: 'counter', id: counter.id });
-          }}
+    <>
+      <svg
+        ref={ref}
+        className={`scene ${drag ? 'dragging' : ''}`}
+        viewBox={viewBox}
+        preserveAspectRatio="xMidYMax meet"
+        role="application"
+        aria-label="Cửa hàng"
+      >
+        <HighlightDefs />
+        <WallAndFloor />
+        <ExpandedStore warehouseLevel={facilityLevel(state, 'warehouse')} storeLevel={facilityLevel(state, 'storefront')} width={layout.width} />
+        <StoreSign
+          name={brandIdentity.name}
+          avatar={brandIdentity.avatar}
+          cx={layout.shelfCx}
+          width={Math.max(256, shelfWidth(shelfLevel))}
+          level={ownedLevel('signboard')}
         />
-      ))}
-      {workerSpots.map(({ worker, spot }) => (
-        <WorkerBubble
-          key={worker.id}
-          x={spot.x}
-          y={spot.y - 104 * spot.scale}
-          order={worker.orderId ? state.orders[worker.orderId] : undefined}
-          task={worker.task}
-          waiting={state.counters.some((c) => c.operatorId === worker.id && !worker.orderId && !!c.customerId && !state.customers[c.customerId]?.orderId)}
-        />
-      ))}
+        <ShelfUnit level={shelfLevel} sorted={state.upgrades.includes('sorted-shelf')} cx={layout.shelfCx} />
+        {slots.map((slot, index) => {
+          const id = visibleProducts[index];
+          return id ? (
+            <ShelfSlot
+              key={`${index}-${id}`}
+              productId={id}
+              x={slot.x}
+              base={slot.base}
+              cellWidth={cellWidth}
+              count={state.stock[id].shelf}
+              capacity={state.stock[id].capacity}
+              trending={isTrending(state, id)}
+              selected={selection?.kind === 'product' && selection.id === id}
+              onPointerDown={(e) =>
+                beginProductGesture(e, id, {
+                  onDrop: give,
+                  onTap: (productId) => select({ kind: 'product', id: productId }),
+                  draggable: state.stock[id].shelf > 0,
+                })
+              }
+            />
+          ) : (
+            <EmptySlot key={`empty-${index}`} x={slot.x} base={slot.base} cellWidth={cellWidth} />
+          );
+        })}
+        <Plant x={30} y={296} />
+        <WaitingBench level={ownedLevel('bench')} />
 
-      <QueueLane />
-      {overflow > 0 && (
-        <g transform="translate(4 300)">
-          <rect width={30} height={18} rx={9} fill="#FFFFFF" stroke={INK} strokeWidth={1.4} />
-          <text x={15} y={13} textAnchor="middle" fontSize={11} fontWeight={900} fill={INK}>
-            +{overflow}
-          </text>
-        </g>
-      )}
-      {customers.map((c) => {
-        const spot = spotOf(c);
-        const atCounter = c.phase === 'counter';
-        const isSelected = selection?.kind === 'customer' && selection.id === c.id;
-        // Chỉ nhận thả hàng khi người chơi đang đứng quầy và khách chưa có ai khác phục vụ.
-        const assignedCounter = customerCounter(c.id);
-        const customerOrder = c.orderId ? state.orders[c.orderId] : undefined;
-        const awaiting = atCounter && assignedCounter?.operatorId === PLAYER_WORKER_ID &&
-          (!c.orderId || (customerOrder?.workerId === PLAYER_WORKER_ID && customerOrder.state === 'deciding'));
-        return (
-          <g
-            key={c.id}
-            className={`actor ${c.phase === 'leaving' || spot.hidden ? 'leaving' : 'tappable'}`}
-            style={{ transform: `translate(${spot.x}px, ${spot.y}px) scale(${spot.scale})` }}
-            onClick={c.phase === 'queue' ? () => select({ kind: 'customer', id: c.id }) : atCounter && assignedCounter ? () => setActiveCounterId(assignedCounter.id) : undefined}
-            {...(atCounter && awaiting ? { 'data-drop-target': assignedCounter!.id } : {})}
-          >
-            <g className="enter">
-              {atCounter && awaiting && (
-                <ellipse
-                  className={drag ? (drag.over ? 'drop-over' : 'drop-ready') : 'tap-hint'}
-                  cx={0}
-                  cy={-50}
-                  rx={44}
-                  ry={62}
-                />
-              )}
-              {isSelected && <ellipse className="select-ring" cx={0} cy={0} rx={30} ry={8} fill="none" />}
+        {workerSpots.map(({ worker, spot }) => {
+          const selected = selection?.kind === 'worker' && selection.id === worker.id;
+          return (
+            <g
+              key={worker.id}
+              className="actor tappable"
+              style={{ transform: `translate(${spot.x}px, ${spot.y}px) scale(${spot.scale})` }}
+              onClick={() => select({ kind: 'worker', id: worker.id })}
+            >
               <g className="bob">
-                <CustomerFigure look={c.look} expression={c.expression} seated={'seated' in spot && spot.seated} />
+                {selected && (
+                  <g className="hl-underlay" filter="url(#fx-ring-gold)">
+                    <WorkerFigure worker={worker} />
+                  </g>
+                )}
+                <WorkerFigure worker={worker} />
               </g>
-              {c.phase !== 'leaving' && <PatienceBar ratio={c.patienceMs / c.patienceMaxMs} />}
-              <rect x={-36} y={-116} width={72} height={126} fill="transparent" />
+              <rect x={-30} y={-110} width={60} height={spot.scale < 1 ? 112 : 60} fill="transparent" />
             </g>
+          );
+        })}
+
+        {layout.counters.map((c, index) => {
+          const counter = state.counters[index];
+          if (!counter) return null;
+          const active = layout.counters.length > 1 && counter.id === activeCounterId;
+          return (
+            <g key={counter.id}>
+              {active && (
+                <g className="hl-underlay" filter="url(#fx-ring-gold)">
+                  <Counter x={c.x} w={c.w} label={`QUẦY ${index + 1}`} />
+                </g>
+              )}
+              <Counter x={c.x} w={c.w} label={`QUẦY ${index + 1}`} />
+              <CounterScanner level={ownedLevel('scanner')} x={c.register - 86} />
+              <Register x={c.register} active={checkingOut(index)} />
+              <CounterHitArea
+                x={c.x}
+                w={c.w}
+                label={`Quầy ${index + 1}`}
+                unstaffed={!counter.operatorId}
+                onSelect={() => {
+                  setActiveCounterId(counter.id);
+                  select({ kind: 'counter', id: counter.id });
+                }}
+              />
+            </g>
+          );
+        })}
+
+        <QueueLane />
+        {overflow > 0 && (
+          <g transform="translate(4 300)">
+            <rect width={30} height={18} rx={9} fill="#FFFFFF" stroke={INK} strokeWidth={1.4} />
+            <text x={15} y={13} textAnchor="middle" fontSize={11} fontWeight={900} fill={INK}>
+              +{overflow}
+            </text>
           </g>
-        );
-      })}
-      {state.counters.map((counter, index) => {
-        const customer = counterCustomer(counter.id);
-        const order = customer?.orderId ? state.orders[customer.orderId] : undefined;
-        return customer ? <RequestBubble key={counter.id} customer={customer} order={order} x={COUNTER_SPOT.x + index * SECOND_OFFSET} /> : null;
-      })}
-      <Floaters />
-    </svg>
+        )}
+        {customers.map((c) => {
+          const spot = spotOf(c);
+          const atCounter = c.phase === 'counter';
+          const isSelected = selection?.kind === 'customer' && selection.id === c.id;
+          // Chỉ nhận thả hàng khi người chơi đang đứng quầy và khách chưa có ai khác phục vụ.
+          const index = counterOfCustomer(c.id);
+          const assignedCounter = index >= 0 ? state.counters[index] : undefined;
+          const customerOrder = c.orderId ? state.orders[c.orderId] : undefined;
+          const awaiting =
+            atCounter &&
+            assignedCounter?.operatorId === PLAYER_WORKER_ID &&
+            (!c.orderId || (customerOrder?.workerId === PLAYER_WORKER_ID && customerOrder.state === 'deciding'));
+          const hovered = !!drag && drag.target === assignedCounter?.id;
+          const ring = hovered ? 'fx-ring-gold' : awaiting ? 'fx-ring-mint' : isSelected ? 'fx-ring-gold' : null;
+          const seated = 'seated' in spot && spot.seated;
+          return (
+            <g
+              key={c.id}
+              className={`actor ${c.phase === 'leaving' || spot.hidden ? 'leaving' : 'tappable'}`}
+              style={{ transform: `translate(${spot.x}px, ${spot.y}px) scale(${spot.scale * (hovered ? 1.06 : 1)})` }}
+              onClick={c.phase === 'queue' ? () => select({ kind: 'customer', id: c.id }) : atCounter && assignedCounter ? () => setActiveCounterId(assignedCounter.id) : undefined}
+              {...(awaiting && assignedCounter ? { 'data-drop-target': assignedCounter.id } : {})}
+            >
+              <g className="enter">
+                <g className="bob">
+                  {ring && c.phase !== 'leaving' && (
+                    <g className={`hl-underlay ${awaiting && !hovered ? (drag ? 'hl-pulse-fast' : 'hl-pulse') : ''}`} filter={`url(#${ring})`}>
+                      <CustomerFigure look={c.look} expression={c.expression} seated={seated} />
+                    </g>
+                  )}
+                  <CustomerFigure look={c.look} expression={c.expression} seated={seated} />
+                </g>
+                {c.phase !== 'leaving' && <PatienceBar ratio={c.patienceMs / c.patienceMaxMs} />}
+                <rect x={-36} y={-116} width={72} height={126} fill="transparent" />
+              </g>
+            </g>
+          );
+        })}
+        <Floaters />
+      </svg>
+      <SceneOverlay items={overlay} width={size.w} />
+    </>
   );
 }
 
-function CounterHitArea({ x, label, unstaffed, selected, onSelect }: { x: number; label: string; unstaffed: boolean; selected: boolean; onSelect: () => void }) {
+/**
+ * Viền nổi bật ôm sát hình (không phải elip rời): nở alpha của hình ra vài đơn vị, tô màu,
+ * thêm viền trắng mảnh bên trong và quầng sáng, vẽ dưới hình gốc. Vàng = đang chọn / thả vào đây,
+ * xanh bạc hà = có thể thả hàng hoặc chạm để phục vụ.
+ */
+function HighlightDefs() {
+  const ring = (id: string, color: string, glow: string) => (
+    <filter id={id} x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
+      <feMorphology in="SourceAlpha" operator="dilate" radius={5} result="outer" />
+      <feFlood floodColor={color} />
+      <feComposite in2="outer" operator="in" result="band" />
+      <feMorphology in="SourceAlpha" operator="dilate" radius={2} result="inner" />
+      <feFlood floodColor="#FFFFFF" />
+      <feComposite in2="inner" operator="in" result="white" />
+      <feMorphology in="SourceAlpha" operator="dilate" radius={7} result="halo" />
+      <feGaussianBlur in="halo" stdDeviation={4} result="soft" />
+      <feFlood floodColor={glow} />
+      <feComposite in2="soft" operator="in" result="glow" />
+      <feMerge>
+        <feMergeNode in="glow" />
+        <feMergeNode in="band" />
+        <feMergeNode in="white" />
+      </feMerge>
+    </filter>
+  );
+  return (
+    <defs>
+      {ring('fx-ring-gold', '#FFB320', 'rgba(255, 179, 32, 0.55)')}
+      {ring('fx-ring-mint', '#1FC98A', 'rgba(31, 201, 138, 0.5)')}
+      <linearGradient id="fx-badge-hot" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#FF9F1C" />
+        <stop offset="1" stopColor="#F2542D" />
+      </linearGradient>
+      <filter id="fx-glow-warm" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation={2.2} />
+      </filter>
+    </defs>
+  );
+}
+
+function CounterHitArea({ x, w, label, unstaffed, onSelect }: { x: number; w: number; label: string; unstaffed: boolean; onSelect: () => void }) {
   return (
     <g
       className="tappable counter-hit"
@@ -286,11 +456,11 @@ function CounterHitArea({ x, label, unstaffed, selected, onSelect }: { x: number
         }
       }}
     >
-      <rect x={x} y={COUNTER_HIT.y} width={COUNTER_HIT.w} height={COUNTER_HIT.h} rx={8} fill="transparent" stroke={selected ? ART.honey : 'none'} strokeWidth={3} />
+      <rect x={x} y={288} width={w} height={86} rx={8} fill="transparent" />
       {unstaffed && (
-        <g transform={`translate(${x + COUNTER_HIT.w / 2} ${COUNTER_HIT.y + 40})`} pointerEvents="none">
-          <rect x={-46} y={-11} width={92} height={22} rx={11} fill={ART.paper} stroke={INK} strokeWidth={1.4} />
-          <text y={4} textAnchor="middle" fontSize={10} fontWeight={900} fill={ART.leaf}>+ GIAO NGƯỜI</text>
+        <g transform={`translate(${x + w / 2} 356)`} pointerEvents="none">
+          <rect x={-44} y={-11} width={88} height={22} rx={11} fill={ART.honey} stroke={INK} strokeWidth={1.6} />
+          <text y={4} textAnchor="middle" fontSize={10} fontWeight={900} fill={INK}>+ GIAO NGƯỜI</text>
         </g>
       )}
     </g>
@@ -336,22 +506,34 @@ function ShelfSlot(props: {
   onPointerDown: (e: React.PointerEvent) => void;
 }) {
   const { productId, x, base, cellWidth, count, capacity, selected, trending, onPointerDown } = props;
-  const cap = capacity;
   const shown = Math.min(count, cellWidth < 88 ? 2 : 3);
   const scale = cellWidth < 65 ? 0.65 : cellWidth < 88 ? 0.76 : 0.9;
   const spacing = cellWidth < 65 ? 17 : cellWidth < 88 ? 22 : 28;
   const w = 40 * scale;
   const h = 48 * scale;
   const low = count > 0 && count <= 1;
+  const left = x - cellWidth / 2 + 3;
+  const frame = { x: left, y: base - 60, width: cellWidth - 6, height: 60, rx: 7 };
   return (
     <g
-      className={`tappable shelf-slot ${count > 0 ? 'draggable' : ''} ${trending ? 'shelf-trending' : ''}`}
+      className={`tappable shelf-slot ${count > 0 ? 'draggable' : ''} ${trending ? 'shelf-trending' : ''} ${selected ? 'shelf-selected' : ''}`}
       onPointerDown={onPointerDown}
       role="button"
-      aria-label={`${PRODUCTS[productId].name}: còn ${count}/${cap}. Kéo vào khách để đưa hàng, chạm để xem chi tiết.`}
+      aria-label={`${PRODUCTS[productId].name}: còn ${count}/${capacity}${trending ? ', đang bán chạy' : ''}. Kéo vào khách để đưa hàng, chạm để xem chi tiết.`}
     >
-      <rect x={x - cellWidth / 2 + 2} y={base - 60} width={cellWidth - 4} height={62} rx={6} fill={selected ? 'rgba(126,214,181,0.35)' : 'transparent'} />
-      {trending && <><rect x={x - cellWidth / 2 + 4} y={base - 56} width={cellWidth - 8} height={54} rx={7} fill="none" stroke="#C97A24" strokeWidth={2} /><text x={x - cellWidth / 2 + 4} y={base - 60} fontSize={cellWidth < 65 ? 6 : 8} fontWeight={900} fill="#A85C12">★ BÁN CHẠY</text></>}
+      <rect {...frame} fill={selected ? 'rgba(255, 214, 110, 0.28)' : trending ? 'rgba(255, 159, 28, 0.1)' : 'transparent'} />
+      {trending && (
+        <>
+          <rect {...frame} fill="none" stroke="#FF9F1C" strokeWidth={4} opacity={0.55} filter="url(#fx-glow-warm)" />
+          <rect {...frame} fill="none" stroke="#F2542D" strokeWidth={2} />
+        </>
+      )}
+      {selected && (
+        <>
+          <rect {...frame} fill="none" stroke="#FFB320" strokeWidth={4} />
+          <rect x={frame.x + 3} y={frame.y + 3} width={frame.width - 6} height={frame.height - 6} rx={5} fill="none" stroke="#FFFFFF" strokeWidth={1.5} />
+        </>
+      )}
       {count === 0 && (
         <g opacity={0.25}>
           <ProductArt id={productId} x={x - w / 2} y={base - h - 1} scale={scale} />
@@ -360,21 +542,30 @@ function ShelfSlot(props: {
       {Array.from({ length: shown }, (_, i) => (
         <ProductArt key={i} id={productId} x={x - w / 2 + (i - (shown - 1) / 2) * spacing} y={base - h - 1} scale={scale} />
       ))}
+      {trending && <HotBadge x={left + 2} y={base - 58} compact={cellWidth < 70} />}
       <g transform={`translate(${x + cellWidth / 2 - 30} ${base - 58})`}>
-        <rect
-          x={0}
-          y={0}
-          width={count === 0 ? 34 : 26}
-          height={15}
-          rx={7.5}
-          fill={count === 0 ? ART.coral : low ? ART.honey : ART.paper}
-          stroke={INK}
-          strokeWidth={1.4}
-        />
+        <rect x={0} y={0} width={count === 0 ? 34 : 26} height={15} rx={7.5} fill={count === 0 ? ART.coral : low ? ART.honey : ART.paper} stroke={INK} strokeWidth={1.4} />
         <text x={count === 0 ? 17 : 13} y={11} textAnchor="middle" fontSize={10} fontWeight={900} fill={count === 0 ? '#FFFFFF' : INK}>
           {count === 0 ? 'HẾT' : low ? `!${count}` : count}
         </text>
       </g>
+    </g>
+  );
+}
+
+/** Nhãn "Bán chạy": dải cam có ngôi sao, viền mực như các nhãn khác; ô hẹp chỉ còn ngôi sao. */
+function HotBadge({ x, y, compact }: { x: number; y: number; compact: boolean }) {
+  const star = 'M0,-5.2 L1.5,-1.7 L5.2,-1.5 L2.3,0.9 L3.2,4.6 L0,2.6 L-3.2,4.6 L-2.3,0.9 L-5.2,-1.5 L-1.5,-1.7Z';
+  const width = compact ? 18 : 58;
+  return (
+    <g transform={`translate(${x} ${y})`} pointerEvents="none">
+      <rect x={0} y={0} width={width} height={16} rx={8} fill="url(#fx-badge-hot)" stroke={INK} strokeWidth={1.4} />
+      <path d={star} transform="translate(9 8)" fill="#FFF4C2" stroke={INK} strokeWidth={0.9} strokeLinejoin="round" />
+      {!compact && (
+        <text x={17} y={11.5} fontSize={8.5} fontWeight={900} fill="#FFFFFF" stroke={INK} strokeWidth={2} paintOrder="stroke" letterSpacing={0.2}>
+          BÁN CHẠY
+        </text>
+      )}
     </g>
   );
 }
@@ -403,163 +594,5 @@ function PatienceBar({ ratio }: { ratio: number }) {
         </text>
       )}
     </g>
-  );
-}
-
-function Bubble({ x, y, w, h, children }: { x: number; y: number; w: number; h: number; children: React.ReactNode }) {
-  return (
-    <g transform={`translate(${x - w / 2} ${y - h})`} className="bubble" pointerEvents="none">
-      <path
-        d={`M8,0 H${w - 8} Q${w},0 ${w},8 V${h - 8} Q${w},${h} ${w - 8},${h} H${w / 2 + 6} L${w / 2},${h + 7} L${w / 2 - 6},${h} H8 Q0,${h} 0,${h - 8} V8 Q0,0 8,0 Z`}
-        fill={ART.paper}
-        stroke={INK}
-        strokeWidth={1.8}
-        strokeLinejoin="round"
-      />
-      {children}
-    </g>
-  );
-}
-
-function RequestBubble({ customer, order, x }: { customer: DeepReadonly<Customer>; order: DeepReadonly<Order> | undefined; x: number }) {
-  const request = REQUESTS[customer.requestId];
-  if (!request) return null;
-  if (order && order.customerId === customer.id && order.state !== 'deciding') return null;
-  const y = COUNTER_SPOT.y - 116;
-  const w = 46;
-  const h = 38;
-  let content: React.ReactNode;
-  if (request.kind === 'named' && request.acceptable[0]) {
-    content = <ProductArt id={request.acceptable[0]} x={w / 2 - 13} y={4} scale={0.62} />;
-  } else if (request.kind === 'need') {
-    content = (
-      <text x={w / 2} y={29} textAnchor="middle" fontSize={26} fontWeight={900} fill={ART.leaf}>
-        ?
-      </text>
-    );
-  } else {
-    // Khách thấy không khoẻ: hiện "…" và giọt mồ hôi, không gợi ý sản phẩm nào.
-    content = (
-      <g>
-        <text x={w / 2 - 4} y={25} textAnchor="middle" fontSize={20} fontWeight={900} fill="#7FA7D9">
-          …
-        </text>
-        <path d={`M${w - 11},10 q-4,6 0,8 q4,-2 0,-8z`} fill="#8FD0FF" stroke={INK} strokeWidth={1.1} />
-      </g>
-    );
-  }
-  return (
-    <Bubble x={x} y={y} w={w} h={h}>
-      {content}
-    </Bubble>
-  );
-}
-
-function WorkerBubble(props: {
-  x: number;
-  y: number;
-  order: DeepReadonly<Order> | undefined;
-  task: DeepReadonly<WorkerTask> | null;
-  waiting: boolean;
-}) {
-  const { x, y, order, task, waiting } = props;
-  if (!order && task?.kind === 'slack') {
-    // "Siêu lười": cầm điện thoại, thanh tiến độ là thời gian lướt.
-    const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
-    return (
-      <Bubble x={x} y={y} w={40} h={40}>
-        <rect x={13} y={5} width={14} height={22} rx={3} fill={ART.sky} stroke={INK} strokeWidth={1.4} />
-        <path d="M17,10 H23 M17,14 H23 M17,18 H21" stroke={INK} strokeWidth={1.1} strokeLinecap="round" />
-        <g transform="translate(6 31)">
-          <rect x={0} y={0} width={28} height={5} rx={2.5} fill={ART.mint} />
-          <rect className="bar-fill" x={0} y={0} width={28 * progress} height={5} rx={2.5} fill={ART.coral} />
-        </g>
-      </Bubble>
-    );
-  }
-  if (!order && task?.kind === 'label') {
-    // Ghi phiếu gửi đơn ship: tờ phiếu + thanh tiến độ.
-    const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
-    return (
-      <Bubble x={x} y={y} w={40} h={40}>
-        <rect x={12} y={4} width={16} height={21} rx={2} fill={ART.paper} stroke={INK} strokeWidth={1.4} />
-        <path d="M15,10 H25 M15,14 H25 M15,18 H21" stroke={ART.leaf} strokeWidth={1.3} strokeLinecap="round" />
-        <g transform="translate(6 31)">
-          <rect x={0} y={0} width={28} height={5} rx={2.5} fill={ART.mint} />
-          <rect className="bar-fill" x={0} y={0} width={28 * progress} height={5} rx={2.5} fill={ART.leaf} />
-        </g>
-      </Bubble>
-    );
-  }
-  if (!order && (task?.kind === 'restock' || task?.kind === 'pack')) {
-    // Đang bổ sung kệ (thanh vàng) hoặc gói món vào đơn ship (thanh xanh): hộp hàng + món + thanh tiến độ.
-    const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
-    return (
-      <Bubble x={x} y={y} w={52} h={40}>
-        <g transform="translate(5 6)">
-          <path d="M1,6 L9,2 L17,6 V15 L9,19 L1,15 Z" fill="#F2C48D" stroke={INK} strokeWidth={1.3} strokeLinejoin="round" />
-          <path d="M1,6 L9,10 L17,6 M9,10 V19" fill="none" stroke={INK} strokeWidth={1.1} />
-        </g>
-        <ProductArt id={task.productId} x={25} y={3} scale={0.46} />
-        <g transform="translate(6 31)">
-          <rect x={0} y={0} width={40} height={5} rx={2.5} fill={ART.mint} />
-          <rect className="bar-fill" x={0} y={0} width={40 * progress} height={5} rx={2.5} fill={task.kind === 'pack' ? ART.leaf : ART.honey} />
-        </g>
-      </Bubble>
-    );
-  }
-  if (!order) {
-    if (!waiting) return null;
-    return (
-      <Bubble x={x} y={y} w={30} h={28}>
-        <text x={15} y={22} textAnchor="middle" fontSize={20} fontWeight={900} fill="#F2994A">
-          !
-        </text>
-      </Bubble>
-    );
-  }
-  const timed = order.state === 'retrieving' || order.state === 'checkingOut' || order.state === 'referring' || order.state === 'deferring';
-  const progress = timed && order.timerTotalMs > 0 ? 1 - order.timerMs / order.timerTotalMs : 1;
-  let icon: React.ReactNode = null;
-  if (order.state === 'deciding') {
-    icon = (
-      <text x={26} y={25} textAnchor="middle" fontSize={18} fontWeight={900} fill={INK}>
-        ?
-      </text>
-    );
-  } else if (order.state === 'referring') {
-    icon = (
-      <g transform="translate(14 5)">
-        <path d="M2,20 V9 L12,3 L22,9 V20 Z" fill="#DDEBFF" stroke={INK} strokeWidth={1.5} strokeLinejoin="round" />
-        <path d="M9,20 V14 H15 V20" fill="none" stroke={INK} strokeWidth={1.5} />
-      </g>
-    );
-  } else if (order.state === 'deferring') {
-    icon = (
-      <g transform="translate(16 4)">
-        <path d="M1,6 L10,2 L19,6 V16 L10,20 L1,16 Z" fill="#F2C48D" stroke={INK} strokeWidth={1.4} strokeLinejoin="round" />
-        <path d="M1,6 L10,10 L19,6 M10,10 V20" fill="none" stroke={INK} strokeWidth={1.2} />
-      </g>
-    );
-  } else if (order.state === 'checkingOut') {
-    icon = (
-      <g transform="translate(15 5)">
-        <circle cx={11} cy={11} r={9} fill="#FFD66B" stroke={INK} strokeWidth={1.5} />
-        <path d="M11,7 V15" stroke={INK} strokeWidth={1.8} />
-      </g>
-    );
-  } else if (order.productId) {
-    icon = <ProductArt id={order.productId} x={14} y={2} scale={0.5} />;
-  }
-  return (
-    <Bubble x={x} y={y} w={52} h={40}>
-      {icon}
-      {timed && (
-        <g transform="translate(6 31)">
-          <rect x={0} y={0} width={40} height={5} rx={2.5} fill={ART.mint} />
-          <rect className="bar-fill" x={0} y={0} width={40 * progress} height={5} rx={2.5} fill={ART.leaf} />
-        </g>
-      )}
-    </Bubble>
   );
 }

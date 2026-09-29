@@ -1,7 +1,8 @@
 import { cloneConfig, DEFAULT_CONFIG } from './config';
 import { ARCHETYPES } from './content/archetypes';
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
-import type { ProductId } from './content/types';
+import type { ArchetypeId, ProductId } from './content/types';
+import { loyalName } from './content/names';
 import { STAFF_CANDIDATES, TRAITS } from './content/staff';
 import { BACK_STATION_IDS, type BackStationId } from './content/stations';
 import { levelFor, refreshRecruits } from './recruit';
@@ -294,6 +295,16 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       for (const report of state.dayReports) if (isObject(report)) Object.assign(report, { ...fresh, ...report });
     }
   },
+  11: (state) => {
+    // v12: khách quen có tên gọi.
+    if (!Array.isArray(state.loyalty)) return;
+    for (const profile of state.loyalty) {
+      if (!isObject(profile) || typeof profile.name === 'string') continue;
+      const look = isObject(profile.look) ? profile.look : {};
+      const archetype = typeof profile.archetypeId === 'string' && profile.archetypeId in ARCHETYPES ? (profile.archetypeId as ArchetypeId) : 'curious';
+      profile.name = loyalName(String(profile.id), archetype, isNum(look.hairStyle) ? look.hairStyle : 0);
+    }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -359,7 +370,7 @@ function isValidState(state: Loose): state is SimState & Loose {
     if (!isNum(s.prices[id])) return false;
   }
   if (!isObject(s.workers) || !isObject(s.customers) || !isObject(s.orders)) return false;
-  if (!Array.isArray(s.loyalty) || !s.loyalty.every((p: unknown) => isObject(p) && typeof p.id === 'string' && isNum(p.visits) && isNum(p.goodVisits) && p.goodVisits <= p.visits && isNum(p.nextEligibleAtMs) && isObject(p.look))) return false;
+  if (!Array.isArray(s.loyalty) || !s.loyalty.every((p: unknown) => isObject(p) && typeof p.id === 'string' && typeof p.name === 'string' && isNum(p.visits) && isNum(p.goodVisits) && p.goodVisits <= p.visits && isNum(p.nextEligibleAtMs) && isObject(p.look))) return false;
   if (!isObject(s.stats) || !isNum(s.stats.expiredStock) || !isNum(s.stats.returningCustomers)) return false;
   for (const worker of Object.values(s.workers)) {
     if (

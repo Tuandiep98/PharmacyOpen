@@ -77,7 +77,9 @@ export type ReasonCode =
   | 'strict-customer'
   | 'out-of-stock'
   | 'late-delivery'
-  | 'on-time-delivery';
+  | 'on-time-delivery'
+  | 'awkward-talk'
+  | 'patient-advice';
 
 /**
  * named: khách gọi đúng tên sản phẩm.
@@ -90,6 +92,8 @@ export interface RequestDef {
   id: string;
   kind: RequestKind;
   text: string;
+  /** Nhu cầu tóm một dòng, hiện trên bong bóng khách (yêu cầu gọi tên thì dùng tên món). Không lộ đáp án. */
+  short?: string;
   /** Sản phẩm phù hợp; luôn rỗng với kind = 'refer'. */
   acceptable: ProductId[];
 }

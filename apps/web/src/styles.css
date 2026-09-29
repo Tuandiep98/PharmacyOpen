@@ -180,22 +180,6 @@ button {
   transition: width 120ms linear;
 }
 
-.tap-hint {
-  fill: rgba(126, 214, 181, 0.14);
-  stroke: #2f9e7a;
-  stroke-width: 3;
-  animation: pulse 1.1s ease-in-out infinite;
-}
-
-.select-ring {
-  stroke: #2f9e7a;
-  stroke-width: 2.5;
-  stroke-dasharray: 6 4;
-}
-
-.bubble {
-  animation: pop 220ms var(--sheet-ease) both;
-}
 
 .floater {
   animation: float-up 1100ms ease-out forwards;
@@ -914,20 +898,6 @@ button {
 .scene.dragging,
 .scene.dragging * {
   cursor: grabbing;
-}
-
-.drop-ready {
-  fill: rgba(126, 214, 181, 0.18);
-  stroke: #2f9e7a;
-  stroke-width: 3;
-  stroke-dasharray: 8 6;
-  animation: pulse 0.9s ease-in-out infinite;
-}
-
-.drop-over {
-  fill: rgba(126, 214, 181, 0.4);
-  stroke: #1f7f61;
-  stroke-width: 4;
 }
 
 /* ---------- Bảng chi tiết (overlay trên điện thoại) ---------- */

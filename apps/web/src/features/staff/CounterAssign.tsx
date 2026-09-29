@@ -1,5 +1,6 @@
 import { isOnDuty, isPresent, PLAYER_WORKER_ID, type DeepReadonly, type SimState, type Worker } from '@pharmacy/simulation';
 import { WorkerPortrait } from '../../art/WorkerFigure';
+import { SwapIcon } from '../../art/Icons';
 import { useUi } from '../../ui/uiStore';
 import { useServiceActions } from '../store/useServiceActions';
 import { workerProgress, workerStatus } from './workerStatus';
@@ -95,6 +96,28 @@ export function CounterStaffPicker({ state, counterId, includePlayer = true }: {
         offDuty > 0 && <p className="pick-note">{offDuty} người ngoài ca hoặc nghỉ hôm nay.</p>
       )}
     </div>
+  );
+}
+
+/**
+ * Chân dung người đang đứng quầy kèm nút tròn nhỏ "đổi người" đè ở góc. Cả chân dung là vùng chạm
+ * (≥ 44 px); chạm mở/đóng bộ chọn người ngay bên dưới.
+ */
+export function SwapAvatar({ worker, size = 40, open, onToggle, counterLabel }: { worker: DeepReadonly<Worker>; size?: number; open: boolean; onToggle: () => void; counterLabel: string }) {
+  return (
+    <button
+      type="button"
+      className={`swap-avatar ${open ? 'open' : ''}`}
+      style={{ width: Math.max(44, size), height: Math.max(44, size) }}
+      aria-expanded={open}
+      aria-label={`Đổi người đứng ${counterLabel} (đang là ${worker.id === PLAYER_WORKER_ID ? 'bạn' : worker.name})`}
+      onClick={onToggle}
+    >
+      <WorkerPortrait worker={worker} size={size} />
+      <span className="swap-badge" aria-hidden>
+        <SwapIcon size={14} />
+      </span>
+    </button>
   );
 }
 

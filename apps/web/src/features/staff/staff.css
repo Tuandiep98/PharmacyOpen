@@ -329,34 +329,9 @@
 }
 
 /* Khay: bộ chọn trải hết chiều ngang dưới dải trạng thái quầy. */
-.auto-counter .staff-picker,
-.auto-counter .counter-swap {
+.auto-counter .staff-picker {
   grid-column: 1 / -1;
   flex-basis: 100%;
-}
-.tray-assign.tray-operator {
-  display: block;
-}
-.tray-assign.tray-operator[open] {
-  display: grid;
-}
-.tray-operator summary {
-  gap: 8px;
-  list-style: none;
-}
-.tray-operator summary::-webkit-details-marker {
-  display: none;
-}
-.tray-operator summary > span:not(.tray-assign-cta) {
-  flex: 1;
-  min-width: 0;
-  color: var(--ink-soft);
-  font-weight: 700;
-}
-.tray-assign-cta {
-  margin-left: auto;
-  font-weight: 900;
-  white-space: nowrap;
 }
 
 /* Mặt quầy trong cảnh là vùng chạm mở bộ chọn người. */
@@ -369,4 +344,74 @@
 }
 .counter-hit:focus-visible > rect:first-child {
   stroke: var(--focus);
+}
+
+/* Nút đổi người: chân dung người đang trực + huy hiệu tròn có mũi tên xoay đè ở góc dưới phải. */
+.swap-avatar {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+.swap-badge {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--sun);
+  box-shadow: 0 2px 0 rgb(38 58 54 / 35%);
+  transition: transform 180ms var(--sheet-ease), background-color 180ms ease;
+}
+.swap-avatar:hover .swap-badge {
+  transform: rotate(-30deg);
+}
+.swap-avatar.open .swap-badge {
+  background: var(--primary);
+}
+.swap-avatar.open .swap-badge svg * {
+  stroke: #fff;
+}
+.tray .staff-picker,
+.auto-counter .staff-picker {
+  grid-column: 1 / -1;
+}
+
+/* Nhận xét của khách: giọng giao tiếp + lời khen/chê hay gặp nhất (luôn có dấu + / − ngoài màu). */
+.review-traits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tag.review-good {
+  color: #1f6b3e;
+  background: var(--good-soft);
+  border-color: #7cc497;
+}
+.tag.review-bad {
+  color: #8e2f28;
+  background: var(--danger-soft);
+  border-color: #de958c;
+}
+.tag.tone-tag.tone-warm {
+  color: #1f6b3e;
+  background: var(--good-soft);
+}
+.tag.tone-tag.tone-curt,
+.tag.tone-tag.tone-awkward {
+  color: #8e2f28;
+  background: var(--danger-soft);
+}
+.tag.tone-tag.tone-chatty {
+  color: #75500f;
+  background: var(--warn-soft);
 }

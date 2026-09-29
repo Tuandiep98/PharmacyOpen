@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { DandelionLogo } from '../../art/Furniture';
 import { BoxIcon, ClinicIcon, StaffIcon } from '../../art/Icons';
 import { ProductIcon } from '../../art/Products';
 import { playSfx } from '../../audio/sfx';
 import { useBrandIdentity } from '../../brand';
+import { BrandAvatarImage } from '../brand/BrandDialog';
 import { GameButton } from '../../ui/primitives';
 import { SaveSection } from '../save/SaveSection';
 
@@ -24,7 +24,7 @@ export function OnboardingDialog({ seed, showSave, onClose }: { seed: number; sh
       </div>
       <div className="onboarding-body">
       {step === 0 && <>
-        <div className="onboarding-art"><svg width={64} height={64} viewBox="-15 -15 30 30" aria-hidden><DandelionLogo r={14} /></svg></div>
+        <div className="onboarding-art"><BrandAvatarImage avatar={identity.avatar} size={64} /></div>
         <h1 id="onboarding-title">Chào mừng đến {identity.name}</h1>
         <p>Điều hành một tiệm nhỏ: nghe khách, chọn đồ phù hợp, chăm kệ và xây đội ngũ.</p>
         <ul className="disclaimer">

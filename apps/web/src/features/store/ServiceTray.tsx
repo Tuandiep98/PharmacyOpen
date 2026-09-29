@@ -1,5 +1,6 @@
 import {
   ARCHETYPES,
+  customerName,
   PRODUCTS,
   REFERRAL_MESSAGE,
   REQUESTS,
@@ -19,7 +20,8 @@ import { GameButton } from '../../ui/primitives';
 import { Portrait } from './CustomerInfo';
 import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
 import { workerProgress, workerStatus } from '../staff/workerStatus';
-import { CounterStaffPicker } from '../staff/CounterAssign';
+import { CounterStaffPicker, SwapAvatar } from '../staff/CounterAssign';
+import { useState } from 'react';
 import { CatalogControls } from '../../ui/CatalogControls';
 import { catalogPageProducts } from '../../ui/catalog';
 
@@ -44,6 +46,10 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const activeCounterId = useUi((s) => s.activeCounterId);
   const setActiveCounterId = useUi((s) => s.setActiveCounterId);
   const counter = state.counters.find((c) => c.id === activeCounterId) ?? state.counters[0]!;
+  // Bộ chọn người mở theo từng quầy; đổi quầy thì tự đóng.
+  const [swapFor, setSwapFor] = useState<string | null>(null);
+  const swapOpen = swapFor === counter.id;
+  const toggleSwap = () => setSwapFor(swapOpen ? null : counter.id);
   const counterTabs = state.counters.length > 1 && (
     <div className="counter-tabs" role="group" aria-label="Chọn quầy">
       {state.counters.map((c, i) => <button key={c.id} type="button" aria-pressed={c.id === counter.id} className={c.id === counter.id ? 'active' : ''} onClick={() => setActiveCounterId(c.id)}>Quầy {i + 1}{c.customerId ? ' · Có khách' : !c.operatorId ? ' · Chưa mở' : ''}</button>)}
@@ -83,7 +89,11 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     return (
       <section className="auto-counter" aria-label="Quầy tự phục vụ">
         {counterTabs}
-        <WorkerPortrait worker={operator} size={40} />
+        {staffOnDuty ? (
+          <SwapAvatar worker={operator} open={swapOpen} onToggle={toggleSwap} counterLabel={`quầy${counterLabel}`} />
+        ) : (
+          <WorkerPortrait worker={operator} size={40} />
+        )}
         <div className="auto-counter-info">
           <strong>{operator.name} đang đứng quầy</strong>
           <span>{workerStatus(state, operator)}{waiting > 0 ? ` · ${waiting} khách chờ` : ''}</span>
@@ -94,23 +104,14 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
           )}
         </div>
         <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>
-        {staffOnDuty && (
-          <details className="tray-assign counter-swap">
-            <summary>Đổi người đứng quầy{counterLabel}</summary>
-            <CounterStaffPicker state={state} counterId={counter.id} includePlayer={false} />
-          </details>
-        )}
+        {staffOnDuty && swapOpen && <CounterStaffPicker state={state} counterId={counter.id} includePlayer={false} />}
       </section>
     );
   }
 
   let status: React.ReactNode;
   if (!customer) {
-    status = (
-      <span className="muted">
-        Chưa có khách ở quầy — chuẩn bị kệ hàng nhé.
-      </span>
-    );
+    status = null;
   } else if (order && order.state !== 'deciding' && order.state !== 'ready') {
     const label =
       order.state === 'retrieving' && order.productId
@@ -135,17 +136,14 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     <section className="tray" aria-label="Quầy phục vụ">
       {counterTabs}
       {staffOnDuty && (
-        <details className="tray-assign tray-operator">
-          <summary>
-            <WorkerPortrait worker={operator} size={28} />
-            <span>
-              Quầy{counterLabel}: <b>{operator.name} (bạn)</b>
-            </span>
-            <span className="tray-assign-cta">Giao quầy</span>
-          </summary>
-          <CounterStaffPicker state={state} counterId={counter.id} includePlayer={false} />
-        </details>
+        <div className="tray-operator">
+          <SwapAvatar worker={operator} size={32} open={swapOpen} onToggle={toggleSwap} counterLabel={`quầy${counterLabel}`} />
+          <span>
+            Quầy{counterLabel} · <b>{operator.name} (bạn)</b>
+          </span>
+        </div>
       )}
+      {staffOnDuty && swapOpen && <CounterStaffPicker state={state} counterId={counter.id} includePlayer={false} />}
       <div className="tray-customer">
         {customer ? (
           <>
@@ -156,10 +154,11 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
               </span>
             </div>
             <div className="tray-speech">
-              <span className="tray-who">{ARCHETYPES[customer.archetypeId].name}{customer.loyaltyId ? ' · Khách quen' : ''}</span>
+              <span className="tray-who">{customerName(state, customer) ? `${customerName(state, customer)} · Khách quen · ` : ''}{ARCHETYPES[customer.archetypeId].name}</span>
               <p>
                 {order?.state === 'referring' ? REFERRAL_MESSAGE : `“${REQUESTS[customer.requestId]?.text ?? ''}”`}
               </p>
+              <div className="tray-speech-status">{status}</div>
             </div>
           </>
         ) : (
@@ -171,7 +170,6 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
       </div>
 
       <div className="tray-status">
-        {status}
         <div className="tray-actions">
           <GameButton className="refer" disabled={!canServe} onClick={() => refer(counter.id)} title="Khuyên khách đi khám">
             <ClinicIcon size={20} />

@@ -49,6 +49,7 @@ const requestSchema = z.object({
   id: z.string().regex(/^(named|need|refer)-[a-z0-9-]+$/),
   kind: z.enum(['named', 'need', 'refer']),
   text: z.string().min(8).max(120),
+  short: z.string().min(4).max(32).optional(),
   acceptable: z.array(z.string()),
 });
 
@@ -94,7 +95,9 @@ export function validateContent(
     issues.push(...schemaIssues(where, requestSchema, r));
     if (r.id !== key) add(where, `id "${r.id}" khác khoá "${key}"`);
     if (!r.id.startsWith(`${r.kind}-`)) add(where, `id phải bắt đầu bằng "${r.kind}-"`);
-    for (const hit of findTerms(r.text, NOWHERE)) add(where, `từ bị cấm: "${hit}"`);
+    for (const hit of findTerms(`${r.text} ${r.short ?? ''}`, NOWHERE)) add(where, `từ bị cấm: "${hit}"`);
+    // Nhãn ngắn hiện ở mọi bong bóng nên không được nêu triệu chứng hay hứa hẹn điều trị, kể cả với refer.
+    for (const hit of findTerms(r.short ?? '', [...SYMPTOMS, ...GAME_VOICE])) add(where, `nhãn ngắn không được chứa "${hit}"`);
     if (r.kind === 'refer') {
       if (r.acceptable.length) add(where, 'yêu cầu có triệu chứng không được có sản phẩm "đúng"');
       if (!findTerms(r.text, SYMPTOMS).length) add(where, 'yêu cầu refer phải mô tả một triệu chứng có trong blocklist.symptoms');

@@ -2,7 +2,7 @@ import { ARCHETYPES } from './content/archetypes';
 import { PRODUCTS } from './content/products';
 import { REQUESTS } from './content/requests';
 import { REASONS, REVIEW_COMMENTS, type ComplaintResponse } from './content/reviews';
-import type { ArchetypeDef, ReasonCode, TraitId } from './content/types';
+import type { ArchetypeDef, ReasonCode, RequestKind, TraitId } from './content/types';
 import type { Emit } from './events';
 import { loseExperience } from './recruit';
 import { nextFloat, nextInt } from './rng';
@@ -53,12 +53,29 @@ export interface SatisfactionInput {
   server: { communication: number; traits: readonly TraitId[] } | null;
   /** Khách quen quay lại (người "Được khách quen quý" phục vụ thì vui hơn). */
   returning?: boolean;
+  /** Loại yêu cầu: khách kể nhu cầu mà được tư vấn đúng ngay thì khen tư vấn. */
+  requestKind?: RequestKind;
+}
+
+/**
+ * Giọng giao tiếp của người phục vụ, suy ra từ kỹ năng và tính cách. Dùng chung cho lời thoại
+ * ở quầy (giao diện) và cách khách chấm điểm, để điều khách thấy khớp với điều khách đánh giá.
+ */
+export type ServiceTone = 'warm' | 'plain' | 'curt' | 'chatty' | 'awkward';
+
+export function serviceTone(server: { communication: number; traits: readonly TraitId[] }): ServiceTone {
+  if (server.traits.includes('hot-tempered')) return 'curt';
+  if (server.traits.includes('silver-tongue') || server.communication >= 0.8) return 'warm';
+  if (server.traits.includes('talkative')) return 'chatty';
+  if (server.communication < 0.45) return 'awkward';
+  return 'plain';
 }
 
 const NEGATIVE_PRIORITY: ReasonCode[] = [
   'late-delivery',
   'wrong-item',
   'rude-staff',
+  'awkward-talk',
   'unneeded-referral',
   'slow-service',
   'long-queue',
@@ -67,7 +84,7 @@ const NEGATIVE_PRIORITY: ReasonCode[] = [
   'too-chatty',
   'strict-customer',
 ];
-const PRAISE_PRIORITY: ReasonCode[] = ['on-time-delivery', 'helpful-advice', 'friendly-staff', 'fair-price', 'fast-service', 'correct-item'];
+const PRAISE_PRIORITY: ReasonCode[] = ['on-time-delivery', 'helpful-advice', 'patient-advice', 'friendly-staff', 'fair-price', 'fast-service', 'correct-item'];
 
 export function evaluateSatisfaction(input: SatisfactionInput): { satisfaction: number; reasons: ReasonCode[] } {
   const { archetype, outcome } = input;
@@ -163,6 +180,21 @@ export function evaluateSatisfaction(input: SatisfactionInput): { satisfaction: 
       }
     } else if (input.server.communication >= 0.8) {
       reasons.add('friendly-staff');
+    }
+    // Nói năng lúng túng làm khách phải hỏi lại; khách kể nhu cầu mà được gợi ý đúng ngay thì khen tư vấn.
+    if (serviceTone(input.server) === 'awkward') {
+      sat -= 0.08;
+      reasons.add('awkward-talk');
+    }
+    if (
+      outcome === 'bought' &&
+      input.requestKind === 'need' &&
+      input.wrongCount === 0 &&
+      input.server.communication >= 0.6 &&
+      archetype.likesDetail
+    ) {
+      sat += 0.05;
+      reasons.add('patient-advice');
     }
   }
 
@@ -267,6 +299,7 @@ export function recordInteraction(
     referencePrice: product?.referencePrice ?? null,
     server: worker ? { communication: worker.communication, traits: [...worker.traits, ...worker.hiddenTraits] } : null,
     returning: customer.loyaltyId !== null,
+    requestKind: request?.kind,
   });
 
   const interaction = {

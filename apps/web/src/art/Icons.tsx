@@ -22,13 +22,44 @@ function Svg({ size = 24, title, children }: IconProps & { children: React.React
   );
 }
 
+/** Đồng xu vàng dày: vành đậm, mặt trong sáng, hoa bốn cánh dập nổi và vệt sáng. */
 export const CoinIcon = (p: IconProps) => (
   <Svg {...p}>
-    <circle cx={12} cy={12} r={9} fill={ART.honey} />
-    <circle cx={12} cy={12} r={6} fill="#FFE0A0" strokeWidth={1.2} />
-    <path d="M12,8.5 V15.5" strokeWidth={2} />
+    <circle cx={12} cy={13} r={9.5} fill="#C98A12" />
+    <circle cx={12} cy={11.5} r={9.5} fill="#F6B93B" />
+    <circle cx={12} cy={11.5} r={6.6} fill="#FFD966" stroke="#B7791F" strokeWidth={1.2} />
+    <path d="M12,7.6 L13.2,10.3 L15.9,11.5 L13.2,12.7 L12,15.4 L10.8,12.7 L8.1,11.5 L10.8,10.3 Z" fill="#E09A1B" stroke="#9A6410" strokeWidth={0.9} />
+    <path d="M6.9,8.4 A6.3,6.3 0 0 1 10,5.8" stroke="#FFFFFF" strokeWidth={1.6} strokeOpacity={0.85} />
   </Svg>
 );
+
+export type Daypart = 'morning' | 'noon' | 'afternoon' | 'night';
+
+/** Biểu tượng buổi trong ngày: mặt trời mọc, mặt trời đứng bóng, mặt trời xế, trăng. */
+export function DaypartGlyph({ part, size = 16 }: { part: Daypart; size?: number }) {
+  return (
+    <Svg size={size}>
+      {part === 'morning' && <>
+        <path d="M3,17 H21" />
+        <path d="M6.5,17 A5.5,5.5 0 0 1 17.5,17 Z" fill="#FFC857" />
+        <path d="M12,6 V8.5 M5,10 L6.7,11.4 M19,10 L17.3,11.4" />
+      </>}
+      {part === 'noon' && <>
+        <circle cx={12} cy={12} r={4.6} fill="#FFB320" />
+        <path d="M12,2.8 V5 M12,19 V21.2 M2.8,12 H5 M19,12 H21.2 M5.5,5.5 L7,7 M17,17 L18.5,18.5 M18.5,5.5 L17,7 M7,17 L5.5,18.5" />
+      </>}
+      {part === 'afternoon' && <>
+        <circle cx={10} cy={11} r={4.6} fill="#F08A24" />
+        <path d="M13,17 Q13,13.5 16.5,13.5 Q17.5,11 20.5,12.5 Q22,15 20.5,17 Z" fill="#FFFFFF" />
+        <path d="M10,3.5 V5.5 M3.5,11 H5.5 M5.3,6.3 L6.7,7.7" />
+      </>}
+      {part === 'night' && <>
+        <path d="M15.5,4 A8,8 0 1 0 20,15.5 A6.5,6.5 0 0 1 15.5,4 Z" fill="#FFE08A" />
+        <path d="M6,5 L6.6,6.4 L8,7 L6.6,7.6 L6,9 L5.4,7.6 L4,7 L5.4,6.4 Z" fill="#FFFFFF" strokeWidth={1} />
+      </>}
+    </Svg>
+  );
+}
 
 export const BagIcon = (p: IconProps) => (
   <Svg {...p}>
@@ -104,6 +135,16 @@ export const BoxIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M3,8 L12,4 L21,8 V17 L12,21 L3,17 Z" fill={ART.woodLight} />
     <path d="M3,8 L12,12 L21,8 M12,12 V21" />
+  </Svg>
+);
+
+/** Hai mũi tên xoay vòng: đổi người. */
+export const SwapIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M5,9 A7,7 0 0 1 18,7" />
+    <path d="M18.5,3 V7.5 H14" />
+    <path d="M19,15 A7,7 0 0 1 6,17" />
+    <path d="M5.5,21 V16.5 H10" />
   </Svg>
 );
 

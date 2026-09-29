@@ -1,3 +1,5 @@
+import { useId } from 'react';
+import type { BrandAvatar } from '../brand';
 import { ART, INK, STROKE } from './palette';
 
 const S = { stroke: INK, strokeWidth: STROKE, strokeLinejoin: 'round' as const };
@@ -22,15 +24,50 @@ export function DandelionLogo({ x = 0, y = 0, r = 14 }: { x?: number; y?: number
   );
 }
 
-export function StoreSign({ name, level = 0 }: { name: string; level?: number }) {
+/** Vị trí từng hình trong sprite avatar thương hiệu (2×2 ô, xem public/brand-avatars.png). */
+const AVATAR_CELL: Record<BrandAvatar, [number, number]> = { dandelion: [0, 0], sprout: [1, 0], sun: [0, 1], kite: [1, 1] };
+const AVATAR_SPRITE = 1254;
+
+/** Avatar thương hiệu người chơi đã chọn, vẽ trong SVG (cắt tròn) để bảng hiệu khớp với thanh trên cùng. */
+export function BrandAvatarArt({ avatar, x, y, r }: { avatar: BrandAvatar; x: number; y: number; r: number }) {
+  const clip = useId();
+  const cell = AVATAR_SPRITE / 2;
+  const [col, row] = AVATAR_CELL[avatar];
   return (
     <g>
-      <path d="M110,4 V12 M250,4 V12" stroke={INK} strokeWidth={2} />
-      <rect x={52} y={10} width={256} height={40} rx={10} fill={ART.leaf} {...S} />
-      {level > 0 && <path d="M58,11 H302" stroke={level >= 2 ? '#FFD56F' : ART.honey} strokeWidth={level >= 2 ? 5 : 3} strokeLinecap="round" />}
-      <rect x={58} y={15} width={244} height={30} rx={6} fill="none" stroke={ART.leafLight} strokeWidth={1.4} strokeDasharray="3 3" />
-      <DandelionLogo x={80} y={30} r={13} />
-      <text x={200} y={36} textAnchor="middle" fontSize={16} fontWeight={900} fill="#FFFFFF" letterSpacing={0.3} textLength={name.length > 19 ? 180 : undefined} lengthAdjust="spacingAndGlyphs">
+      <circle cx={x} cy={y} r={r + 2} fill={ART.paper} stroke={INK} strokeWidth={STROKE} />
+      <svg x={x - r} y={y - r} width={r * 2} height={r * 2} viewBox={`${col * cell} ${row * cell} ${cell} ${cell}`}>
+        <clipPath id={clip}>
+          <circle cx={col * cell + cell / 2} cy={row * cell + cell / 2} r={cell / 2} />
+        </clipPath>
+        <image href={`${import.meta.env.BASE_URL}brand-avatars.png`} width={AVATAR_SPRITE} height={AVATAR_SPRITE} clipPath={`url(#${clip})`} />
+      </svg>
+    </g>
+  );
+}
+
+/** Bảng hiệu treo ngay trên kệ, canh giữa theo kệ; avatar và tên lấy từ nhận diện người chơi chọn. */
+export function StoreSign({ name, avatar, cx, width, level = 0 }: { name: string; avatar: BrandAvatar; cx: number; width: number; level?: number }) {
+  const x = cx - width / 2;
+  const textWidth = width - 76;
+  return (
+    <g>
+      <path d={`M${x + width * 0.22},4 V12 M${x + width * 0.78},4 V12`} stroke={INK} strokeWidth={2} />
+      <rect x={x} y={10} width={width} height={40} rx={10} fill={ART.leaf} {...S} />
+      {level > 0 && <path d={`M${x + 6},11 H${x + width - 6}`} stroke={level >= 2 ? '#FFD56F' : ART.honey} strokeWidth={level >= 2 ? 5 : 3} strokeLinecap="round" />}
+      <rect x={x + 6} y={15} width={width - 12} height={30} rx={6} fill="none" stroke={ART.leafLight} strokeWidth={1.4} strokeDasharray="3 3" />
+      <BrandAvatarArt avatar={avatar} x={x + 28} y={30} r={12} />
+      <text
+        x={x + 48 + textWidth / 2}
+        y={36}
+        textAnchor="middle"
+        fontSize={16}
+        fontWeight={900}
+        fill="#FFFFFF"
+        letterSpacing={0.3}
+        textLength={name.length * 8.6 > textWidth ? textWidth : undefined}
+        lengthAdjust="spacingAndGlyphs"
+      >
         {name}
       </text>
     </g>
@@ -47,19 +84,20 @@ export function WaitingBench({ level }: { level: number }) {
   </g>;
 }
 
-export function CounterScanner({ level }: { level: number }) {
+/** Máy quét đặt trên mặt quầy, `x` là mép trái quầy. */
+export function CounterScanner({ level, x }: { level: number; x: number }) {
   if (level < 1) return null;
-  return <g aria-label="Máy quét mã vạch">
+  return <g aria-label="Máy quét mã vạch" transform={`translate(${x - 196} 0)`}>
     <path d="M252,292 L256,277 L271,278 L276,292Z" fill={level >= 2 ? ART.sky : '#6C8B83'} {...S} />
     <path d="M260,277 L264,263 L279,269 L274,283Z" fill={level >= 3 ? ART.honey : ART.leafLight} {...S} />
     <path d="M264,269 L274,272" stroke={level >= 2 ? '#FFFFFF' : ART.honey} strokeWidth={2.5} />
   </g>;
 }
 
-export function ExpandedStore({ warehouseLevel, storeLevel }: { warehouseLevel: number; storeLevel: number }) {
+export function ExpandedStore({ warehouseLevel, storeLevel, width = 360 }: { warehouseLevel: number; storeLevel: number; width?: number }) {
   return <g pointerEvents="none">
-    {storeLevel >= 2 && <><path d="M0,256 H360" stroke={storeLevel >= 4 ? ART.honey : ART.leafLight} strokeWidth={storeLevel >= 4 ? 9 : 5} /><path d="M0,263 H360" stroke={INK} strokeOpacity={0.25} strokeWidth={1} /></>}
-    {storeLevel >= 3 && <><path d="M8,276 H188" stroke={ART.leaf} strokeOpacity={0.4} strokeWidth={2} /><path d="M190,276 H350" stroke={ART.leaf} strokeOpacity={0.4} strokeWidth={2} /></>}
+    {storeLevel >= 2 && <><path d={`M0,256 H${width}`} stroke={storeLevel >= 4 ? ART.honey : ART.leafLight} strokeWidth={storeLevel >= 4 ? 9 : 5} /><path d={`M0,263 H${width}`} stroke={INK} strokeOpacity={0.25} strokeWidth={1} /></>}
+    {storeLevel >= 3 && <><path d={`M8,276 H${width / 2 + 8}`} stroke={ART.leaf} strokeOpacity={0.4} strokeWidth={2} /><path d={`M${width / 2 + 10},276 H${width - 10}`} stroke={ART.leaf} strokeOpacity={0.4} strokeWidth={2} /></>}
     {warehouseLevel >= 2 && <g transform="translate(8 230)"><rect x={0} y={12} width={29} height={25} rx={3} fill={ART.woodLight} {...S} /><path d="M0,19 H29 M14,13 V37" stroke={ART.wood} strokeWidth={2} /></g>}
     {warehouseLevel >= 3 && <g transform="translate(30 225)"><rect x={0} y={8} width={25} height={29} rx={3} fill={ART.woodLight} {...S} /><path d="M0,17 H25 M12,8 V37" stroke={ART.wood} strokeWidth={2} /></g>}
     {warehouseLevel >= 4 && <path d="M13,239 H53" stroke={ART.honey} strokeWidth={3} strokeLinecap="round" />}
@@ -92,9 +130,13 @@ export function WallAndFloor() {
 }
 
 /** Tủ kệ gỗ treo tường, 2 tầng. Các ô sản phẩm được vẽ riêng bên trên. */
-export function ShelfUnit({ level = 1, sorted = false }: { level?: number; sorted?: boolean }) {
-  const width = level === 1 ? 256 : level === 2 ? 314 : 332;
-  const x = 180 - width / 2;
+export function shelfWidth(level: number): number {
+  return level === 1 ? 256 : level === 2 ? 314 : 332;
+}
+
+export function ShelfUnit({ level = 1, sorted = false, cx = 180 }: { level?: number; sorted?: boolean; cx?: number }) {
+  const width = shelfWidth(level);
+  const x = cx - width / 2;
   const columns = Math.min(6, level + 1 + (sorted ? 1 : 0));
   const wood = level >= 3 ? '#B77A4B' : ART.wood;
   return (
@@ -111,27 +153,26 @@ export function ShelfUnit({ level = 1, sorted = false }: { level?: number; sorte
   );
 }
 
-export function Counter() {
+/** Quầy bán: `x` là mép trái, `w` là bề ngang; mặt trước ghi số quầy thay cho logo. */
+export function Counter({ x, w, label }: { x: number; w: number; label: string }) {
   return (
     <g>
-      <rect x={202} y={298} width={150} height={74} rx={6} fill={ART.leafLight} {...S} />
-      <path d="M202,356 H352" stroke={INK} strokeWidth={1.6} />
-      <rect x={202} y={356} width={150} height={16} rx={4} fill={ART.leaf} {...S} />
-      <rect x={196} y={288} width={162} height={14} rx={5} fill={ART.paper} {...S} />
-      <DandelionLogo x={226} y={328} r={14} />
-      <text x={295} y={326} textAnchor="middle" fontSize={10} fontWeight={800} fill={ART.leaf}>
-        QUẦY
-      </text>
-      <text x={295} y={339} textAnchor="middle" fontSize={10} fontWeight={800} fill={ART.leaf}>
-        THANH TOÁN
+      <rect x={x + 6} y={298} width={w - 12} height={74} rx={6} fill={ART.leafLight} {...S} />
+      <path d={`M${x + 6},356 H${x + w - 6}`} stroke={INK} strokeWidth={1.6} />
+      <rect x={x + 6} y={356} width={w - 12} height={16} rx={4} fill={ART.leaf} {...S} />
+      <rect x={x} y={288} width={w} height={14} rx={5} fill={ART.paper} {...S} />
+      <rect x={x + w / 2 - 38} y={316} width={76} height={26} rx={13} fill={ART.paper} stroke={ART.leaf} strokeWidth={2} />
+      <text x={x + w / 2} y={334} textAnchor="middle" fontSize={14} fontWeight={900} fill={ART.leaf} letterSpacing={0.6}>
+        {label}
       </text>
     </g>
   );
 }
 
-export function Register({ active }: { active: boolean }) {
+/** Máy tính tiền ở đầu phải quầy, `x` là mép trái máy. */
+export function Register({ active, x }: { active: boolean; x: number }) {
   return (
-    <g>
+    <g transform={`translate(${x - 296} 0)`}>
       <path d="M296,289 L300,262 H336 L340,289 Z" fill="#7D8BA6" {...S} />
       <rect x={303} y={250} width={30} height={16} rx={3} fill="#5B6780" {...S} />
       <rect x={306} y={253} width={24} height={10} rx={2} fill={active ? '#9BF0C9' : '#CFE9DE'} />

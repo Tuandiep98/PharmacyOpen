@@ -1,10 +1,12 @@
 import { ART, INK } from './palette';
-import { DandelionLogo } from './Furniture';
+import { useBrandIdentity } from '../brand';
+import { BrandAvatarArt } from './Furniture';
 
 const S = { stroke: INK, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
 
 /** Tranh SVG riêng cho từng nâng cấp, dùng ở cả thẻ và chi tiết sau này. */
 export function UpgradeArt({ id, level = 0 }: { id: string; level?: number }) {
+  const identity = useBrandIdentity();
   let drawing: React.ReactNode;
   switch (id) {
     case 'warehouse':
@@ -64,7 +66,7 @@ export function UpgradeArt({ id, level = 0 }: { id: string; level?: number }) {
         <path d="M20,23 L26,15 H70 L76,23Z" fill={ART.leaf} {...S} />
         <path d="M24,23 V35 Q30,41 36,35 Q42,41 48,35 Q54,41 60,35 Q66,41 72,35 V23Z" fill={ART.leafLight} {...S} />
         <path d="M40,52 V40 H56 V52" fill={ART.paper} {...S} />
-        <DandelionLogo x={48} y={21} r={6} />
+        <BrandAvatarArt avatar={identity.avatar} x={48} y={21} r={6} />
         <path d="M17,14 L14,11 M79,14 L82,11 M48,9 V5" stroke={ART.honey} strokeWidth={2.4} strokeLinecap="round" />
       </g>;
       break;

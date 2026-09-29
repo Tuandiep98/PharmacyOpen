@@ -31,7 +31,8 @@ export function beginProductGesture(
       dragging = true;
       playSfx('pick');
     }
-    setDrag({ productId, x: ev.clientX, y: ev.clientY, over: dropTarget(ev.clientX, ev.clientY) !== null });
+    const target = dropTarget(ev.clientX, ev.clientY);
+    setDrag({ productId, x: ev.clientX, y: ev.clientY, over: target !== null, target });
   };
   const up = (ev: PointerEvent) => {
     cleanup();

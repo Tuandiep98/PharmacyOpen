@@ -1,4 +1,4 @@
-import { ARCHETYPES, REQUESTS, type Customer, type DeepReadonly, type SimState } from '@pharmacy/simulation';
+import { ARCHETYPES, customerName, REQUESTS, type Customer, type DeepReadonly, type SimState } from '@pharmacy/simulation';
 import { CustomerFigure } from '../../art/Character';
 import { ClockIcon } from '../../art/Icons';
 
@@ -24,7 +24,8 @@ export function CustomerInfo({ state, customerId }: { state: DeepReadonly<SimSta
       <div className="service-head">
         <Portrait customer={customer} />
         <div className="service-who">
-          <strong>{archetype.name}</strong>
+          <strong>{customerName(state, customer) ?? archetype.name}</strong>
+          {customerName(state, customer) && <span className="small muted">{archetype.name}</span>}
           {customer.loyaltyId && <span className="small good-text">Khách quen · lần ghé {((state.loyalty.find((p) => p.id === customer.loyaltyId)?.visits) ?? 0) + 1}</span>}
           <span className="muted small">{archetype.description}</span>
           <span className="patience" aria-label={`Kiên nhẫn ${Math.round(ratio * 100)}%`}>

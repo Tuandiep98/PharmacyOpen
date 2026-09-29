@@ -8,6 +8,10 @@ import {
   PLAYER_WORKER_ID,
   QUIT_FATIGUE,
   RARITIES,
+  REASONS,
+  serviceTone,
+  type ReasonCode,
+  type ServiceTone,
   retainWage,
   SHIFT_IDS,
   shiftHeadcount,
@@ -114,6 +118,48 @@ export function WorkerMetrics({ worker }: { worker: DeepReadonly<Worker> }) {
       Nghiệp vụ: <b>{worker.perfCount ? `${Math.round(worker.perfSum / worker.perfCount)}/100` : '—'}</b>
       {' · '}Đánh giá cá nhân:{' '}
       <b>{worker.repCount ? `${(worker.repStarsSum / worker.repCount).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}★ (${worker.repCount})` : '—'}</b>
+    </span>
+  );
+}
+
+const TONE_LABEL: Record<ServiceTone, string> = {
+  warm: 'Niềm nở',
+  plain: 'Bình thường',
+  curt: 'Cộc lốc',
+  chatty: 'Nói nhiều',
+  awkward: 'Lúng túng',
+};
+
+/**
+ * Nhận xét của khách về một người: giọng giao tiếp (cùng tiêu chí khách dùng để chấm) và các lý do
+ * khen/chê được nhắc nhiều nhất trong các đánh giá tính cho người đó.
+ */
+export function ReviewTraits({ state, worker }: { state: DeepReadonly<SimState>; worker: DeepReadonly<Worker> }) {
+  const counts = new Map<ReasonCode, number>();
+  for (const review of state.reviews) {
+    if (review.workerId !== worker.id || !review.countsForStaff) continue;
+    for (const reason of review.reasons) {
+      const scope = REASONS[reason].scope;
+      if (scope === 'praise' || scope === 'staff') counts.set(reason, (counts.get(reason) ?? 0) + 1);
+    }
+  }
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  const praise = ranked.filter(([r]) => REASONS[r].scope === 'praise').slice(0, 2);
+  const complaint = ranked.filter(([r]) => REASONS[r].scope === 'staff').slice(0, 1);
+  const tone = serviceTone({ communication: worker.communication, traits: [...worker.traits, ...worker.hiddenTraits] });
+  return (
+    <span className="review-traits" aria-label={`Nhận xét của khách về ${worker.name}`}>
+      <span className={`tag tone-tag tone-${tone}`} title="Giọng giao tiếp khi đứng quầy">Giọng: {TONE_LABEL[tone]}</span>
+      {praise.map(([reason, n]) => (
+        <span key={reason} className="tag review-good">
+          + {REASONS[reason].label} ×{n}
+        </span>
+      ))}
+      {complaint.map(([reason, n]) => (
+        <span key={reason} className="tag review-bad">
+          − {REASONS[reason].label} ×{n}
+        </span>
+      ))}
     </span>
   );
 }
@@ -258,6 +304,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
                 {w.resigning && <ResignNotice worker={w} />}
               </>
             )}
+            <ReviewTraits state={state} worker={w} />
             <div className="team-card-metrics" aria-label={`Thống kê của ${w.name}`}>
               <span>
                 Đã bán <b>{w.served}</b>

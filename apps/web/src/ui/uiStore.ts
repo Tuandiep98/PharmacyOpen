@@ -24,8 +24,9 @@ export interface DragState {
   productId: ProductId;
   x: number;
   y: number;
-  /** Con trỏ đang nằm trên vùng thả (khách ở quầy). */
+  /** Con trỏ đang nằm trên vùng thả (khách ở quầy) và id quầy của vùng đó. */
   over: boolean;
+  target: string | null;
 }
 
 export interface Floater {

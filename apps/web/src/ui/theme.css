@@ -51,10 +51,7 @@ button:disabled { cursor: not-allowed; }
 .icon-btn { color: var(--primary); transition: background-color 160ms ease, transform 160ms ease; }
 .scene-wrap { background: #eaf1df; }
 .scene { filter: drop-shadow(0 3px 0 rgb(64 93 65 / 5%)); }
-.tap-hint { fill: rgb(142 201 160 / 22%); stroke: var(--primary); }
-.select-ring { stroke: var(--primary); }
-.drop-ready { fill: rgb(142 201 160 / 24%); stroke: var(--primary); }
-.drop-over { fill: rgb(142 201 160 / 45%); stroke: var(--primary); }
+
 .toast { border-radius: 12px; border: 1px solid var(--line); border-left-width: 5px; }
 .toast.good { border-left-color: #4eaa72; }
 .toast.bad { border-left-color: var(--danger); }
@@ -370,15 +367,7 @@ button:disabled { cursor: not-allowed; }
   font-size: 10px;
   color: var(--ink-soft);
 }
-.hud-time-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  max-width: 100%;
-  background: var(--sun);
-  border-radius: 2px;
-}
+
 .hud-menu {
   position: relative;
   flex: none;
@@ -496,10 +485,6 @@ button:disabled { cursor: not-allowed; }
 .counter-tabs button { flex: 1 0 auto; min-height: 44px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-tint); color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
 .counter-tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .counter-tabs button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
-.tray-assign { position: relative; }
-.tray-assign summary { min-height: 44px; display: flex; align-items: center; padding: 0 9px; border: 1.5px solid var(--line); border-radius: 10px; color: var(--primary); font-size: 12px; font-weight: 800; cursor: pointer; }
-.tray-assign[open] { display: grid; gap: 4px; }
-.tray-assign summary:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 
 .unstaffed-counter .auto-counter-info { grid-column: 1 / -1; }
 .unstaffed-counter .btn { grid-column: auto; }
@@ -513,4 +498,83 @@ button:disabled { cursor: not-allowed; }
 @media (max-width: 420px) {
   .tray-actions { width: 100%; }
   .tray-actions .btn { flex: 1; padding-inline: 6px; font-size: 13px; }
+}
+
+
+/* HUD: avatar + tên tiệm canh giữa theo chiều dọc; tên co lại bằng dấu ba chấm thay vì ẩn. */
+.hud-brand-button { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; }
+.hud-brand-button .brand-avatar { border: 2px solid var(--ink); box-shadow: 0 2px 0 rgb(38 58 54 / 25%); }
+.hud-brand-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 16px; line-height: 1.2; }
+.hud-stats { flex: none; }
+@media (max-width: 420px) {
+  .hud-brand > span.hud-brand-name { display: block; font-size: 14px; }
+}
+@media (max-width: 340px) {
+  .hud-brand > span.hud-brand-name { display: none; }
+}
+.hud-stats .chip-btn b { font-size: 16px; }
+
+/* Ngày/giờ: một dòng; vòng tiến trình ngày quanh icon buổi, màu theo buổi. */
+.hud-time { display: inline-flex; flex-direction: row; align-items: center; gap: 6px; min-width: 0; padding: 3px 10px 3px 4px; line-height: 1; cursor: pointer; }
+.hud-time b { font-size: 14px; white-space: nowrap; }
+.hud-time-detail { font-size: 13px; font-weight: 800; color: var(--ink-soft); white-space: nowrap; }
+.daypart-ring { position: relative; display: grid; place-items: center; width: 32px; height: 32px; flex: none; }
+.daypart-ring > svg:first-child { position: absolute; inset: 0; }
+.ring-track { fill: #fffdf6; stroke: var(--line); stroke-width: 3.5; }
+.ring-fill { fill: none; stroke: var(--sun); stroke-width: 3.5; stroke-linecap: round; transition: stroke-dashoffset 400ms linear; }
+.daypart-noon .ring-fill { stroke: #f08a24; }
+.daypart-afternoon .ring-fill { stroke: #e0603a; }
+.daypart-night .ring-fill { stroke: #5a6fb0; }
+.hud-time.open { background: var(--primary-soft); border-color: #9bc3a8; }
+@media (max-width: 420px) {
+  .hud-time { min-width: 0; padding-inline: 3px 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring-fill { transition: none; }
+}
+/* Phần mở rộng (giờ · ca) thả xuống dưới chip, không làm HUD rộng ra trên màn hẹp. */
+.hud-time { position: relative; }
+.hud-time-detail {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 6;
+  display: grid;
+  gap: 2px;
+  padding: 7px 11px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow: 0 3px 0 rgb(38 58 54 / 22%);
+  text-align: left;
+  animation: speech-pop 160ms var(--sheet-ease) both;
+}
+.hud-time-detail strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.hud-time-detail small { font-size: 12px; color: var(--ink-soft); }
+.hud { position: relative; z-index: 10; }
+.daypart-ring > svg:last-child { position: relative; }
+
+/* Khay khi bạn tự đứng quầy: gợi ý/tiến độ nằm trong thẻ khách, hai nút thành một hàng, bớt một tầng. */
+.tray { gap: 7px; padding-top: 8px; }
+.tray-customer { min-height: 0; }
+.tray-speech { padding: 5px 10px 6px; }
+.tray-speech p { font-size: 15px; }
+.tray-speech-status { margin-top: 3px; font-size: 12.5px; font-weight: 800; }
+.tray-speech-status:empty { display: none; }
+.tray-speech-status .tray-progress { gap: 2px; }
+.tray-speech-status .progress-track { height: 6px; }
+.tray-status { min-height: 0; }
+.tray-actions { display: grid; grid-template-columns: 1fr 1fr; width: 100%; margin-left: 0; }
+.tray-actions .btn { width: 100%; justify-content: center; }
+
+/*
+ * Điện thoại dọc: khay giữ chiều cao tự nhiên (luôn thấy khách + hàng hoá); cảnh nhận phần còn lại
+ * nhưng không dưới ~1/3 màn hình. Khay quá cao thì cuộn bên trong thay vì ép mất cảnh.
+ */
+@media not ((min-width: 820px) and (orientation: landscape)) {
+  @media (max-width: 1099px) {
+    .scene-wrap { flex: 1 1 0; min-height: clamp(180px, 34dvh, 320px); }
+    .side { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+  }
 }

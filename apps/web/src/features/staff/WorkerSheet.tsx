@@ -3,7 +3,7 @@ import { useUi } from '../../ui/uiStore';
 import { DismissButton } from './DismissButton';
 import { WorkerPortrait } from '../../art/WorkerFigure';
 import { useServiceActions } from '../store/useServiceActions';
-import { LevelBar, StatBars, TraitTags, WageLine, WorkerMetrics, workerStatus } from './StaffPanel';
+import { LevelBar, ReviewTraits, StatBars, TraitTags, WageLine, WorkerMetrics, workerStatus } from './StaffPanel';
 import { GameButton } from '../../ui/primitives';
 
 export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>; workerId: string }) {
@@ -26,6 +26,7 @@ export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>
           </span>
           <span className="small">{workerStatus(state, worker)}</span>
           <WorkerMetrics worker={worker} />
+          <ReviewTraits state={state} worker={worker} />
           <WageLine worker={worker} />
           {worker.controller === 'ai' && <LevelBar worker={worker} />}
         </div>

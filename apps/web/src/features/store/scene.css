@@ -1,0 +1,262 @@
+/*
+ * Cảnh cửa hàng: lớp chữ phủ (bảng tên, bong bóng thoại) và hiệu ứng nổi bật.
+ * Phong cách "clay" của game: viền mực 2 px, bo tròn, bóng đổ đặc phía dưới; màu lấy từ ui/theme.css.
+ */
+
+.scene-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.overlay-anchor {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transition: left 450ms var(--sheet-ease);
+}
+.overlay-anchor.fading {
+  animation: overlay-fade 1300ms ease-in forwards;
+}
+
+/* Bảng tên: viên thuốc màu theo vai trò, chữ đậm, viền mực và bóng đặc để tách khỏi nền. */
+.nametag {
+  position: absolute;
+  transform: translateX(-50%);
+  height: 20px;
+  padding: 0 8px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 16px;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 rgb(38 58 54 / 35%);
+}
+.nametag-player {
+  background: var(--sun);
+  color: var(--ink);
+}
+.nametag-pharmacist {
+  background: var(--primary);
+  color: #fff;
+}
+.nametag-clerk {
+  background: #2f6f9f;
+  color: #fff;
+}
+.nametag-regular {
+  background: #fff4f0;
+  color: #9a3a2e;
+  border-color: #9a3a2e;
+}
+
+/* Bong bóng thoại: khách mọc sang trái, người bán mọc sang phải để hai câu không chồng nhau. */
+.speech {
+  position: absolute;
+  width: max-content;
+  padding: 5px 9px;
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+  box-shadow: 0 3px 0 rgb(38 58 54 / 22%);
+  animation: speech-pop 180ms var(--sheet-ease) both;
+}
+.speech::after {
+  content: '';
+  position: absolute;
+  bottom: -7px;
+  width: 10px;
+  height: 10px;
+  background: inherit;
+  border-right: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  transform: rotate(45deg);
+}
+.speech.side-left {
+  right: -22px;
+  transform: translateY(-100%);
+  border-bottom-right-radius: 4px;
+}
+.speech.side-left::after {
+  right: 16px;
+}
+.speech.side-right {
+  left: -22px;
+  transform: translateY(-100%);
+  border-bottom-left-radius: 4px;
+}
+.speech.side-right::after {
+  left: 16px;
+}
+.speech.side-center {
+  left: 0;
+  transform: translate(-50%, -100%);
+}
+.speech.side-center::after {
+  left: calc(50% - 5px);
+}
+.speech-staff {
+  background: #e2f4e8;
+}
+.speech-task {
+  background: #fff6de;
+  padding: 4px 7px;
+}
+.speech.mood-urgent {
+  background: #ffe8e1;
+  border-color: var(--danger);
+  color: #7c2a24;
+}
+.speech.mood-urgent::after {
+  border-color: var(--danger);
+}
+.speech.mood-happy {
+  background: #fff4cf;
+}
+.speech.compact {
+  padding: 3px 7px;
+}
+.speech-body {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.speech-body svg {
+  flex: none;
+}
+.speech-text {
+  overflow-wrap: anywhere;
+}
+.speech-progress {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: rgb(38 58 54 / 12%);
+}
+.speech-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+  transition: width 120ms linear;
+}
+.speech-task .speech-progress > span {
+  background: var(--sun);
+}
+
+/* Viền nổi bật ôm sát hình (bộ lọc SVG trong StoreScene); nhấp nháy nhẹ khi chờ thao tác. */
+.hl-underlay {
+  pointer-events: none;
+}
+.hl-pulse {
+  animation: hl-pulse 1.3s ease-in-out infinite;
+}
+.hl-pulse-fast {
+  animation: hl-pulse 0.7s ease-in-out infinite;
+}
+.shelf-trending .shelf-hot-frame {
+  animation: hl-pulse 1.8s ease-in-out infinite;
+}
+
+/* Thông báo không đè lên nút Đơn ship ở góc cảnh. */
+.scene-wrap:has(.delivery-chip) .toasts {
+  top: 60px;
+}
+
+@keyframes speech-pop {
+  from {
+    opacity: 0;
+    scale: 0.9;
+  }
+}
+@keyframes hl-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+@keyframes overlay-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .speech,
+  .hl-pulse,
+  .hl-pulse-fast,
+  .overlay-anchor.fading {
+    animation: none;
+  }
+  .overlay-anchor {
+    transition: none;
+  }
+}
+
+/* Dòng "Cần: …" luôn ở đầu bong bóng khách: một dòng, cắt bằng dấu ba chấm, nền mật ong nhạt. */
+.speech-need {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: -2px -4px 4px;
+  overflow: hidden;
+  padding: 2px 7px 2px 3px;
+  border-radius: 8px;
+  background: #fff0c8;
+  font-size: 11.5px;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+.speech-need b {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 6px;
+  background: var(--sun);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.speech-need svg {
+  flex: none;
+}
+.speech-need-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.speech.compact .speech-need {
+  margin: 0;
+}
+.speech-text {
+  animation: speech-text-in 220ms ease-out both;
+}
+.speech {
+  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+.overlay-anchor {
+  transition: left 450ms var(--sheet-ease), top 450ms var(--sheet-ease);
+}
+@keyframes speech-text-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .speech-text {
+    animation: none;
+  }
+  .speech,
+  .overlay-anchor {
+    transition: none;
+  }
+}

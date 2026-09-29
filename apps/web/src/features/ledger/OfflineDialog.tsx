@@ -1,5 +1,6 @@
 import type { OfflineSummary } from '@pharmacy/simulation';
-import { DandelionLogo } from '../../art/Furniture';
+import { useBrandIdentity } from '../../brand';
+import { BrandAvatarImage } from '../brand/BrandDialog';
 import { BRAND } from '../../brand';
 import { formatRating } from '../../ui/Stars';
 import { GameButton } from '../../ui/primitives';
@@ -8,12 +9,11 @@ import { signedNumber } from '../day/dayText';
 
 /** "Chào mừng trở lại": tóm tắt trung thực những gì đã xảy ra khi người chơi vắng mặt. */
 export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; onClose: () => void }) {
+  const identity = useBrandIdentity();
   return (
     <div className="modal-backdrop">
       <div className="modal offline" role="dialog" aria-modal="true" aria-labelledby="offline-title">
-        <svg width={48} height={48} viewBox="-15 -15 30 30" aria-hidden>
-          <DandelionLogo r={14} />
-        </svg>
+        <BrandAvatarImage avatar={identity.avatar} size={48} />
         <h1 id="offline-title">Chào mừng trở lại!</h1>
         <div className="offline-body">
         <p className="muted">Bạn đã vắng {formatDuration(summary.awayMs)}.</p>

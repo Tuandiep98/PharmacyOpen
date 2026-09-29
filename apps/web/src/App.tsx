@@ -15,6 +15,8 @@ import {
   BoxIcon,
   CheckIcon,
   CoinIcon,
+  DaypartGlyph,
+  type Daypart,
   CrossMarkIcon,
   InfoIcon,
   MapIcon,
@@ -31,7 +33,7 @@ import { CustomerInfo } from './features/store/CustomerInfo';
 import { ServiceTray } from './features/store/ServiceTray';
 import { PLAYER_WORKER_ID } from './features/store/useServiceActions';
 import { ProductIcon } from './art/Products';
-import { REGISTER_SPOT, SECOND_OFFSET, StoreScene } from './features/store/StoreScene';
+import { registerSpot, StoreScene } from './features/store/StoreScene';
 import { WorkerSheet } from './features/staff/WorkerSheet';
 import { CounterCard } from './features/staff/CounterAssign';
 import { DeliveryChip, DeliveryPanel } from './features/delivery/DeliveryPanel';
@@ -159,8 +161,9 @@ function useEventFeedback() {
             break;
           }
           case 'saleCompleted': {
-            pushFloater(`+${e.amount} ${BRAND.currency}`, REGISTER_SPOT.x + (e.counterId === 'counter-2' ? SECOND_OFFSET : 0), REGISTER_SPOT.y);
-            if (e.tip > 0) pushFloater(`Boa +${e.tip}`, REGISTER_SPOT.x - 40 + (e.counterId === 'counter-2' ? SECOND_OFFSET : 0), REGISTER_SPOT.y - 24);
+            const spot = registerSpot(bridge.state.counters.findIndex((c) => c.id === e.counterId), bridge.state.counters.length);
+            pushFloater(`+${e.amount} ${BRAND.currency}`, spot.x, spot.y);
+            if (e.tip > 0) pushFloater(`Boa +${e.tip}`, spot.x - 40, spot.y - 24);
             const sales = bridge.state.stats.sales;
             if (SALE_MILESTONES.includes(sales)) {
               playSfx('milestone');
@@ -420,8 +423,8 @@ function Hud({
   return (
     <header className="hud">
       <button className="hud-brand hud-brand-button" onClick={onBrand} aria-label={`Đổi tên và hình đại diện ${identity.name}`}>
-        <BrandAvatarImage avatar={identity.avatar} size={30} />
-        <span>{identity.name}</span>
+        <BrandAvatarImage avatar={identity.avatar} size={34} />
+        <span className="hud-brand-name">{identity.name}</span>
       </button>
       <div className="hud-stats">
         <button
@@ -429,7 +432,7 @@ function Hud({
           onClick={openLedger}
           aria-label={`${state.money} ${BRAND.currency}. Mở sổ sách`}
         >
-          <CoinIcon size={20} />
+          <CoinIcon size={24} />
           <b>
             {new Intl.NumberFormat("vi-VN", {
               notation: "compact",
@@ -437,20 +440,7 @@ function Hud({
             }).format(state.money)}
           </b>
         </button>
-        <span
-          className="chip hud-time"
-          aria-label={`Ngày ${state.day}, ${clockLabel(state)}, ${phaseLabel(state)}`}
-        >
-          <b>
-            N{state.day} · {clockLabel(state)}
-          </b>
-          <small>{phaseLabel(state)}</small>
-          <i
-            className="hud-time-progress"
-            style={{ width: `${progress * 100}%` }}
-            aria-hidden
-          />
-        </span>
+        <DayClock state={state} progress={progress} />
         <div className="hud-menu" ref={menuRef}>
           <IconButton
             onClick={() => setMenuOpen((open) => !open)}
@@ -480,6 +470,51 @@ function Hud({
         </div>
       </div>
     </header>
+  );
+}
+
+/** Giờ trong game → buổi: sáng (tới 11h), trưa (11–13h), chiều (13–18h), tối. */
+function daypartOf(clock: string): Daypart {
+  const hour = Number(clock.slice(0, 2));
+  return hour < 11 ? 'morning' : hour < 13 ? 'noon' : hour < 18 ? 'afternoon' : 'night';
+}
+const DAYPART_LABEL: Record<Daypart, string> = { morning: 'Sáng', noon: 'Trưa', afternoon: 'Chiều', night: 'Tối' };
+
+/**
+ * Ngày và giờ gọn một dòng: icon buổi có vòng tiến trình ngày bao quanh + "Ngày N". Chạm để mở rộng
+ * xem giờ và ca; chạm lần nữa thì thu lại.
+ */
+function DayClock({ state, progress }: { state: DeepReadonly<SimState>; progress: number }) {
+  const [open, setOpen] = useState(false);
+  const clock = clockLabel(state);
+  const part = daypartOf(clock);
+  const r = 13;
+  const length = 2 * Math.PI * r;
+  return (
+    <button
+      type="button"
+      className={`chip chip-btn hud-time daypart-${part} ${open ? 'open' : ''}`}
+      aria-expanded={open}
+      aria-label={`Ngày ${state.day}, ${DAYPART_LABEL[part].toLowerCase()}, ${clock}, ${phaseLabel(state)}. ${open ? 'Thu gọn' : 'Xem giờ'}`}
+      onClick={() => setOpen((v) => !v)}
+    >
+      <span className="daypart-ring" aria-hidden>
+        <svg width={32} height={32} viewBox="0 0 32 32">
+          <circle cx={16} cy={16} r={r} className="ring-track" />
+          <circle cx={16} cy={16} r={r} className="ring-fill" strokeDasharray={length} strokeDashoffset={length * (1 - progress)} transform="rotate(-90 16 16)" />
+        </svg>
+        <DaypartGlyph part={part} size={18} />
+      </span>
+      <b>Ngày {state.day}</b>
+      {open && (
+        <span className="hud-time-detail">
+          <strong>{clock}</strong>
+          <small>
+            {DAYPART_LABEL[part]} · {phaseLabel(state)}
+          </small>
+        </span>
+      )}
+    </button>
   );
 }
 
