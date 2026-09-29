@@ -84,7 +84,7 @@ export function BrandDialog({ onClose }: { onClose: () => void }) {
             Lưu nhận diện
           </GameButton>
           <GameButton type="button" onClick={onClose}>
-            Đóng
+            Huỷ thay đổi
           </GameButton>
         </div>
       </form>

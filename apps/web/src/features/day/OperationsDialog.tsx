@@ -30,7 +30,8 @@ export function OperationsDialog({ state }: { state: DeepReadonly<SimState> }) {
         <p>{incident.story}</p>
         <div className="operations-choices">
           {incident.choices.map((choice) => (
-            <button
+            <GameButton
+              surface="inset"
               className="operations-choice"
               key={choice.id}
               disabled={state.money < choice.cost}
@@ -44,7 +45,7 @@ export function OperationsDialog({ state }: { state: DeepReadonly<SimState> }) {
             >
               <strong>{choice.title}</strong>
               <span>{choice.consequence}</span>
-            </button>
+            </GameButton>
           ))}
         </div>
         <p className="small muted">

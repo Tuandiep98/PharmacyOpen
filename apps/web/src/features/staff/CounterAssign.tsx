@@ -9,6 +9,7 @@ import {
 import { WorkerPortrait } from "../../art/WorkerFigure";
 import { SwapIcon } from "../../art/Icons";
 import { useUi } from "../../ui/uiStore";
+import { GameButton } from "../../ui/primitives";
 import { useServiceActions } from "../store/useServiceActions";
 import { workerProgress, workerStatus } from "./workerStatus";
 import "./staff.css";
@@ -93,7 +94,8 @@ export function CounterStaffPicker({
             const progress = kind === "busy" ? workerProgress(state, w) : null;
             return (
               <li key={w.id}>
-                <button
+                <GameButton
+                  surface="custom"
                   type="button"
                   className={`pick-tile pick-${kind} ${w.controller === "ai" ? `rarity-${w.rarity}-edge` : ""}`}
                   aria-pressed={kind === "current"}
@@ -119,7 +121,7 @@ export function CounterStaffPicker({
                       <span style={{ width: `${progress * 100}%` }} />
                     </span>
                   )}
-                </button>
+                </GameButton>
               </li>
             );
           })}
@@ -128,13 +130,16 @@ export function CounterStaffPicker({
       {staff.length === 0 ? (
         <p className="pick-note">
           Chưa có nhân viên.{" "}
-          <button
+          <GameButton
+            tone="quiet"
+            surface="flat"
+            size="small"
             type="button"
             className="link-btn"
             onClick={() => setTab("staff")}
           >
             Tuyển ở tab Nhân sự
-          </button>
+          </GameButton>
         </p>
       ) : (
         offDuty > 0 && (
@@ -165,7 +170,8 @@ export function SwapAvatar({
   counterLabel: string;
 }) {
   return (
-    <button
+    <GameButton
+      surface="custom"
       type="button"
       className={`swap-avatar ${open ? "open" : ""}`}
       style={{ width: Math.max(44, size), height: Math.max(44, size) }}
@@ -177,7 +183,7 @@ export function SwapAvatar({
       <span className="swap-badge" aria-hidden>
         <SwapIcon size={14} />
       </span>
-    </button>
+    </GameButton>
   );
 }
 

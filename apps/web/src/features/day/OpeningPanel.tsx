@@ -75,7 +75,8 @@ export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
               : PREP_TASKS[id].detail;
           return (
             <li key={id} className={done ? "done" : ""}>
-              <button
+              <GameButton
+                surface="inset"
                 className="prep-item"
                 disabled={done}
                 aria-pressed={done}
@@ -95,7 +96,7 @@ export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
                   <b>{PREP_TASKS[id].title}</b>
                   <span className="small muted">{detail}</span>
                 </span>
-              </button>
+              </GameButton>
             </li>
           );
         })}

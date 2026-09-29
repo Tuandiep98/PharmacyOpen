@@ -1,6 +1,7 @@
 import { playSfx } from "../audio/sfx";
 import { CATALOG_CATEGORIES, catalogPages } from "./catalog";
 import { useUi } from "./uiStore";
+import { GameButton } from "./primitives";
 import type { DeepReadonly, SimState } from "@pharmacy/simulation";
 
 /** Cùng một bộ chọn danh mục cho kệ, khay phục vụ và Kho. */
@@ -21,7 +22,9 @@ export function CatalogControls({
     <div className="catalog-controls" aria-label="Danh mục hàng">
       <div className="catalog-categories" role="group" aria-label="Nhóm hàng">
         {CATALOG_CATEGORIES.map((item) => (
-          <button
+          <GameButton
+            surface="inset"
+            size="small"
             key={item.id}
             type="button"
             className={`catalog-tab ${category === item.id ? "active" : ""}`}
@@ -32,7 +35,7 @@ export function CatalogControls({
             }}
           >
             {item.label}
-          </button>
+          </GameButton>
         ))}
       </div>
       {pages && (
@@ -40,7 +43,9 @@ export function CatalogControls({
           className="catalog-pager"
           aria-label={`Trang hàng ${current + 1} trên ${total}`}
         >
-          <button
+          <GameButton
+            surface="inset"
+            size="small"
             type="button"
             aria-label="Trang hàng trước"
             disabled={current <= 0}
@@ -50,11 +55,13 @@ export function CatalogControls({
             }}
           >
             ‹
-          </button>
+          </GameButton>
           <span>
             {current + 1}/{total}
           </span>
-          <button
+          <GameButton
+            surface="inset"
+            size="small"
             type="button"
             aria-label="Trang hàng sau"
             disabled={current >= total - 1}
@@ -64,7 +71,7 @@ export function CatalogControls({
             }}
           >
             ›
-          </button>
+          </GameButton>
         </div>
       )}
     </div>

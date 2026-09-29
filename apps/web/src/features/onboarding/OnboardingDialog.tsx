@@ -162,9 +162,15 @@ export function OnboardingDialog({
           </GameButton>
         </div>
         {step < STEP_COUNT - 1 && (
-          <button className="link-btn" onClick={onClose}>
+          <GameButton
+            tone="quiet"
+            surface="flat"
+            size="small"
+            className="link-btn"
+            onClick={onClose}
+          >
             Bỏ qua hướng dẫn
-          </button>
+          </GameButton>
         )}
       </div>
     </div>

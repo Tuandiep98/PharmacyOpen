@@ -294,13 +294,16 @@ function ReviewCard({
         </span>
       )}
       {interaction && (
-        <button
+        <GameButton
+          tone="quiet"
+          surface="flat"
+          size="small"
           className="link-btn"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
         >
           {open ? "Ẩn diễn biến" : "Xem diễn biến"}
-        </button>
+        </GameButton>
       )}
       {open && interaction && (
         <Timeline state={state} interaction={interaction} />

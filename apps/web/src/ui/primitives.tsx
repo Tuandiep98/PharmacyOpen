@@ -1,41 +1,61 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type ButtonTone = "primary" | "secondary" | "danger" | "quiet";
+type ButtonTone =
+  "neutral" | "primary" | "secondary" | "sun" | "danger" | "quiet";
 type ButtonSize = "regular" | "small" | "large";
+type ButtonSurface = "raised" | "inset" | "flat" | "custom";
 
 export function GameButton({
-  tone = "secondary",
+  tone = "neutral",
   size = "regular",
+  surface = "raised",
+  icon,
   className = "",
   children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: ButtonTone;
   size?: ButtonSize;
-  children: ReactNode;
+  surface?: ButtonSurface;
+  icon?: ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <button
-      className={`btn ${tone} ${size === "large" ? "big" : size} ${className}`.trim()}
+      type="button"
+      className={`${surface === "custom" ? "" : "btn "}game-button ${tone} ${size === "large" ? "big" : size} surface-${surface} ${className}`.trim()}
       {...props}
     >
+      {icon && (
+        <span className="game-button-icon" aria-hidden>
+          {icon}
+        </span>
+      )}
       {children}
     </button>
   );
 }
 
 export function IconButton({
+  tone = "neutral",
+  surface = "inset",
   className = "",
   children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
+  tone?: ButtonTone;
+  surface?: ButtonSurface;
   "aria-label": string;
   children: ReactNode;
 }) {
   return (
-    <button className={`icon-btn ${className}`.trim()} {...props}>
-      {children}
-    </button>
+    <GameButton
+      tone={tone}
+      surface={surface}
+      className={`icon-btn ${className}`.trim()}
+      icon={children}
+      {...props}
+    />
   );
 }
 

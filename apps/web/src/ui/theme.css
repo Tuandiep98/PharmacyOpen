@@ -18,6 +18,7 @@
   --radius: 16px;
   --shadow: 0 10px 28px rgb(49 70 50 / 13%);
   --focus: #b8751b;
+  --coin-outer: #263a36;
 }
 
 body {
@@ -465,9 +466,6 @@ button:disabled {
 }
 .sheet {
   box-shadow: 0 -10px 30px rgb(35 60 46 / 18%);
-}
-.sheet-grip {
-  background: #a8c5ae;
 }
 .sheet-body {
   padding-inline: clamp(16px, 2.5vw, 28px);
@@ -1172,6 +1170,15 @@ button:disabled {
 .hud-menu-item:hover {
   background: var(--surface-tint);
 }
+.hud-menu-item > svg {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border-radius: 9px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
 
 /* Tạm dừng khoá toàn bộ giao diện. Cảnh vẫn đủ rõ để đọc hội thoại. */
 .app.user-paused > .bottom-nav,
@@ -1195,42 +1202,6 @@ button:disabled {
   place-items: center;
   background: rgba(38, 58, 54, 0.08);
 }
-.btn.primary.pause-resume {
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  min-width: 216px;
-  min-height: 66px;
-  padding: 12px 28px;
-  border: 3px solid var(--panel);
-  border-radius: 19px;
-  background: #ffd66f;
-  color: var(--ink);
-  font-size: 21px;
-  font-weight: 950;
-  letter-spacing: 0.01em;
-  box-shadow:
-    0 0 0 3px var(--ink),
-    0 8px 0 var(--ink),
-    0 18px 32px rgb(22 44 36 / 32%);
-  transform: translateY(-18vh);
-}
-.btn.primary.pause-resume:hover:not(:disabled) {
-  border-color: var(--panel);
-  background: #ffe49a;
-  transform: translateY(calc(-18vh - 3px));
-}
-.btn.primary.pause-resume:active:not(:disabled) {
-  box-shadow:
-    0 0 0 3px var(--ink),
-    0 3px 0 var(--ink);
-  transform: translateY(calc(-18vh + 5px));
-}
-.btn.primary.pause-resume:focus-visible {
-  outline: 4px solid var(--panel);
-  outline-offset: 7px;
-}
-
 /* Cùng năm đích đến, nhưng mật độ thay đổi theo chỗ trống thực tế. */
 .bottom-nav {
   display: block;
@@ -1462,7 +1433,7 @@ button:disabled {
   inset: 0;
 }
 .ring-track {
-  fill: #fffdf6;
+  fill: var(--panel);
   stroke: var(--line);
   stroke-width: 3.5;
 }
@@ -1536,6 +1507,7 @@ button:disabled {
 }
 .daypart-ring > svg:last-child {
   position: relative;
+  color: var(--ink);
 }
 
 /* Khay khi bạn tự đứng quầy: gợi ý/tiến độ nằm trong thẻ khách, hai nút thành một hàng, bớt một tầng. */
@@ -1631,4 +1603,475 @@ button:disabled {
 }
 .day-wage-warning {
   margin: 0;
+}
+
+/* Hệ nút trò chơi: cùng hình khối và phản hồi, thay màu/độ nổi theo ngữ cảnh. */
+.game-button.surface-custom {
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.game-button.surface-custom:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+.btn.game-button {
+  --button-face: var(--surface-soft);
+  --button-hover: var(--surface-tint);
+  --button-ink: var(--ink);
+  --button-edge: var(--ink);
+  --button-rim: var(--panel);
+  min-width: 44px;
+  border: 2px solid var(--button-rim);
+  border-radius: 16px;
+  background: var(--button-face);
+  color: var(--button-ink);
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  box-shadow:
+    0 0 0 1.5px var(--button-edge),
+    0 4px 0 var(--button-edge),
+    0 8px 16px rgb(22 44 36 / 14%);
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms var(--sheet-ease),
+    box-shadow 160ms ease;
+}
+.btn.game-button:hover:not(:disabled) {
+  background: var(--button-hover);
+  border-color: var(--button-rim);
+}
+.btn.game-button:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 1.5px var(--button-edge);
+}
+.btn.game-button.primary {
+  --button-face: var(--primary);
+  --button-hover: var(--primary-hover);
+  --button-ink: #fffdf6;
+}
+.btn.game-button.secondary {
+  --button-face: var(--primary-soft);
+  --button-hover: var(--surface-tint);
+  --button-ink: var(--primary);
+}
+.btn.game-button.sun {
+  --button-face: #ffd66f;
+  --button-hover: #ffe49a;
+  --button-ink: #263a36;
+}
+.btn.game-button.danger {
+  --button-face: var(--danger);
+  --button-hover: #8e3632;
+  --button-ink: #fffdf6;
+}
+.btn.game-button.quiet {
+  --button-face: transparent;
+  --button-hover: var(--surface-tint);
+  --button-ink: var(--primary);
+}
+.btn.game-button.surface-inset,
+.btn.game-button.surface-flat {
+  border-color: var(--line);
+  box-shadow: inset 0 2px 3px rgb(38 58 54 / 9%);
+}
+.btn.game-button.surface-flat {
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn.game-button.surface-inset:active:not(:disabled),
+.btn.game-button.surface-flat:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgb(38 58 54 / 15%);
+}
+.btn.game-button.small {
+  min-height: 40px;
+  padding: 6px 11px;
+  font-size: 14px;
+}
+.btn.game-button.big {
+  min-height: 54px;
+  padding: 11px 20px;
+  font-size: 17px;
+}
+.game-button-icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  line-height: 0;
+}
+.btn.game-button.icon-btn {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+}
+.hud-menu .btn.game-button.icon-btn {
+  --button-face: var(--surface-soft);
+  --button-hover: var(--surface-tint);
+  --button-ink: var(--primary);
+  border-color: var(--line);
+  border-radius: 14px;
+}
+.hud-menu .btn.game-button.icon-btn[aria-expanded="true"] {
+  --button-face: var(--primary-soft);
+  border-color: var(--primary);
+}
+.btn.game-button.pause-resume {
+  min-width: 216px;
+  min-height: 66px;
+  padding: 12px 28px;
+  border-width: 3px;
+  border-radius: 19px;
+  font-size: 21px;
+  font-weight: 950;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 0 0 3px var(--button-edge),
+    0 8px 0 var(--button-edge),
+    0 18px 32px rgb(22 44 36 / 32%);
+  transform: translateY(-18vh);
+}
+.btn.game-button.pause-resume:hover:not(:disabled) {
+  transform: translateY(calc(-18vh - 3px));
+}
+.btn.game-button.pause-resume:active:not(:disabled) {
+  transform: translateY(calc(-18vh + 5px));
+  box-shadow:
+    0 0 0 3px var(--button-edge),
+    0 3px 0 var(--button-edge);
+}
+.btn.game-button.operations-choice {
+  display: grid;
+  justify-content: stretch;
+  justify-items: start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+}
+.btn.game-button.prep-item {
+  justify-content: flex-start;
+  width: 100%;
+  text-align: left;
+}
+.btn.game-button.prep-item:disabled {
+  --button-face: var(--good-soft);
+  opacity: 1;
+}
+.btn.game-button.link-btn {
+  min-height: 40px;
+  min-width: 0;
+  width: fit-content;
+  padding: 4px 8px;
+  font-size: 13px;
+  border: 0;
+  box-shadow: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.btn.game-button.catalog-tab {
+  flex: 1 0 auto;
+  min-height: 44px;
+  padding-inline: 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.btn.game-button.catalog-tab.active,
+.counter-tabs button.active,
+.shift-toggle button[aria-pressed="true"] {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.catalog-pager .btn.game-button {
+  width: 44px;
+  padding: 0;
+  font-size: 24px;
+}
+.restock-stepper .btn.game-button {
+  --button-face: var(--surface-tint);
+  --button-hover: var(--primary-soft);
+  --button-ink: var(--primary);
+  min-width: 44px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 22px;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: none;
+}
+.restock-stepper .btn.game-button:disabled {
+  opacity: 0.35;
+  color: var(--ink-soft);
+}
+.restock-stepper .btn.game-button:not(:disabled):hover {
+  background: var(--primary-soft);
+}
+.restock-stepper output {
+  color: var(--ink);
+}
+
+/* Những ô điều hướng và lựa chọn lớn dùng cùng bo góc, viền và phản hồi chạm. */
+:is(
+  .chip-btn,
+  .catalog-tab,
+  .catalog-pager button,
+  .counter-tabs button,
+  .operations-choice,
+  .lock-btn,
+  .restock-stepper button
+) {
+  border-radius: 13px;
+  border-color: var(--line);
+  box-shadow: 0 2px 0 rgb(38 58 54 / 12%);
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease,
+    box-shadow 150ms ease;
+}
+:is(
+    .chip-btn,
+    .catalog-tab,
+    .catalog-pager button,
+    .counter-tabs button,
+    .operations-choice,
+    .lock-btn,
+    .restock-stepper button
+  ):active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+
+.sheet {
+  box-shadow: 0 -14px 34px rgb(24 47 37 / 22%);
+}
+.modal {
+  position: relative;
+  border: 2px solid var(--line);
+  border-top: 8px solid var(--primary);
+  box-shadow:
+    0 0 0 4px rgb(255 253 246 / 35%),
+    0 18px 44px rgb(15 38 27 / 28%);
+}
+.sheet-body,
+.modal,
+.side,
+.tray-items,
+.catalog-categories,
+.counter-tabs {
+  -webkit-overflow-scrolling: touch;
+}
+.tray-items,
+.catalog-categories,
+.counter-tabs {
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}
+@media (pointer: coarse) {
+  .tray-items {
+    scroll-snap-type: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0b1712;
+    --panel: #12231b;
+    --surface-soft: #1b3025;
+    --surface-tint: #254330;
+    --ink: #eaf2e5;
+    --ink-soft: #bed0bd;
+    --line: #3f5c49;
+    --primary: #7ace9d;
+    --primary-hover: #9ae0b1;
+    --primary-soft: #204431;
+    --sun: #e8b65a;
+    --danger: #f08174;
+    --danger-soft: #4f2928;
+    --warn-soft: #4f3e22;
+    --good-soft: #204b33;
+    --shadow: 0 14px 36px rgb(0 8 4 / 45%);
+    --focus: #ffd66f;
+    --good-ink: #a4e8b8;
+    --bad-ink: #ffb5a9;
+    --warn-ink: #f0cf87;
+    --coin-outer: #ffe4a4;
+  }
+  .btn.game-button {
+    --button-edge: #06140b;
+    --button-rim: #3f654d;
+  }
+  .btn.game-button.primary {
+    --button-ink: #0a2114;
+  }
+  .btn.game-button.secondary {
+    --button-ink: #e7f5e6;
+  }
+  .btn.game-button.quiet {
+    --button-ink: #c4edd5;
+  }
+  .btn.game-button.danger {
+    --button-ink: #1e2723;
+  }
+  .daypart-night .ring-fill {
+    stroke: #a8baf2;
+  }
+  .btn.game-button:hover:not(:disabled),
+  .pick-tile:hover {
+    border-color: var(--primary);
+  }
+  .brand-dialog input[type="text"] {
+    background: var(--surface-soft);
+    color: var(--ink);
+  }
+  .modal {
+    box-shadow:
+      0 0 0 4px rgb(12 26 17 / 65%),
+      0 18px 44px rgb(0 8 4 / 55%);
+  }
+  .modal-backdrop {
+    background: rgb(0 8 4 / 76%);
+  }
+  .sheet-backdrop {
+    background: rgb(0 8 4 / 60%);
+  }
+  .scene-wrap {
+    background: #102018;
+  }
+  .scene {
+    opacity: 0.84;
+  }
+  .item-chip.empty {
+    background: #342b20;
+  }
+  .item-chip.trending-product,
+  .inventory-list li.trending-product {
+    background: #392f1e;
+  }
+  .team-card.on-counter {
+    background: #203c2b;
+    border-color: #4f8b67;
+  }
+  .review-card.complaint {
+    background: #3c2825;
+    border-color: #975f58;
+  }
+  .rating-card {
+    background: #40351f;
+  }
+  .upcoming-stock {
+    background: #1b3426;
+    border-color: var(--line);
+  }
+  .level-banner {
+    background: #1d3a29;
+    border-color: #5a956c;
+  }
+  .level-seal {
+    color: #0a2114;
+  }
+  .upgrade-list li.maxed {
+    border-color: #5a956c;
+  }
+  .milestone-track > span {
+    border-color: var(--line);
+  }
+  .counter-summary,
+  .btn.game-button.secondary,
+  .btn.game-button.refer {
+    border-color: var(--line);
+  }
+  .trend-note {
+    background: #40311c;
+    color: #ffe1a5;
+  }
+  .btn.defer {
+    color: #ffdfa1;
+  }
+  .product-level {
+    background: #234331;
+    color: #e6f2e2;
+  }
+  .rarity-common {
+    background: #26332c;
+    color: #d5ddd4;
+  }
+  .rarity-good {
+    background: #204b33;
+    color: #a4e8b8;
+  }
+  .rarity-rare {
+    background: #1c3451;
+    color: #a9cdfb;
+  }
+  .rarity-legendary {
+    background: linear-gradient(90deg, #54401a, #6c4e17);
+    color: #ffe0a0;
+  }
+  :root .tag,
+  :root .reason.customer,
+  :root .review-avatar.anonymous {
+    background: var(--surface-soft);
+    color: var(--ink-soft);
+  }
+  :root .tag.trait.tone-good,
+  :root .tag.review-good,
+  :root .tag.tone-tag.tone-warm,
+  :root .trait-details .tone-good b {
+    color: var(--good-ink);
+  }
+  :root .tag.trait.tone-bad,
+  :root .tag.review-bad,
+  :root .tag.tone-tag.tone-curt,
+  :root .tag.tone-tag.tone-awkward,
+  :root .trait-details .tone-bad b {
+    color: var(--bad-ink);
+  }
+  :root .tag.trait.tone-mixed,
+  :root .tag.tone-tag.tone-chatty,
+  :root .trait-details .tone-mixed b,
+  :root .staff-capacity.full,
+  :root .upgrade-lock,
+  :root .warn-text,
+  :root .reason.store,
+  :root .wage-warning {
+    color: var(--warn-ink);
+  }
+  :root .reason.praise,
+  :root .inv-stock.healthy,
+  :root .tag.mint {
+    color: var(--good-ink);
+  }
+  :root .reason.staff,
+  :root .inv-stock.empty,
+  :root .delivery-chip.late {
+    color: var(--bad-ink);
+  }
+  :root .inv-stock.low,
+  :root .pick-busy .pick-status,
+  :root .tag.delivery-due.urgent {
+    color: var(--warn-ink);
+  }
+  .wage-summary.short {
+    background: #302916;
+  }
+  .milestone-track > span:not(.reached) {
+    color: var(--ink-soft);
+  }
+  .review-avatar.fam-known {
+    background: #3c2825;
+    color: var(--bad-ink);
+    border-color: #975f58;
+  }
+  .review-avatar:not(.fam-close):not(.fam-known) {
+    background: var(--surface-tint);
+    border-color: var(--line);
+  }
+  .fam-badge.fam-known,
+  .fam-badge.fam-close {
+    color: var(--bad-ink);
+  }
 }

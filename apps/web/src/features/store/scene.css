@@ -26,7 +26,7 @@
   transform: translateX(-50%);
   height: 20px;
   padding: 0 8px;
-  border: 2px solid var(--ink);
+  border: 2px solid #263a36;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 900;
@@ -37,7 +37,7 @@
 }
 .nametag-player {
   background: var(--sun);
-  color: var(--ink);
+  color: #263a36;
 }
 .nametag-pharmacist {
   background: var(--primary);
@@ -64,29 +64,33 @@
 }
 
 /* Bong bóng thoại: khách mọc sang trái, người bán mọc sang phải để hai câu không chồng nhau. */
-.speech {
+.scene-overlay .speech {
+  --bubble-bg: #fffdf6;
+  --bubble-fg: #263a36;
+  --bubble-edge: #263a36;
   position: absolute;
   width: max-content;
-  padding: 5px 9px;
-  border: 2px solid var(--ink);
+  margin: 0;
+  padding: 7px 10px;
+  border: 2px solid var(--bubble-edge);
   border-radius: 12px;
-  background: var(--panel);
-  color: var(--ink);
+  background: var(--bubble-bg);
+  color: var(--bubble-fg);
   font-size: 12px;
   font-weight: 800;
-  line-height: 1.3;
+  line-height: 1.35;
   box-shadow: 0 3px 0 rgb(38 58 54 / 22%);
   animation: speech-pop 180ms var(--sheet-ease) both;
 }
-.speech::after {
+.scene-overlay .speech::after {
   content: "";
   position: absolute;
   bottom: -7px;
   width: 10px;
   height: 10px;
-  background: inherit;
-  border-right: 2px solid var(--ink);
-  border-bottom: 2px solid var(--ink);
+  background: var(--bubble-bg);
+  border-right: 2px solid var(--bubble-edge);
+  border-bottom: 2px solid var(--bubble-edge);
   transform: rotate(45deg);
 }
 .speech.side-left {
@@ -112,16 +116,13 @@
 .speech.side-center::after {
   left: calc(50% - 5px);
 }
-.speech-staff {
-  background: #e2f4e8;
+.scene-overlay .speech-staff {
+  --bubble-bg: #e2f4e8;
 }
 /* Lời khách quen: viền đỏ gạch cùng màu bảng tên, góc có dấu tim. */
-.speech.regular {
-  border-color: #9a3a2e;
-  background: #fff4f0;
-}
-.speech.regular::after {
-  border-color: #9a3a2e;
+.scene-overlay .speech.regular {
+  --bubble-bg: #fff4f0;
+  --bubble-edge: #9a3a2e;
 }
 .speech.regular:not(.compact)::before {
   content: "♥";
@@ -139,22 +140,19 @@
   font-size: 10px;
   line-height: 1;
 }
-.speech-task {
-  background: #fff6de;
+.scene-overlay .speech-task {
+  --bubble-bg: #fff6de;
   padding: 4px 7px;
 }
-.speech.mood-urgent {
-  background: #ffe8e1;
-  border-color: var(--danger);
-  color: #7c2a24;
+.scene-overlay .speech.mood-urgent {
+  --bubble-bg: #ffe8e1;
+  --bubble-fg: #7c2a24;
+  --bubble-edge: #a9433c;
 }
-.speech.mood-urgent::after {
-  border-color: var(--danger);
+.scene-overlay .speech.mood-happy {
+  --bubble-bg: #fff4cf;
 }
-.speech.mood-happy {
-  background: #fff4cf;
-}
-.speech.compact {
+.scene-overlay .speech.compact {
   padding: 3px 7px;
 }
 .speech-body {
@@ -244,6 +242,7 @@
   padding: 2px 7px 2px 3px;
   border-radius: 8px;
   background: #fff0c8;
+  color: #263a36;
   font-size: 11.5px;
   line-height: 1.25;
   white-space: nowrap;
@@ -253,7 +252,7 @@
   padding: 0 5px;
   border-radius: 6px;
   background: var(--sun);
-  color: var(--ink);
+  color: #263a36;
   font-size: 10px;
   font-weight: 900;
   text-transform: uppercase;
@@ -297,6 +296,60 @@
   .speech,
   .overlay-anchor {
     transition: none;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .nametag-pharmacist {
+    border-color: #273022;
+    color: #0a2114;
+  }
+  .nametag-regular {
+    background: #412b2d;
+    border-color: #e69d91;
+    color: #ffece7;
+  }
+  .speech.regular:not(.compact)::before {
+    background: #412b2d;
+    border-color: #e69d91;
+    color: #ffb9aa;
+  }
+  .scene-overlay .speech {
+    --bubble-bg: #172e24;
+    --bubble-fg: #f2f6ec;
+    --bubble-edge: #75b78f;
+    box-shadow: 0 3px 0 rgb(0 8 4 / 55%);
+  }
+  .scene-overlay .speech-staff {
+    --bubble-bg: #1b4030;
+  }
+  .scene-overlay .speech.regular {
+    --bubble-bg: #412b2d;
+    --bubble-edge: #e69d91;
+  }
+  .scene-overlay .speech-task,
+  .scene-overlay .speech.mood-happy {
+    --bubble-bg: #41351d;
+    --bubble-edge: #e8b65a;
+  }
+  .scene-overlay .speech.mood-urgent {
+    --bubble-bg: #4a2928;
+    --bubble-fg: #ffece7;
+    --bubble-edge: #f08174;
+  }
+  .speech-need {
+    background: #5b4524;
+    color: #fff3d7;
+  }
+  .speech-need b {
+    background: #e8b65a;
+    color: #273022;
+  }
+  .speech-progress {
+    background: rgb(255 255 255 / 20%);
+  }
+  .speech-progress > span {
+    background: #83d9a5;
   }
 }
 

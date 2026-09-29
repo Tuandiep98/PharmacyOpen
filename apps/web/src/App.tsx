@@ -59,9 +59,10 @@ import { formatRating, starText } from "./ui/Stars";
 import { useBridge, useGameEvents, useGameState } from "./game/useGame";
 import { useUi, type Tab, type Toast } from "./ui/uiStore";
 import { useSettings } from "./ui/settings";
-import { IconButton } from "./ui/primitives";
+import { GameButton, IconButton } from "./ui/primitives";
 import { playSfx } from "./audio/sfx";
 import { burst, celebrate } from "./fx/confetti";
+import "./ui/detail.css";
 
 const InventoryPanel = lazy(() =>
   import("./features/inventory/InventoryPanel").then((m) => ({
@@ -124,6 +125,7 @@ export function App() {
   const setOffline = useUi((s) => s.setOffline);
   const daySummary = useUi((s) => s.daySummary);
   const setDaySummary = useUi((s) => s.setDaySummary);
+  const detailSelection = useUi((s) => s.selection);
   const incidentPending =
     dailyOperationsCase(state) !== null && state.operations.choice === null;
   // Người chơi tự bấm tạm dừng từ menu tuỳ chọn.
@@ -135,6 +137,8 @@ export function App() {
     showBrand ||
     offline !== null ||
     daySummary !== null ||
+    detailSelection?.kind === "product" ||
+    detailSelection?.kind === "worker" ||
     incidentPending ||
     state.operations.pendingTransfer;
 
@@ -190,13 +194,16 @@ export function App() {
           aria-modal="true"
           aria-label="Trò chơi đang tạm dừng"
         >
-          <button
-            className="btn primary pause-resume"
+          <GameButton
+            tone="sun"
+            size="large"
+            className="pause-resume"
+            icon={<PauseIcon size={26} paused />}
             onClick={() => setUserPaused(false)}
             autoFocus
           >
-            <PauseIcon size={26} paused /> Tiếp tục
-          </button>
+            Tiếp tục
+          </GameButton>
         </div>
       )}
       {offline && !showInfo && (
@@ -654,16 +661,18 @@ function Hud({
   };
   return (
     <header className="hud" inert={paused}>
-      <button
+      <GameButton
+        surface="custom"
         className="hud-brand hud-brand-button"
         onClick={onBrand}
         aria-label={`Đổi tên và hình đại diện ${identity.name}`}
       >
         <BrandAvatarImage avatar={identity.avatar} size={34} />
         <span className="hud-brand-name">{identity.name}</span>
-      </button>
+      </GameButton>
       <div className="hud-stats">
-        <button
+        <GameButton
+          surface="custom"
           className={`chip chip-btn ${owed ? "alert" : ""}`}
           onClick={openLedger}
           aria-label={`${state.money} ${BRAND.currency}. Mở sổ sách`}
@@ -675,7 +684,7 @@ function Hud({
               maximumFractionDigits: 1,
             }).format(state.money)}
           </b>
-        </button>
+        </GameButton>
         <DayClock state={state} progress={progress} />
         <div className="hud-menu" ref={menuRef}>
           <IconButton
@@ -688,7 +697,8 @@ function Hud({
           </IconButton>
           {menuOpen && (
             <div className="hud-menu-panel" id="hud-menu-panel">
-              <button
+              <GameButton
+                surface="custom"
                 className="hud-menu-item"
                 aria-pressed={paused}
                 onClick={() => {
@@ -698,9 +708,10 @@ function Hud({
               >
                 <PauseIcon size={22} paused={paused} />{" "}
                 {paused ? "Tiếp tục" : "Tạm dừng"}
-              </button>
+              </GameButton>
               <SoundToggle />
-              <button
+              <GameButton
+                surface="custom"
                 className="hud-menu-item"
                 onClick={() => {
                   setMenuOpen(false);
@@ -708,8 +719,9 @@ function Hud({
                 }}
               >
                 <InfoIcon size={22} /> Hướng dẫn chơi
-              </button>
-              <button
+              </GameButton>
+              <GameButton
+                surface="custom"
                 className="hud-menu-item"
                 onClick={() => {
                   setMenuOpen(false);
@@ -717,7 +729,7 @@ function Hud({
                 }}
               >
                 <StoreIcon size={22} /> Tên &amp; hình tiệm
-              </button>
+              </GameButton>
             </div>
           )}
         </div>
@@ -761,7 +773,8 @@ function DayClock({
   const r = 13;
   const length = 2 * Math.PI * r;
   return (
-    <button
+    <GameButton
+      surface="custom"
       type="button"
       className={`chip chip-btn hud-time daypart-${part} ${open ? "open" : ""}`}
       aria-expanded={open}
@@ -781,7 +794,7 @@ function DayClock({
             transform="rotate(-90 16 16)"
           />
         </svg>
-        <DaypartGlyph part={part} size={18} />
+        <DaypartGlyph part={part} size={21} />
       </span>
       <b>Ngày {state.day}</b>
       {open && (
@@ -792,7 +805,7 @@ function DayClock({
           </small>
         </span>
       )}
-    </button>
+    </GameButton>
   );
 }
 
@@ -800,9 +813,14 @@ function SoundToggle() {
   const sound = useSettings((s) => s.sound);
   const toggle = useSettings((s) => s.toggleSound);
   return (
-    <button className="hud-menu-item" onClick={toggle} aria-pressed={sound}>
+    <GameButton
+      surface="custom"
+      className="hud-menu-item"
+      onClick={toggle}
+      aria-pressed={sound}
+    >
       <SpeakerIcon size={22} muted={!sound} /> Âm thanh: {sound ? "Bật" : "Tắt"}
-    </button>
+    </GameButton>
   );
 }
 
@@ -812,6 +830,42 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
 
+  if (
+    tab === "store" &&
+    (selection?.kind === "product" || selection?.kind === "worker")
+  ) {
+    const onClose = () => select(null);
+    return (
+      <DetailDialog
+        key={`${selection.kind}-${selection.id}`}
+        label={
+          selection.kind === "product"
+            ? "Chi tiết sản phẩm"
+            : "Chi tiết nhân viên"
+        }
+        onClose={onClose}
+      >
+        <Suspense
+          fallback={<p className="small muted detail-loading">Đang tải…</p>}
+        >
+          {selection.kind === "product" ? (
+            <ProductSheet
+              state={state}
+              productId={selection.id}
+              onClose={onClose}
+            />
+          ) : (
+            <WorkerSheet
+              state={state}
+              workerId={selection.id}
+              onClose={onClose}
+            />
+          )}
+        </Suspense>
+      </DetailDialog>
+    );
+  }
+
   let content: React.ReactNode = null;
   if (tab === "inventory") content = <InventoryPanel state={state} />;
   else if (tab === "staff") content = <StaffPanel state={state} />;
@@ -819,10 +873,6 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
   else if (tab === "reviews") content = <ReviewsPanel state={state} />;
   else if (selection?.kind === "customer")
     content = <CustomerInfo state={state} customerId={selection.id} />;
-  else if (selection?.kind === "product")
-    content = <ProductSheet state={state} productId={selection.id} />;
-  else if (selection?.kind === "worker")
-    content = <WorkerSheet state={state} workerId={selection.id} />;
   else if (selection?.kind === "counter")
     content = <CounterCard state={state} counterId={selection.id} />;
   else if (selection?.kind === "deliveries")
@@ -842,12 +892,6 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
       )}
       {content ? (
         <div className="sheet">
-          <div className="sheet-bar">
-            <span className="sheet-grip" aria-hidden />
-            <IconButton className="close" aria-label="Đóng" onClick={close}>
-              <CrossMarkIcon size={22} />
-            </IconButton>
-          </div>
           <div className="sheet-body">
             <Suspense fallback={<p className="small muted">Đang tải…</p>}>
               {content}
@@ -861,6 +905,40 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
         </p>
       )}
     </aside>
+  );
+}
+
+function DetailDialog({
+  label,
+  onClose,
+  children,
+}: {
+  label: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    dialog.showModal();
+    return () => dialog.close();
+  }, []);
+  return (
+    <dialog
+      ref={dialogRef}
+      className="detail-dialog"
+      aria-label={label}
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      {children}
+    </dialog>
   );
 }
 
@@ -898,7 +976,8 @@ function PrimaryNav({
                 ? resigning
                 : 0;
           return (
-            <button
+            <GameButton
+              surface="custom"
               key={item.tab}
               className={`nav-item ${tab === item.tab ? "active" : ""}`}
               aria-current={tab === item.tab ? "page" : undefined}
@@ -914,7 +993,7 @@ function PrimaryNav({
                 {badge > 0 && <span className="nav-badge">{badge}</span>}
               </span>
               <span>{item.label}</span>
-            </button>
+            </GameButton>
           );
         })}
       </div>

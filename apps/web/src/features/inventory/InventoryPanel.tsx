@@ -13,7 +13,7 @@ import {
 import { ProductIcon } from "../../art/Products";
 import { BRAND } from "../../brand";
 import { useUi } from "../../ui/uiStore";
-import { PanelHeading } from "../../ui/primitives";
+import { GameButton, PanelHeading } from "../../ui/primitives";
 import { RestockButton } from "./ProductSheet";
 import { CatalogControls } from "../../ui/CatalogControls";
 import { catalogProducts } from "../../ui/catalog";
@@ -83,7 +83,8 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
                   {shelf}/{capacity}
                 </span>
               </div>
-              <button
+              <GameButton
+                surface="custom"
                 className="inv-info"
                 onClick={() => {
                   setTab("store");
@@ -113,7 +114,7 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
                     </span>
                   )}
                 </span>
-              </button>
+              </GameButton>
               <div className="inv-actions">
                 <RestockButton state={state} productId={id} compact />
               </div>
@@ -135,13 +136,16 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
               </span>
             ))}
           </div>
-          <button
+          <GameButton
+            tone="quiet"
+            surface="flat"
+            size="small"
             type="button"
             className="link-btn"
             onClick={() => setTab("expansion")}
           >
             Xem các mốc mở rộng
-          </button>
+          </GameButton>
         </section>
       )}
     </div>

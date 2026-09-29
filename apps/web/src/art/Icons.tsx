@@ -1,4 +1,4 @@
-import { ART, INK } from "./palette";
+import { ART } from "./palette";
 
 type IconProps = { size?: number; title?: string };
 
@@ -16,7 +16,7 @@ function Svg({
       aria-label={title}
       aria-hidden={title ? undefined : true}
       fill="none"
-      stroke={INK}
+      stroke="currentColor"
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -29,8 +29,15 @@ function Svg({
 /** Đồng xu vàng dày: vành đậm, mặt trong sáng, hoa bốn cánh dập nổi và vệt sáng. */
 export const CoinIcon = (p: IconProps) => (
   <Svg {...p}>
-    <circle cx={12} cy={13} r={9.5} fill="#C98A12" />
-    <circle cx={12} cy={11.5} r={9.5} fill="#F6B93B" />
+    <circle
+      cx={12}
+      cy={11.5}
+      r={10.5}
+      stroke="var(--coin-outer, #263a36)"
+      strokeWidth={1}
+    />
+    <circle cx={12} cy={13} r={9.5} fill="#C98A12" stroke="#754B18" />
+    <circle cx={12} cy={11.5} r={9.5} fill="#F6B93B" stroke="#754B18" />
     <circle
       cx={12}
       cy={11.5}
@@ -84,7 +91,7 @@ export function DaypartGlyph({
           <circle cx={10} cy={11} r={4.6} fill="#F08A24" />
           <path
             d="M13,17 Q13,13.5 16.5,13.5 Q17.5,11 20.5,12.5 Q22,15 20.5,17 Z"
-            fill="#FFFFFF"
+            fill="var(--panel)"
           />
           <path d="M10,3.5 V5.5 M3.5,11 H5.5 M5.3,6.3 L6.7,7.7" />
         </>
@@ -115,17 +122,17 @@ export const BagIcon = (p: IconProps) => (
 
 export const InfoIcon = (p: IconProps) => (
   <Svg {...p}>
-    <circle cx={12} cy={12} r={9} fill={ART.paper} />
+    <circle cx={12} cy={12} r={9} />
     <path d="M12,11 V16.5" strokeWidth={2.2} />
-    <circle cx={12} cy={7.6} r={1.2} fill={INK} stroke="none" />
+    <circle cx={12} cy={7.6} r={1.2} fill="currentColor" stroke="none" />
   </Svg>
 );
 
 export const MenuIcon = (p: IconProps) => (
   <Svg {...p}>
-    <circle cx={5} cy={12} r={1.5} fill={INK} stroke="none" />
-    <circle cx={12} cy={12} r={1.5} fill={INK} stroke="none" />
-    <circle cx={19} cy={12} r={1.5} fill={INK} stroke="none" />
+    <circle cx={5} cy={12} r={1.5} fill="currentColor" stroke="none" />
+    <circle cx={12} cy={12} r={1.5} fill="currentColor" stroke="none" />
+    <circle cx={19} cy={12} r={1.5} fill="currentColor" stroke="none" />
   </Svg>
 );
 
@@ -157,14 +164,14 @@ export const WarningIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12,3 L22,20 H2 Z" fill={ART.honey} />
     <path d="M12,9.5 V14" strokeWidth={2.2} />
-    <circle cx={12} cy={17} r={1.1} fill={INK} stroke="none" />
+    <circle cx={12} cy={17} r={1.1} fill="currentColor" stroke="none" />
   </Svg>
 );
 
 export const StoreIcon = (p: IconProps) => (
   <Svg {...p}>
-    <path d="M4,10 V20 H20 V10" fill={ART.paper} />
-    <path d="M3,10 L5,4 H19 L21,10 Z" fill={ART.leafLight} />
+    <path d="M4,10 V20 H20 V10" fill="var(--panel)" />
+    <path d="M3,10 L5,4 H19 L21,10 Z" fill="var(--surface-tint)" />
     <path d="M10,20 V14 H14 V20" />
   </Svg>
 );
@@ -233,7 +240,7 @@ export const SpeakerIcon = ({
   ...p
 }: IconProps & { muted?: boolean }) => (
   <Svg {...p}>
-    <path d="M4,9.5 H8 L13,5 V19 L8,14.5 H4 Z" fill={ART.mint} />
+    <path d="M4,9.5 H8 L13,5 V19 L8,14.5 H4 Z" />
     {muted ? (
       <path d="M16.5,9.5 L21,14 M21,9.5 L16.5,14" strokeWidth={2} />
     ) : (
@@ -251,9 +258,9 @@ export const PauseIcon = ({
   ...p
 }: IconProps & { paused?: boolean }) => (
   <Svg {...p}>
-    <circle cx={12} cy={12} r={9} fill={ART.mint} />
+    <circle cx={12} cy={12} r={9} />
     {paused ? (
-      <path d="M10,8 L16,12 L10,16 Z" fill={INK} />
+      <path d="M10,8 L16,12 L10,16 Z" fill="currentColor" />
     ) : (
       <path d="M10,8.5 V15.5 M14,8.5 V15.5" strokeWidth={2.4} />
     )}
@@ -286,11 +293,11 @@ export const PadlockIcon = ({
       width={14}
       height={10}
       rx={2.5}
-      fill={open ? ART.paper : ART.honey}
+      fill={open ? "var(--surface-soft)" : "var(--warn-soft)"}
     />
     <path
       d={open ? "M8,11 V8 a4,4 0 0 1 7.6,-1.7" : "M8,11 V8 a4,4 0 0 1 8,0 V11"}
     />
-    <circle cx={12} cy={16} r={1.4} fill={INK} strokeWidth={0} />
+    <circle cx={12} cy={16} r={1.4} fill="currentColor" strokeWidth={0} />
   </Svg>
 );

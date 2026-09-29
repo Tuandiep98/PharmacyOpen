@@ -58,7 +58,8 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const counterTabs = state.counters.length > 1 && (
     <div className="counter-tabs" role="group" aria-label="Chọn quầy">
       {state.counters.map((c, i) => (
-        <button
+        <GameButton
+          surface="custom"
           key={c.id}
           type="button"
           aria-pressed={c.id === counter.id}
@@ -67,7 +68,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         >
           Quầy {i + 1}
           {c.customerId ? " · Có khách" : !c.operatorId ? " · Chưa mở" : ""}
-        </button>
+        </GameButton>
       ))}
     </div>
   );
@@ -293,7 +294,8 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
             );
             return (
               <li key={id}>
-                <button
+                <GameButton
+                  surface="custom"
                   className={`item-chip empty ${isTrending(state, id) ? "trending-product" : ""}`}
                   onClick={() => restock(id)}
                   disabled={affordable === 0}
@@ -307,13 +309,14 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
                       ? `+ Nhập ${affordable * stockUnitCost(state, id)} ${BRAND.currency}`
                       : "Thiếu xu"}
                   </span>
-                </button>
+                </GameButton>
               </li>
             );
           }
           return (
             <li key={id}>
-              <button
+              <GameButton
+                surface="custom"
                 className={`item-chip ${dragging === id ? "lifted" : ""} ${isTrending(state, id) ? "trending-product" : ""}`}
                 disabled={!canServe}
                 onPointerDown={(e) =>
@@ -340,7 +343,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
                 <span className="item-price">
                   {state.prices[id]} {BRAND.currency}
                 </span>
-              </button>
+              </GameButton>
             </li>
           );
         })}

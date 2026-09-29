@@ -61,33 +61,38 @@ export function RestockButton({
           role="group"
           aria-label={`Số lượng nhập ${PRODUCTS[productId].name}`}
         >
-          <button
+          <GameButton
+            surface="inset"
+            size="small"
             type="button"
             aria-label="Giảm số lượng nhập"
             disabled={quantity <= 1}
             onClick={() => setRequestedQuantity(quantity - 1)}
           >
             −
-          </button>
+          </GameButton>
           <output
             aria-live="polite"
             aria-label={`Nhập ${quantity} trên tối đa ${affordable} món`}
           >
             {quantity}
           </output>
-          <button
+          <GameButton
+            surface="inset"
+            size="small"
             type="button"
             aria-label="Tăng số lượng nhập"
             disabled={quantity >= affordable}
             onClick={() => setRequestedQuantity(quantity + 1)}
           >
             +
-          </button>
+          </GameButton>
         </div>
       )}
       <GameButton
         tone={compact ? "secondary" : "primary"}
         size={compact ? "small" : "regular"}
+        icon={<BoxIcon size={compact ? 18 : 22} />}
         disabled={affordable === 0}
         onClick={() => {
           const r = bridge.dispatch({ type: "restock", productId, quantity });
@@ -95,7 +100,6 @@ export function RestockButton({
           if (r.ok) setRequestedQuantity(null);
         }}
       >
-        <BoxIcon size={compact ? 18 : 22} />
         {label}
       </GameButton>
       {error && (
@@ -111,63 +115,79 @@ export function RestockButton({
 export function ProductSheet({
   state,
   productId,
+  onClose,
 }: {
   state: DeepReadonly<SimState>;
   productId: ProductId;
+  onClose: () => void;
 }) {
   const p = PRODUCTS[productId];
   const { shelf, capacity } = state.stock[productId];
   const expiry = nextExpiry(state, productId);
+  const trending = isTrending(state, productId);
   return (
-    <div className="product-sheet">
-      <div className="service-head">
-        <div className="icon-tile">
-          <ProductIcon id={productId} size={52} />
+    <article className="detail-layout product-detail">
+      <header className="detail-hero">
+        <div className="detail-portrait product-portrait">
+          <ProductIcon id={productId} size={76} />
         </div>
-        <div className="service-who">
-          <strong>{p.name}</strong>
-          <span className="small">
-            Mặt hàng cấp {productLevel(productId)}{" "}
-            {isTrending(state, productId) && (
-              <span className="trend-tag">Bán chạy hôm nay</span>
-            )}
-          </span>
-          <span className="muted small">
-            Nhãn hư cấu “{p.brand}” · {CATEGORY[p.category]}
-          </span>
-          <span className="small">
-            Giá bán <b>{state.prices[productId]}</b> · Giá nhập hôm nay{" "}
-            {stockUnitCost(state, productId)} {BRAND.currency}
-          </span>
-        </div>
-      </div>
-      <div className="stock-row">
-        <span>Trên kệ</span>
-        <span className="stock-pips" aria-label={`${shelf}/${capacity}`}>
-          {Array.from({ length: capacity }, (_, i) => (
-            <i key={i} className={i < shelf ? "on" : ""} />
-          ))}
+        <span className="detail-eyebrow">
+          {CATEGORY[p.category]} · Cấp {productLevel(productId)}
         </span>
-        <b>
-          {shelf}/{capacity}
-        </b>
-      </div>
-      <p className="small muted">
-        Lô gần nhất:{" "}
-        {expiry === null
-          ? "chưa có hàng"
-          : `còn ${Math.max(0, Math.ceil((expiry - state.timeMs) / state.config.dayMs))} ngày trong game`}
-        . Hàng hết hạn sẽ tự rời kệ.
-      </p>
-      <RestockButton state={state} productId={productId} />
-      {isTrending(state, productId) && (
-        <p className="small trend-note">
-          Khách hỏi món này nhiều hơn hôm nay. Giá nhập tăng 20%; giá bán gợi ý{" "}
-          {suggestedPrice(state, productId)} xu. Bạn có thể chỉnh giá bên dưới.
+        <h1>{p.name}</h1>
+        <span className="small muted">Nhãn hư cấu “{p.brand}”</span>
+        {trending && <span className="trend-tag">Bán chạy hôm nay</span>}
+      </header>
+      <div className="detail-scroll">
+        <section className="detail-overview" aria-label="Tình trạng sản phẩm">
+          <div className="detail-stat">
+            <span>Trên kệ</span>
+            <strong>
+              {shelf}/{capacity}
+            </strong>
+            <small>món</small>
+          </div>
+          <div className="detail-stat">
+            <span>Giá bán</span>
+            <strong>{state.prices[productId]}</strong>
+            <small>{BRAND.currency}/món</small>
+          </div>
+          <div className="detail-stat">
+            <span>Giá nhập</span>
+            <strong>{stockUnitCost(state, productId)}</strong>
+            <small>{BRAND.currency}/món</small>
+          </div>
+        </section>
+        <div className="stock-row detail-stock-row">
+          <span>Hàng trên kệ</span>
+          <span className="stock-pips" aria-label={`${shelf}/${capacity}`}>
+            {Array.from({ length: capacity }, (_, i) => (
+              <i key={i} className={i < shelf ? "on" : ""} />
+            ))}
+          </span>
+        </div>
+        <p className="small muted">
+          Lô gần nhất:{" "}
+          {expiry === null
+            ? "chưa có hàng"
+            : `còn ${Math.max(0, Math.ceil((expiry - state.timeMs) / state.config.dayMs))} ngày trong game`}
+          . Hàng hết hạn sẽ tự rời kệ.
         </p>
-      )}
-      <PriceControl state={state} productId={productId} />
-    </div>
+        {trending && (
+          <p className="small trend-note">
+            Khách hỏi món này nhiều hơn hôm nay. Giá nhập tăng 20%; giá bán gợi
+            ý {suggestedPrice(state, productId)} xu.
+          </p>
+        )}
+        <PriceControl state={state} productId={productId} />
+      </div>
+      <footer className="detail-footer">
+        <RestockButton state={state} productId={productId} />
+        <GameButton tone="secondary" onClick={onClose} autoFocus>
+          Đóng
+        </GameButton>
+      </footer>
+    </article>
   );
 }
 

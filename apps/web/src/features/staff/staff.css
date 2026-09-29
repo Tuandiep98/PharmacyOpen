@@ -164,14 +164,22 @@
   border: 1.5px solid var(--line);
   border-radius: 12px;
   background: var(--surface-soft);
+  color: var(--primary);
   cursor: pointer;
 }
 .lock-btn.locked {
   background: var(--warn-soft);
   border-color: var(--sun);
+  color: #75500f;
 }
 .lock-btn:hover {
   background: var(--surface-tint);
+}
+.lock-btn.locked:hover {
+  background: var(--warn-soft);
+}
+.lock-btn svg {
+  display: block;
 }
 
 .policy-toggle {
@@ -328,6 +336,34 @@
 .staff-capacity.full {
   color: #785013;
   font-weight: 800;
+}
+
+@media (prefers-color-scheme: dark) {
+  .rarity-common {
+    color: #d5ddd4;
+    background: #26332c;
+  }
+  .rarity-good {
+    color: #a4e8b8;
+    background: #204b33;
+  }
+  .rarity-rare {
+    color: #a9cdfb;
+    background: #1c3451;
+  }
+  .rarity-legendary {
+    color: #ffe0a0;
+    background: linear-gradient(90deg, #54401a, #6c4e17);
+  }
+  .lock-btn.locked,
+  .pick-busy .pick-status,
+  .staff-capacity.full {
+    color: var(--warn-ink);
+  }
+  .pick-level {
+    border-color: #273022;
+    color: #273022;
+  }
 }
 
 /* Khay: bộ chọn trải hết chiều ngang dưới dải trạng thái quầy. */

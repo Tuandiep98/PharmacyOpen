@@ -549,13 +549,16 @@ function StaffCapacityHint({
     <p className={`small staff-capacity ${full ? "full" : "muted"}`}>
       {full ? "Đội đã đủ chỗ. " : ""}
       {label} thêm {perShift ? "1 chỗ mỗi ca" : "1 người dự phòng"}.{" "}
-      <button
+      <GameButton
+        tone="quiet"
+        surface="flat"
+        size="small"
         type="button"
         className="link-btn"
         onClick={() => setTab("expansion")}
       >
         Mở rộng
-      </button>
+      </GameButton>
     </p>
   );
 }
@@ -695,7 +698,8 @@ function StationPicker({
       {STATION_IDS.map((id) => {
         if (id === "counter")
           return state.counters.map((counter, index) => (
-            <button
+            <GameButton
+              surface="custom"
               key={counter.id}
               aria-pressed={counter.operatorId === worker.id}
               disabled={
@@ -706,7 +710,7 @@ function StationPicker({
               {state.counters.length > 1
                 ? `Quầy ${index + 1}`
                 : STATIONS.counter.name}
-            </button>
+            </GameButton>
           ));
         const cap = STATIONS[id].capacity;
         const full =
@@ -714,7 +718,8 @@ function StationPicker({
           cap !== null &&
           stationHeadcount(state, id, worker.id) >= cap;
         return (
-          <button
+          <GameButton
+            surface="custom"
             key={id}
             aria-pressed={current === id}
             disabled={full}
@@ -723,7 +728,7 @@ function StationPicker({
           >
             {STATIONS[id].name}
             {full ? " (đủ người)" : ""}
-          </button>
+          </GameButton>
         );
       })}
     </div>
@@ -799,7 +804,8 @@ function ShiftToggle({
         const has = worker.shifts.includes(shift);
         const full = !has && shiftHeadcount(state, shift) >= perShift;
         return (
-          <button
+          <GameButton
+            surface="custom"
             key={shift}
             aria-pressed={has}
             disabled={(has && worker.shifts.length === 1) || full}
@@ -810,7 +816,7 @@ function ShiftToggle({
               ? " ✓"
               : ""}
             {full ? " (đủ người)" : ""}
-          </button>
+          </GameButton>
         );
       })}
     </div>
@@ -915,7 +921,8 @@ function RecruitCard({
           </span>
           <span className="small muted">{recruit.blurb}</span>
         </div>
-        <button
+        <GameButton
+          surface="custom"
           className={`lock-btn ${recruit.locked ? "locked" : ""}`}
           aria-pressed={recruit.locked}
           aria-label={
@@ -928,7 +935,7 @@ function RecruitCard({
           }
         >
           <PadlockIcon open={!recruit.locked} size={22} />
-        </button>
+        </GameButton>
       </div>
       <TraitTags traits={recruit.traits} hidden={recruit.hiddenTraits.length} />
       {recruit.hiddenTraits.length > 0 && (

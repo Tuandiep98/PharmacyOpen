@@ -67,7 +67,8 @@ export function DeliveryChip({ state }: { state: State }) {
           ? "Sắp trễ"
           : "Cần gói";
   return (
-    <button
+    <GameButton
+      surface="custom"
       type="button"
       className={`delivery-chip ${worst ?? "ok"}`}
       onClick={() => select({ kind: "deliveries" })}
@@ -76,7 +77,7 @@ export function DeliveryChip({ state }: { state: State }) {
       <ParcelIcon size={22} />
       <b>{open.length > 0 ? open.length : state.deliveries.length}</b>
       <span>{label}</span>
-    </button>
+    </GameButton>
   );
 }
 
