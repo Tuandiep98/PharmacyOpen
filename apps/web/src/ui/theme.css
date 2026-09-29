@@ -258,6 +258,20 @@ button:disabled { cursor: not-allowed; }
 .upgrade-lock { margin-left: 6px; background: var(--warn-soft); color: #75500f; vertical-align: 2px; }
 .upgrade-next { color: var(--ink); }
 .review-card.complaint { background: #fff3ec; border-color: #e0aea0; }
+/* Người viết đánh giá: chữ cái đại diện + tên (hoặc Ẩn danh) + độ quen; màu khách quen cùng tông bảng tên trong cảnh. */
+.review-author { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.review-avatar { display: grid; place-items: center; width: 34px; height: 34px; border: 2px solid var(--ink); border-radius: 50%; background: #e0ebe3; color: var(--primary); font-weight: 900; font-size: 15px; }
+.review-avatar.fam-known { background: #fff4f0; color: #9a3a2e; border-color: #9a3a2e; }
+.review-avatar.fam-close { background: #9a3a2e; color: #fff; border-color: #6f2820; }
+.review-avatar.anonymous { background: #eceee8; color: var(--ink-soft); border-style: dashed; }
+.review-byline { display: grid; gap: 1px; min-width: 0; }
+.review-byline strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fam-badge { font-weight: 800; }
+.fam-badge.fam-known { color: #9a3a2e; }
+.fam-badge.fam-close { color: #9a3a2e; }
+.fam-badge.fam-close::before { content: '♥ '; }
+.review-card.fam-close { border-left: 4px solid #9a3a2e; }
+.review-card.fam-known { border-left: 4px solid #e6b4a8; }
 .rating-card { background: #fff3d6; border-color: #edcd84; }
 .notice.warn, .bottlenecks { background: var(--warn-soft); }
 .notice.bad { background: var(--danger-soft); }
@@ -539,6 +553,8 @@ button:disabled { cursor: not-allowed; }
 .daypart-afternoon .ring-fill { stroke: #e0603a; }
 .daypart-night .ring-fill { stroke: #5a6fb0; }
 .hud-time.open { background: var(--primary-soft); border-color: #9bc3a8; }
+/* Chip ngày/giờ luôn đủ rộng cho "Ngày N" (và giờ khi mở rộng); chỉ chip tiền được co lại. */
+.hud-stats .hud-time { max-width: none; flex: none; }
 @media (max-width: 420px) {
   .hud-time { min-width: 0; padding-inline: 3px 7px; }
 }

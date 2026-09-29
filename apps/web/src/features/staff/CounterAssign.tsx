@@ -9,9 +9,9 @@ import './staff.css';
 type State = DeepReadonly<SimState>;
 type PickState = 'current' | 'other-counter' | 'busy' | 'away' | 'free';
 
-/** Tên gọi ngắn trên ô chọn: tên riêng (chữ cuối), người chơi là "Bạn". */
+/** Tên gọi ngắn trên ô chọn: tên riêng (chữ cuối), người chơi là "Tôi". */
 export function shortName(worker: DeepReadonly<Worker>): string {
-  if (worker.id === PLAYER_WORKER_ID) return 'Bạn';
+  if (worker.id === PLAYER_WORKER_ID) return 'Tôi';
   return worker.name.split(' ').pop() || worker.name;
 }
 
@@ -139,7 +139,7 @@ export function CounterCard({ state, counterId }: { state: State; counterId: str
       <div className="counter-summary-main">
         {operator && <WorkerPortrait worker={operator} size={48} />}
         <div className="counter-summary-text">
-          <strong>{operator ? `${operator.name}${operator.id === PLAYER_WORKER_ID ? ' (bạn)' : ''}` : 'Quầy chưa mở'}</strong>
+          <strong>{operator ? operator.name : 'Quầy chưa mở'}</strong>
           <span>{operator ? workerStatus(state, operator) : 'Chọn người đứng quầy bên dưới.'}</span>
         </div>
       </div>

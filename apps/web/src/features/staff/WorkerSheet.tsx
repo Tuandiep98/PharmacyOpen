@@ -18,7 +18,8 @@ export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>
         <WorkerPortrait worker={worker} size={64} />
         <div className="service-who">
           <strong>
-            {worker.role === 'pharmacist' ? 'Dược sĩ' : 'Nhân viên'} {worker.name}{' '}
+            {worker.controller === 'player' ? `${worker.name} · ` : ''}
+            {worker.role === 'pharmacist' ? 'Dược sĩ' : 'Nhân viên'} {worker.controller === 'player' ? '' : worker.name}{' '}
             <TraitTags traits={worker.traits} hidden={worker.hiddenTraits.length} />
           </strong>
           <span className="muted small">

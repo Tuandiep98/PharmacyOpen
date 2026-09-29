@@ -139,7 +139,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         <div className="tray-operator">
           <SwapAvatar worker={operator} size={32} open={swapOpen} onToggle={toggleSwap} counterLabel={`quầy${counterLabel}`} />
           <span>
-            Quầy{counterLabel} · <b>{operator.name} (bạn)</b>
+            Quầy{counterLabel} · <b>{operator.name}</b>
           </span>
         </div>
       )}

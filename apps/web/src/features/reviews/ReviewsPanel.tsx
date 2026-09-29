@@ -162,15 +162,37 @@ function ReasonTags({ reasons }: { reasons: readonly (keyof typeof REASONS)[] })
   );
 }
 
+/** Nhãn độ quen: visits là số lần đã ghé trước, nên lượt được đánh giá là lần thứ visits + 1. */
+function familiarityLabel(review: DeepReadonly<Review>): string {
+  if (review.familiarity === 'close') return `Khách thân · lần ghé thứ ${review.visits + 1}`;
+  if (review.familiarity === 'known') return `Khách quen · lần ghé thứ ${review.visits + 1}`;
+  return 'Khách mới';
+}
+
+/** Chữ cái đại diện: chữ đầu của tên riêng ("Chị Dung" → D, "Dung N." → D); ẩn danh thì "?". */
+function authorInitial(author: string | null): string {
+  if (!author) return '?';
+  const words = author.split(' ');
+  const given = words.length > 1 && /\.$/.test(words[words.length - 1]!) ? words[0]! : words[words.length - 1]!;
+  return given.charAt(0).toUpperCase();
+}
+
 function ReviewHeader({ state, review }: { state: State; review: DeepReadonly<Review> }) {
   const worker = review.workerId ? state.workers[review.workerId] : undefined;
   return (
     <>
-      <div className="review-top">
-        <Stars value={review.stars} size={15} />
-        <span className="small muted">
-          {ARCHETYPES[review.archetypeId].name} · {minutesAgo(state, review.atMs)}
+      <div className="review-author">
+        <span className={`review-avatar fam-${review.familiarity} ${review.author ? '' : 'anonymous'}`} aria-hidden>
+          {authorInitial(review.author)}
         </span>
+        <div className="review-byline">
+          <strong>{review.author ?? 'Ẩn danh'}</strong>
+          <span className="small muted">
+            <span className={`fam-badge fam-${review.familiarity}`}>{familiarityLabel(review)}</span> · {ARCHETYPES[review.archetypeId].name} ·{' '}
+            {minutesAgo(state, review.atMs)}
+          </span>
+        </div>
+        <Stars value={review.stars} size={15} />
       </div>
       <p className="review-comment">“{review.comment}”</p>
       <ReasonTags reasons={review.reasons} />
@@ -186,7 +208,7 @@ function ReviewCard({ state, review }: { state: State; review: DeepReadonly<Revi
   const [open, setOpen] = useState(false);
   const interaction = state.interactions.find((i) => i.id === review.interactionId);
   return (
-    <li className="review-card">
+    <li className={`review-card fam-${review.familiarity}`}>
       <ReviewHeader state={state} review={review} />
       {review.response && (
         <span className="small reply">
@@ -212,7 +234,7 @@ function Timeline({ state, interaction: i }: { state: State; interaction: DeepRe
       <li>Khách vào tiệm.</li>
       {i.servedAtMs !== null ? (
         <li>
-          Chờ {seconds(i.servedAtMs - i.arrivedAtMs)} rồi được {worker?.name ?? 'nhân viên'} phục vụ.
+          Chờ {seconds(i.servedAtMs - i.arrivedAtMs)} rồi được {i.workerId === PLAYER_WORKER_ID ? 'tôi' : (worker?.name ?? 'nhân viên')} phục vụ.
         </li>
       ) : (
         <li>Chờ {seconds(i.endedAtMs - i.arrivedAtMs)} mà chưa tới lượt.</li>
@@ -248,7 +270,7 @@ function ComplaintCard({ state, complaintId, review }: { state: State; complaint
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
   };
   return (
-    <li className="review-card complaint">
+    <li className={`review-card complaint fam-${review.familiarity}`}>
       <ReviewHeader state={state} review={review} />
       <div className="responses">
         {(Object.keys(COMPLAINT_RESPONSES) as ComplaintResponse[]).map((key) => (

@@ -1,8 +1,19 @@
 import { ARCHETYPES } from './content/archetypes';
 import { PRODUCTS } from './content/products';
 import { REQUESTS } from './content/requests';
-import { REASONS, REVIEW_COMMENTS, type ComplaintResponse } from './content/reviews';
-import type { ArchetypeDef, ReasonCode, RequestKind, TraitId } from './content/types';
+import { reviewerNickname, stableHash } from './content/names';
+import {
+  REASONS,
+  REVIEW_CLOSERS,
+  REVIEW_COMMENTS,
+  REVIEW_OPENERS,
+  REVIEW_TRENDING_PRODUCT,
+  REVIEW_TRENDY_CLOSERS,
+  type ComplaintResponse,
+  type StarCount,
+} from './content/reviews';
+import { isTrending } from './progression';
+import type { ArchetypeDef, ReasonCode, RequestKind, ReviewerFamiliarity, TraitId } from './content/types';
 import type { Emit } from './events';
 import { loseExperience } from './recruit';
 import { nextFloat, nextInt } from './rng';
@@ -55,6 +66,8 @@ export interface SatisfactionInput {
   returning?: boolean;
   /** Loại yêu cầu: khách kể nhu cầu mà được tư vấn đúng ngay thì khen tư vấn. */
   requestKind?: RequestKind;
+  /** Số lần khách quen đã ghé trước đó: càng gắn bó càng dễ bỏ qua lỗi nhỏ (có trần). */
+  loyaltyVisits?: number;
 }
 
 /**
@@ -198,12 +211,18 @@ export function evaluateSatisfaction(input: SatisfactionInput): { satisfaction: 
     }
   }
 
+  if (input.loyaltyVisits) sat += Math.min(LOYALTY_GRACE_MAX, input.loyaltyVisits * LOYALTY_GRACE_PER_VISIT);
+
   sat -= archetype.strictness;
   const satisfaction = clamp(sat, 0, 1);
   const hasNegative = NEGATIVE_PRIORITY.some((r) => reasons.has(r));
   if (!hasNegative && starsFrom(satisfaction) <= 3 && archetype.strictness >= 0.2) reasons.add('strict-customer');
   return { satisfaction, reasons: [...reasons] };
 }
+
+/** Khách quen dễ tính hơn một chút: +0,03 hài lòng mỗi lần đã ghé, tối đa +0,09 (khoảng nửa sao). */
+const LOYALTY_GRACE_PER_VISIT = 0.03;
+const LOYALTY_GRACE_MAX = 0.09;
 
 export function starsFrom(satisfaction: number): number {
   return clamp(1 + Math.round(satisfaction * 4), 1, 5);
@@ -227,6 +246,65 @@ export function primaryReason(stars: number, reasons: readonly ReasonCode[]): Re
 export function countsForStaff(workerId: string | null, stars: number, reasons: readonly ReasonCode[]): boolean {
   if (!workerId) return false;
   return stars >= 4 || reasons.some((r) => REASONS[r].scope === 'staff');
+}
+
+// ---------------------------------------------------------------- Người viết & lời bình
+
+/** Người ký dưới đánh giá. */
+export interface Reviewer {
+  author: string | null;
+  familiarity: ReviewerFamiliarity;
+  visits: number;
+  /** Hạt băm để chọn câu mở/kết và quyết định ẩn danh, không tiêu tốn RNG của mô phỏng. */
+  seed: string;
+  /** Khách trẻ viết giọng mạng xã hội. */
+  trendy: boolean;
+  /** Vừa mua đúng món đang bán chạy. */
+  boughtTrending: boolean;
+}
+
+export function familiarityOf(visits: number): ReviewerFamiliarity {
+  return visits <= 0 ? 'new' : visits >= 3 ? 'close' : 'known';
+}
+
+/** Khách càng thân càng hay ký tên thật; khách mới thường để ẩn danh. */
+const SIGN_CHANCE: Record<ReviewerFamiliarity, number> = { new: 0.45, known: 0.7, close: 0.9 };
+/** Khách càng thân càng hay kể mình gắn bó thế nào. */
+const OPENER_CHANCE: Record<ReviewerFamiliarity, number> = { new: 0.3, known: 0.6, close: 0.85 };
+const CLOSER_CHANCE = 0.7;
+/** Khách hay hỏi và khách vội thường trẻ, hay viết giọng mạng; khách lớn tuổi thì không. */
+const TRENDY_CHANCE: Partial<Record<ArchetypeId, number>> = { curious: 0.7, hurried: 0.4 };
+
+export function writesTrendy(seed: string, archetypeId: ArchetypeId): boolean {
+  return roll(`${seed}:trendy`) < (TRENDY_CHANCE[archetypeId] ?? 0);
+}
+
+const roll = (seed: string) => (stableHash(seed) % 1000) / 1000;
+const hashPick = <T>(list: readonly T[], seed: string): T => list[stableHash(seed) % list.length]!;
+
+/** Tên ký hoặc ẩn danh: khách quen ký bằng tên gọi, khách mới ký kiểu "Dung N.". */
+export function signReview(seed: string, familiarity: ReviewerFamiliarity, loyalName: string | null, hairStyle: number): string | null {
+  if (roll(`${seed}:sign`) >= SIGN_CHANCE[familiarity]) return null;
+  return loyalName ?? reviewerNickname(seed, hairStyle);
+}
+
+/**
+ * Ghép lời bình: [câu mở theo độ quen] + câu chính theo lý do + [món đang hot] + [câu kết theo số sao
+ * và độ quen, hoặc giọng mạng của khách trẻ].
+ */
+export function composeComment(main: string, stars: number, reviewer: Reviewer): string {
+  const { seed, familiarity } = reviewer;
+  const parts: string[] = [];
+  if (roll(`${seed}:open`) < OPENER_CHANCE[familiarity]) parts.push(hashPick(REVIEW_OPENERS[familiarity], `${seed}:opener`));
+  parts.push(main);
+  if (reviewer.boughtTrending && stars >= 3) parts.push(hashPick(REVIEW_TRENDING_PRODUCT, `${seed}:trend`));
+  if (reviewer.trendy) {
+    const band = stars >= 4 ? 'good' : stars === 3 ? 'mid' : 'bad';
+    parts.push(hashPick(REVIEW_TRENDY_CLOSERS[band], `${seed}:closer`));
+  } else if (roll(`${seed}:close`) < CLOSER_CHANCE) {
+    parts.push(hashPick(REVIEW_CLOSERS[familiarity][clamp(stars, 1, 5) as StarCount], `${seed}:closer`));
+  }
+  return parts.filter(Boolean).join(' ');
 }
 
 // ---------------------------------------------------------------- Danh tiếng & lượng khách
@@ -278,6 +356,9 @@ export function recordInteraction(
   const request = REQUESTS[customer.requestId];
   const worker = order ? state.workers[order.workerId] : undefined;
   const served = customer.servedAtMs !== null;
+  // Hồ sơ khách quen ghi trước lượt này (recordVisit chạy sau), nên visits là số lần đã ghé trước đó.
+  const profile = customer.loyaltyId ? state.loyalty.find((p) => p.id === customer.loyaltyId) : undefined;
+  const visits = profile?.visits ?? 0;
   const productId = outcome === 'bought' ? (order?.productId ?? null) : null;
   const product = productId ? PRODUCTS[productId] : null;
 
@@ -300,6 +381,7 @@ export function recordInteraction(
     server: worker ? { communication: worker.communication, traits: [...worker.traits, ...worker.hiddenTraits] } : null,
     returning: customer.loyaltyId !== null,
     requestKind: request?.kind,
+    loyaltyVisits: visits,
   });
 
   const interaction = {
@@ -326,7 +408,16 @@ export function recordInteraction(
   // Không phải khách nào cũng viết đánh giá (xác suất luôn < 1, có seed để tái hiện).
   // Khách hẹn giao sau đánh giá khi nhận hàng (recordDelivery), không đánh giá lúc rời quầy.
   if (outcome !== 'backordered' && nextFloat(state.rng.review) < reviewProbability(archetype, satisfaction, config.reviewMaxProbability)) {
-    interaction.reviewId = postReview(state, interaction.id, customer.archetypeId, interaction.workerId, satisfaction, reasons, emit);
+    const familiarity = familiarityOf(visits);
+    const reviewer: Reviewer = {
+      familiarity,
+      visits,
+      seed: customer.id,
+      author: signReview(customer.id, familiarity, profile?.name ?? null, customer.look.hairStyle),
+      trendy: writesTrendy(customer.id, customer.archetypeId),
+      boughtTrending: productId !== null && isTrending(state, productId),
+    };
+    interaction.reviewId = postReview(state, interaction.id, customer.archetypeId, interaction.workerId, satisfaction, reasons, reviewer, emit);
   }
 
   state.interactions.push(interaction);
@@ -341,6 +432,7 @@ function postReview(
   workerId: string | null,
   satisfaction: number,
   reasons: ReasonCode[],
+  reviewer: Reviewer,
   emit: Emit,
 ): string {
   const config = state.config.reputation;
@@ -354,7 +446,10 @@ function postReview(
     workerId,
     stars,
     originalStars: stars,
-    comment: templates[nextInt(rng, 0, templates.length - 1)] ?? '',
+    comment: composeComment(templates[nextInt(rng, 0, templates.length - 1)] ?? '', stars, reviewer),
+    author: reviewer.author,
+    familiarity: reviewer.familiarity,
+    visits: reviewer.visits,
     reasons,
     countsForStaff: countsForStaff(workerId, stars, reasons),
     atMs: state.timeMs,
@@ -399,7 +494,17 @@ export function recordDelivery(state: SimState, delivery: Delivery, result: Deli
   const reasons: ReasonCode[] = [result === 'on-time' ? 'on-time-delivery' : 'late-delivery'];
   const max = state.config.reputation.reviewMaxProbability;
   const chance = result === 'on-time' ? reviewProbability(archetype, satisfaction, max) : max;
-  if (nextFloat(state.rng.review) < chance) postReview(state, delivery.id, delivery.archetypeId, null, satisfaction, reasons, emit);
+  if (nextFloat(state.rng.review) >= chance) return;
+  // Đơn ship không gắn với hồ sơ khách quen: người nhận là khách mới, dáng người suy từ mã đơn.
+  const reviewer: Reviewer = {
+    familiarity: 'new',
+    visits: 0,
+    seed: delivery.id,
+    author: signReview(delivery.id, 'new', null, stableHash(`${delivery.id}:look`) % 2 ? 1 : 0),
+    trendy: delivery.source === 'online' && writesTrendy(delivery.id, delivery.archetypeId),
+    boughtTrending: false,
+  };
+  postReview(state, delivery.id, delivery.archetypeId, null, satisfaction, reasons, reviewer, emit);
 }
 
 // ---------------------------------------------------------------- Phản hồi khiếu nại

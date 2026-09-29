@@ -5,6 +5,7 @@ import type {
   ProductId,
   Rarity,
   ReasonCode,
+  ReviewerFamiliarity,
   RequestKind,
   StaffCandidateDef,
   StaffLook,
@@ -13,7 +14,7 @@ import type {
 } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 12;
+export const SAVE_VERSION = 13;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = 'morning' | 'afternoon';
@@ -286,6 +287,11 @@ export interface Review {
   stars: number;
   originalStars: number;
   comment: string;
+  /** Tên ký dưới đánh giá; null = ẩn danh. Khách quen ký bằng tên gọi (vd. "Chị Dung"). */
+  author: string | null;
+  familiarity: ReviewerFamiliarity;
+  /** Số lần khách đã ghé trước lượt được đánh giá này (0 với khách mới). */
+  visits: number;
   reasons: ReasonCode[];
   /** Có tính vào danh tiếng cá nhân của workerId không (false nếu lỗi không thuộc về người đó). */
   countsForStaff: boolean;

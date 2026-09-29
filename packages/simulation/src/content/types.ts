@@ -61,6 +61,9 @@ export type Rarity = 'common' | 'good' | 'rare' | 'legendary';
  * - staff: do người phục vụ → tính vào danh tiếng cá nhân.
  * - praise: điểm cộng.
  */
+/** Độ quen của người viết đánh giá: khách mới, khách quen mặt (ghé 1–2 lần), khách thân (từ 3 lần). */
+export type ReviewerFamiliarity = 'new' | 'known' | 'close';
+
 export type ReasonCode =
   | 'correct-item'
   | 'fair-price'

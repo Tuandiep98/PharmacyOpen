@@ -547,7 +547,8 @@ function ShelfSlot(props: {
         <ProductArt key={i} id={productId} x={x - w / 2 + (i - (shown - 1) / 2) * spacing} y={base - h - 1} scale={scale} />
       ))}
       {trending && <HotBadge x={left + 2} y={base - 58} compact={cellWidth < 70} />}
-      <g transform={`translate(${x + cellWidth / 2 - 30} ${base - 58})`}>
+      {/* Số lượng ở góc dưới bên phải ô kệ, căn theo mép phải khung để nhãn "HẾT" rộng hơn không tràn ra ngoài. */}
+      <g transform={`translate(${frame.x + frame.width - (count === 0 ? 34 : 26) - 3} ${base - 17})`}>
         <rect x={0} y={0} width={count === 0 ? 34 : 26} height={15} rx={7.5} fill={count === 0 ? ART.coral : low ? ART.honey : ART.paper} stroke={INK} strokeWidth={1.4} />
         <text x={count === 0 ? 17 : 13} y={11} textAnchor="middle" fontSize={10} fontWeight={900} fill={count === 0 ? '#FFFFFF' : INK}>
           {count === 0 ? 'HẾT' : low ? `!${count}` : count}

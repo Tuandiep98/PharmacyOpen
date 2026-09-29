@@ -7,7 +7,11 @@ import {
   REASONS,
   REFERRAL_MESSAGE,
   REQUESTS,
+  REVIEW_CLOSERS,
   REVIEW_COMMENTS,
+  REVIEW_OPENERS,
+  REVIEW_TRENDING_PRODUCT,
+  REVIEW_TRENDY_CLOSERS,
   STAFF_CANDIDATES,
   UPGRADES,
   type ArchetypeDef,
@@ -138,6 +142,19 @@ export function validateReviewText(
     if (!list.length) issues.push({ where: `reviews.${reason}`, problem: 'thiếu lời bình mẫu' });
     list.forEach((text, i) => {
       for (const hit of findTerms(text, banned)) issues.push({ where: `reviews.${reason}[${i}]`, problem: `từ bị cấm: "${hit}"` });
+    });
+  }
+  // Câu mở/kết theo độ quen, giọng mạng và câu "món đang hot" được ghép vào lời bình nên cùng luật.
+  const extras: [string, readonly string[]][] = [
+    ...Object.entries(REVIEW_OPENERS).map(([k, list]) => [`openers.${k}`, list] as [string, readonly string[]]),
+    ...Object.entries(REVIEW_CLOSERS).flatMap(([k, byStars]) => Object.entries(byStars).map(([n, list]) => [`closers.${k}.${n}`, list] as [string, readonly string[]])),
+    ...Object.entries(REVIEW_TRENDY_CLOSERS).map(([k, list]) => [`trendy.${k}`, list] as [string, readonly string[]]),
+    ['trendingProduct', REVIEW_TRENDING_PRODUCT],
+  ];
+  for (const [where, list] of extras) {
+    if (!list.length) issues.push({ where: `reviews.${where}`, problem: 'thiếu câu mẫu' });
+    list.forEach((text, i) => {
+      for (const hit of findTerms(text, banned)) issues.push({ where: `reviews.${where}[${i}]`, problem: `từ bị cấm: "${hit}"` });
     });
   }
   for (const [key, r] of Object.entries(replies)) {

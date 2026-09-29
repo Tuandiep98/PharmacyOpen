@@ -332,7 +332,8 @@ export function customerLine(state: State, customer: C, order: O | undefined, wo
   const tier = familiarity(state, customer);
   const regular = tier !== 'new';
   const staffWorker = worker ?? (order ? state.workers[order.workerId] : undefined);
-  const staffName = staffWorker ? shortName(staffWorker) : voice.you;
+  // Người chơi hiển thị là "Tôi", nên khách gọi người chơi bằng danh xưng thay vì tên.
+  const staffName = staffWorker && staffWorker.controller !== 'player' ? shortName(staffWorker) : voice.you;
   const say = (pool: string, list: readonly string[], extra: Omit<Line, 'text'> = {}, product?: ProductId): Line => ({
     ...extra,
     regular,

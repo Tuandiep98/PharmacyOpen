@@ -31,7 +31,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
 
   const player: Worker = {
     id: PLAYER_WORKER_ID,
-    name: 'An',
+    // Người chơi tự xưng "Tôi" trên mọi màn hình; khách ở quầy gọi bằng danh xưng (em, cháu…).
+    name: 'Tôi',
     role: 'pharmacist',
     controller: 'player',
     speed: 1,

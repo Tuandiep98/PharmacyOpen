@@ -7,6 +7,7 @@ import { STAFF_CANDIDATES, TRAITS } from './content/staff';
 import { BACK_STATION_IDS, type BackStationId } from './content/stations';
 import { levelFor, refreshRecruits } from './recruit';
 import { createStream } from './rng';
+import { PLAYER_WORKER_ID } from './state';
 import { PREP_TASK_IDS, SAVE_VERSION, SHIFT_IDS, type DeepReadonly, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /*
@@ -303,6 +304,19 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       const look = isObject(profile.look) ? profile.look : {};
       const archetype = typeof profile.archetypeId === 'string' && profile.archetypeId in ARCHETYPES ? (profile.archetypeId as ArchetypeId) : 'curious';
       profile.name = loyalName(String(profile.id), archetype, isNum(look.hairStyle) ? look.hairStyle : 0);
+    }
+  },
+  12: (state) => {
+    // v13: người chơi hiển thị là "Tôi"; đánh giá có người ký tên (hoặc ẩn danh) và độ quen.
+    const player = isObject(state.workers) ? state.workers[PLAYER_WORKER_ID] : undefined;
+    if (isObject(player) && player.name === 'An') player.name = 'Tôi';
+    // Đánh giá cũ coi như ẩn danh của khách mới.
+    if (!Array.isArray(state.reviews)) return;
+    for (const review of state.reviews) {
+      if (!isObject(review)) continue;
+      if (!(review.author === null || typeof review.author === 'string')) review.author = null;
+      if (typeof review.familiarity !== 'string') review.familiarity = 'new';
+      if (!isNum(review.visits)) review.visits = 0;
     }
   },
 };

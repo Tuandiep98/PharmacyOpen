@@ -5,7 +5,6 @@ import {
   LEVEL_XP,
   MAX_LEVEL,
   nextStaffUpgrade,
-  PLAYER_WORKER_ID,
   QUIT_FATIGUE,
   RARITIES,
   REASONS,
@@ -278,7 +277,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
               <WorkerPortrait worker={w} size={48} />
               <div className="team-card-identity">
                 <strong>
-                  {w.name} {w.id === PLAYER_WORKER_ID && <span className="tag">bạn</span>}
+                  {w.name}
                 </strong>
                 <span className="small muted">
                   {ROLE[w.role]} {w.controller === 'ai' && <RarityChip rarity={w.rarity} />}

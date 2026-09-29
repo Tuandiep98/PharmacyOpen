@@ -32,6 +32,19 @@ export function stableHash(text: string): number {
   return hash >>> 0;
 }
 
+/** Chữ cái đầu họ cho tên hiển thị kiểu mạng xã hội ("Dung N."). */
+const SURNAME_INITIALS = ['N', 'T', 'L', 'P', 'H', 'V', 'Đ', 'B', 'D', 'Q'];
+
+/**
+ * Tên khách mới ký dưới đánh giá: cùng tên riêng với tên gọi khi thành khách quen (cùng id), kèm chữ
+ * cái đầu họ. Nhờ vậy "Dung N." viết đánh giá lần đầu, lần sau quay lại là "Chị Dung".
+ */
+export function reviewerNickname(id: string, hairStyle: number): string {
+  const pool = looksFemale(hairStyle) ? FEMALE : MALE;
+  const given = pool[stableHash(id) % pool.length]!;
+  return `${given} ${SURNAME_INITIALS[stableHash(`${id}:surname`) % SURNAME_INITIALS.length]!}.`;
+}
+
 export function loyalName(id: string, archetypeId: ArchetypeId, hairStyle: number): string {
   const female = looksFemale(hairStyle);
   const pool = female ? FEMALE : MALE;
