@@ -1,14 +1,22 @@
-import { cloneConfig, DEFAULT_CONFIG } from './config';
-import { ARCHETYPES } from './content/archetypes';
-import { PRODUCT_IDS, PRODUCTS } from './content/products';
-import type { ArchetypeId, ProductId } from './content/types';
-import { loyalName } from './content/names';
-import { STAFF_CANDIDATES, TRAITS } from './content/staff';
-import { BACK_STATION_IDS, type BackStationId } from './content/stations';
-import { levelFor, refreshRecruits } from './recruit';
-import { createStream } from './rng';
-import { PLAYER_WORKER_ID } from './state';
-import { PREP_TASK_IDS, SAVE_VERSION, SHIFT_IDS, type DeepReadonly, type PrepTaskId, type ShiftId, type SimState } from './types';
+import { cloneConfig, DEFAULT_CONFIG } from "./config";
+import { ARCHETYPES } from "./content/archetypes";
+import { PRODUCT_IDS, PRODUCTS } from "./content/products";
+import type { ArchetypeId, ProductId } from "./content/types";
+import { loyalName } from "./content/names";
+import { STAFF_CANDIDATES, TRAITS } from "./content/staff";
+import { BACK_STATION_IDS, type BackStationId } from "./content/stations";
+import { levelFor, refreshRecruits } from "./recruit";
+import { createStream } from "./rng";
+import { PLAYER_WORKER_ID } from "./state";
+import {
+  PREP_TASK_IDS,
+  SAVE_VERSION,
+  SHIFT_IDS,
+  type DeepReadonly,
+  type PrepTaskId,
+  type ShiftId,
+  type SimState,
+} from "./types";
 
 /*
  * Định dạng save có phiên bản. Save cũ được nâng cấp tuần tự (v1 → v2 → …) rồi kiểm tra cấu trúc;
@@ -16,7 +24,7 @@ import { PREP_TASK_IDS, SAVE_VERSION, SHIFT_IDS, type DeepReadonly, type PrepTas
  * Hàm thuần: thời gian thực (savedAtWallMs) do tầng web truyền vào.
  */
 
-export const SAVE_FORMAT = 'bo-cong-anh-save';
+export const SAVE_FORMAT = "bo-cong-anh-save";
 
 export interface SaveFile {
   format: typeof SAVE_FORMAT;
@@ -25,11 +33,17 @@ export interface SaveFile {
   state: SimState;
 }
 
-export type LoadError = 'not-a-save' | 'newer-version' | 'corrupt';
+export type LoadError =
+  "not-a-save" | "newer-version" | "corrupt" | "file-too-large";
 
-export type LoadResult = { ok: true; state: SimState; savedAtWallMs: number } | { ok: false; error: LoadError };
+export type LoadResult =
+  | { ok: true; state: SimState; savedAtWallMs: number }
+  | { ok: false; error: LoadError };
 
-export function createSave(state: DeepReadonly<SimState>, savedAtWallMs: number): SaveFile {
+export function createSave(
+  state: DeepReadonly<SimState>,
+  savedAtWallMs: number,
+): SaveFile {
   return {
     format: SAVE_FORMAT,
     version: SAVE_VERSION,
@@ -39,24 +53,35 @@ export function createSave(state: DeepReadonly<SimState>, savedAtWallMs: number)
 }
 
 type Loose = Record<string, unknown>;
-const isObject = (v: unknown): v is Loose => typeof v === 'object' && v !== null && !Array.isArray(v);
-const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const isObject = (v: unknown): v is Loose =>
+  typeof v === "object" && v !== null && !Array.isArray(v);
+const isNum = (v: unknown): v is number =>
+  typeof v === "number" && Number.isFinite(v);
 
 export function loadSave(raw: unknown): LoadResult {
-  if (!isObject(raw) || raw.format !== SAVE_FORMAT || !isNum(raw.version) || !isObject(raw.state)) {
-    return { ok: false, error: 'not-a-save' };
+  if (
+    !isObject(raw) ||
+    raw.format !== SAVE_FORMAT ||
+    !isNum(raw.version) ||
+    !isObject(raw.state)
+  ) {
+    return { ok: false, error: "not-a-save" };
   }
-  if (raw.version > SAVE_VERSION) return { ok: false, error: 'newer-version' };
+  if (raw.version > SAVE_VERSION) return { ok: false, error: "newer-version" };
   try {
     const state = JSON.parse(JSON.stringify(raw.state)) as Loose;
     for (let v = raw.version; v < SAVE_VERSION; v++) MIGRATIONS[v]?.(state);
     mergeConfig(state);
     state.version = SAVE_VERSION;
-    if (!isValidState(state)) return { ok: false, error: 'corrupt' };
+    if (!isValidState(state)) return { ok: false, error: "corrupt" };
     if (state.recruits.length === 0) refreshRecruits(state);
-    return { ok: true, state, savedAtWallMs: isNum(raw.savedAtWallMs) ? raw.savedAtWallMs : 0 };
+    return {
+      ok: true,
+      state,
+      savedAtWallMs: isNum(raw.savedAtWallMs) ? raw.savedAtWallMs : 0,
+    };
   } catch {
-    return { ok: false, error: 'corrupt' };
+    return { ok: false, error: "corrupt" };
   }
 }
 
@@ -82,14 +107,19 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     if (isObject(state.workers)) {
       for (const worker of Object.values(state.workers)) {
         if (!isObject(worker)) continue;
-        const candidateId = typeof worker.id === 'string' ? worker.id.replace(/^w-/, '') : '';
+        const candidateId =
+          typeof worker.id === "string" ? worker.id.replace(/^w-/, "") : "";
         // Hồ sơ cố định giờ ghi lương mỗi ca; save v1 dùng lương trọn ngày (hai ca), migration v6 chia lại.
-        worker.wage = worker.controller === 'ai' ? (STAFF_CANDIDATES[candidateId]?.wage ?? 0) * 2 : 0;
+        worker.wage =
+          worker.controller === "ai"
+            ? (STAFF_CANDIDATES[candidateId]?.wage ?? 0) * 2
+            : 0;
         worker.wageOwed = 0;
       }
     }
     if (isObject(state.orders)) {
-      for (const order of Object.values(state.orders)) if (isObject(order)) order.price = null;
+      for (const order of Object.values(state.orders))
+        if (isObject(order)) order.price = null;
     }
   },
   2: (state) => {
@@ -102,17 +132,22 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     if (isObject(state.stock)) {
       for (const entry of Object.values(state.stock)) {
         if (isObject(entry) && isNum(entry.shelf)) {
-          entry.batches = entry.shelf > 0 ? [{ qty: entry.shelf, expiresAtMs: timeMs + life }] : [];
+          entry.batches =
+            entry.shelf > 0
+              ? [{ qty: entry.shelf, expiresAtMs: timeMs + life }]
+              : [];
         }
       }
     }
     if (isObject(state.orders)) {
       for (const order of Object.values(state.orders)) {
-        if (isObject(order)) order.productExpiresAtMs = order.productId ? timeMs + life : null;
+        if (isObject(order))
+          order.productExpiresAtMs = order.productId ? timeMs + life : null;
       }
     }
     if (isObject(state.customers)) {
-      for (const customer of Object.values(state.customers)) if (isObject(customer)) customer.loyaltyId = null;
+      for (const customer of Object.values(state.customers))
+        if (isObject(customer)) customer.loyaltyId = null;
     }
     state.loyalty = [];
     if (Array.isArray(state.dayReports)) {
@@ -138,11 +173,17 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     const prices = isObject(state.prices) ? state.prices : {};
     const timeMs = isNum(state.timeMs) ? state.timeMs : 0;
     const config = isObject(state.config) ? state.config : {};
-    const life = isNum(config.stockShelfLifeMs) ? config.stockShelfLifeMs : DEFAULT_CONFIG.stockShelfLifeMs;
+    const life = isNum(config.stockShelfLifeMs)
+      ? config.stockShelfLifeMs
+      : DEFAULT_CONFIG.stockShelfLifeMs;
     for (const id of PRODUCT_IDS) {
       if (!isObject(stock[id])) {
         const qty = PRODUCTS[id].shelfCapacity;
-        stock[id] = { shelf: qty, capacity: qty, batches: [{ qty, expiresAtMs: timeMs + life }] };
+        stock[id] = {
+          shelf: qty,
+          capacity: qty,
+          batches: [{ qty, expiresAtMs: timeMs + life }],
+        };
       }
       if (!isNum(prices[id])) prices[id] = PRODUCTS[id].price;
     }
@@ -153,7 +194,7 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     // Người chơi v4 đã có cả 20 món, nên giữ quyền nhập và trưng bày toàn bộ.
     const upgrades = Array.isArray(state.upgrades) ? state.upgrades : [];
     for (let level = 2; level <= 5; level++) {
-      for (const facility of ['warehouse', 'storefront']) {
+      for (const facility of ["warehouse", "storefront"]) {
         const id = `${facility}-${level}`;
         if (!upgrades.includes(id)) upgrades.push(id);
       }
@@ -165,20 +206,35 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     const config = isObject(state.config) ? state.config : {};
     if (config.dayMs === 180_000) config.dayMs = DEFAULT_CONFIG.dayMs;
     const dayMs = isNum(config.dayMs) ? config.dayMs : DEFAULT_CONFIG.dayMs;
-    const elapsed = (isNum(state.timeMs) ? state.timeMs : 0) - (isNum(state.dayStartedAtMs) ? state.dayStartedAtMs : 0);
-    const shift = elapsed < dayMs / 2 ? 'morning' : 'afternoon';
-    const newStats = { costOfSales: 0, expiredCost: 0, waitMsSum: 0, servedCount: 0 };
+    const elapsed =
+      (isNum(state.timeMs) ? state.timeMs : 0) -
+      (isNum(state.dayStartedAtMs) ? state.dayStartedAtMs : 0);
+    const shift = elapsed < dayMs / 2 ? "morning" : "afternoon";
+    const newStats = {
+      costOfSales: 0,
+      expiredCost: 0,
+      waitMsSum: 0,
+      servedCount: 0,
+    };
     const fillStats = (stats: unknown) => {
       if (!isObject(stats)) return;
-      for (const [key, value] of Object.entries(newStats)) if (!isNum(stats[key])) stats[key] = value;
+      for (const [key, value] of Object.entries(newStats))
+        if (!isNum(stats[key])) stats[key] = value;
     };
     fillStats(state.stats);
     if (isObject(state.dayStart)) fillStats(state.dayStart.stats);
     if (!isObject(state.prep)) {
-      state.prep = { required: false, openedAtMs: isNum(state.dayStartedAtMs) ? state.dayStartedAtMs : 0, done: [] };
+      state.prep = {
+        required: false,
+        openedAtMs: isNum(state.dayStartedAtMs) ? state.dayStartedAtMs : 0,
+        done: [],
+      };
     }
     if (!isObject(state.shiftMark)) {
-      const base = isObject(state.dayStart) && isObject(state.dayStart.stats) ? state.dayStart.stats : state.stats;
+      const base =
+        isObject(state.dayStart) && isObject(state.dayStart.stats)
+          ? state.dayStart.stats
+          : state.stats;
       state.shiftMark = { shift, stats: { ...(isObject(base) ? base : {}) } };
     }
     if (!Array.isArray(state.shiftSummaries)) state.shiftSummaries = [];
@@ -186,9 +242,12 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     if (isObject(state.workers)) {
       for (const worker of Object.values(state.workers)) {
         if (!isObject(worker)) continue;
-        if (!Array.isArray(worker.shifts)) worker.shifts = ['morning', 'afternoon'];
+        if (!Array.isArray(worker.shifts))
+          worker.shifts = ["morning", "afternoon"];
         // Người đã làm từ đầu ngày được tính đủ ca như cách trả lương theo ngày trước đây.
-        if (!Array.isArray(worker.shiftsToday)) worker.shiftsToday = shift === 'morning' ? ['morning'] : ['morning', 'afternoon'];
+        if (!Array.isArray(worker.shiftsToday))
+          worker.shiftsToday =
+            shift === "morning" ? ["morning"] : ["morning", "afternoon"];
       }
     }
     // Báo cáo cũ không có số liệu ca/giá vốn: để trống (shifts rỗng) để giao diện không chấm sao sai.
@@ -212,7 +271,11 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
   6: (state) => {
     // v7: nhân viên mới — nhiều đặc điểm, độ hiếm, giới tính, tay nghề, mệt mỏi; lương tính theo ca;
     // danh sách ứng viên hằng ngày (sinh sau khi tải, xem loadSave).
-    if (isObject(state.rng)) state.rng.staff = createStream(isNum(state.seed) ? state.seed : 0, 'staff');
+    if (isObject(state.rng))
+      state.rng.staff = createStream(
+        isNum(state.seed) ? state.seed : 0,
+        "staff",
+      );
     for (const stats of [
       state.stats,
       isObject(state.dayStart) ? state.dayStart.stats : null,
@@ -223,27 +286,39 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       if (!isNum(stats.pilfered)) stats.pilfered = 0;
     }
     if (Array.isArray(state.dayReports)) {
-      for (const report of state.dayReports) if (isObject(report)) Object.assign(report, { tips: 0, pilfered: 0 }, { ...report });
+      for (const report of state.dayReports)
+        if (isObject(report))
+          Object.assign(report, { tips: 0, pilfered: 0 }, { ...report });
     }
     if (isObject(state.workers)) {
       for (const worker of Object.values(state.workers)) {
         if (!isObject(worker)) continue;
-        const preset = typeof worker.id === 'string' ? STAFF_CANDIDATES[worker.id.replace(/^w-/, '')] : undefined;
-        if (!Array.isArray(worker.traits)) worker.traits = typeof worker.trait === 'string' ? [worker.trait] : [];
+        const preset =
+          typeof worker.id === "string"
+            ? STAFF_CANDIDATES[worker.id.replace(/^w-/, "")]
+            : undefined;
+        if (!Array.isArray(worker.traits))
+          worker.traits =
+            typeof worker.trait === "string" ? [worker.trait] : [];
         delete worker.trait;
         if (!Array.isArray(worker.hiddenTraits)) worker.hiddenTraits = [];
-        if (typeof worker.rarity !== 'string') worker.rarity = preset?.rarity ?? 'common';
+        if (typeof worker.rarity !== "string")
+          worker.rarity = preset?.rarity ?? "common";
         const look = isObject(worker.look) ? worker.look : {};
-        if (typeof look.gender !== 'string') look.gender = preset?.look.gender ?? 'female';
-        if (typeof look.messy !== 'boolean') look.messy = false;
+        if (typeof look.gender !== "string")
+          look.gender = preset?.look.gender ?? "female";
+        if (typeof look.messy !== "boolean") look.messy = false;
         worker.look = look;
         // Lương cũ là lương trọn ngày (hai ca) → lương mỗi ca bằng một nửa, tổng mỗi ngày không đổi.
-        if (worker.controller === 'ai' && isNum(worker.wage)) worker.wage = Math.max(1, Math.round(worker.wage / 2));
+        if (worker.controller === "ai" && isNum(worker.wage))
+          worker.wage = Math.max(1, Math.round(worker.wage / 2));
         const served = isNum(worker.served) ? worker.served : 0;
-        if (!isNum(worker.xp)) worker.xp = worker.controller === 'ai' ? served : 0;
-        if (!isNum(worker.level)) worker.level = worker.controller === 'ai' ? levelFor(served) : 1;
+        if (!isNum(worker.xp))
+          worker.xp = worker.controller === "ai" ? served : 0;
+        if (!isNum(worker.level))
+          worker.level = worker.controller === "ai" ? levelFor(served) : 1;
         if (!isNum(worker.fatigue)) worker.fatigue = 0;
-        if (typeof worker.resigning !== 'boolean') worker.resigning = false;
+        if (typeof worker.resigning !== "boolean") worker.resigning = false;
         if (!isNum(worker.arrivesAtMs)) worker.arrivesAtMs = 0;
       }
     }
@@ -256,16 +331,19 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       for (const worker of Object.values(state.workers)) {
         if (!isObject(worker)) continue;
         if (!isNum(worker.streak)) worker.streak = 0;
-        if (!(worker.restDay === null || isNum(worker.restDay))) worker.restDay = null;
+        if (!(worker.restDay === null || isNum(worker.restDay)))
+          worker.restDay = null;
       }
     }
-    if (typeof state.keepCounterOnShiftChange !== 'boolean') state.keepCounterOnShiftChange = false;
+    if (typeof state.keepCounterOnShiftChange !== "boolean")
+      state.keepCounterOnShiftChange = false;
   },
   8: (state) => {
     // v9: vị trí làm việc (quầy / kho / hỗ trợ). Mọi người đang làm được xếp vào "Hỗ trợ" như hành vi cũ.
     if (isObject(state.workers)) {
       for (const worker of Object.values(state.workers))
-        if (isObject(worker) && typeof worker.station !== 'string') worker.station = 'support';
+        if (isObject(worker) && typeof worker.station !== "string")
+          worker.station = "support";
     }
   },
   9: (state) => {
@@ -278,44 +356,72 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
   },
   10: (state) => {
     // v11: đơn ship (online và khách hẹn giao sau vì hết hàng), số liệu giao hàng trong sổ sách.
-    if (isObject(state.rng)) state.rng.delivery = createStream(isNum(state.seed) ? state.seed : 0, 'delivery');
+    if (isObject(state.rng))
+      state.rng.delivery = createStream(
+        isNum(state.seed) ? state.seed : 0,
+        "delivery",
+      );
     if (!Array.isArray(state.deliveries)) state.deliveries = [];
     const config = isObject(state.config) ? state.config : {};
     if (!isNum(state.nextDeliveryAtMs)) {
-      state.nextDeliveryAtMs = (isNum(state.timeMs) ? state.timeMs : 0) + (isNum(config.firstDeliveryMs) ? config.firstDeliveryMs : DEFAULT_CONFIG.firstDeliveryMs);
+      state.nextDeliveryAtMs =
+        (isNum(state.timeMs) ? state.timeMs : 0) +
+        (isNum(config.firstDeliveryMs)
+          ? config.firstDeliveryMs
+          : DEFAULT_CONFIG.firstDeliveryMs);
     }
-    const fresh = { deliveries: 0, lateDeliveries: 0, cancelledDeliveries: 0, backorders: 0, wentElsewhere: 0 };
+    const fresh = {
+      deliveries: 0,
+      lateDeliveries: 0,
+      cancelledDeliveries: 0,
+      backorders: 0,
+      wentElsewhere: 0,
+    };
     for (const stats of [
       state.stats,
       isObject(state.dayStart) ? state.dayStart.stats : null,
       isObject(state.shiftMark) ? state.shiftMark.stats : null,
     ]) {
-      if (isObject(stats)) for (const [key, value] of Object.entries(fresh)) if (!isNum(stats[key])) stats[key] = value;
+      if (isObject(stats))
+        for (const [key, value] of Object.entries(fresh))
+          if (!isNum(stats[key])) stats[key] = value;
     }
     if (Array.isArray(state.dayReports)) {
-      for (const report of state.dayReports) if (isObject(report)) Object.assign(report, { ...fresh, ...report });
+      for (const report of state.dayReports)
+        if (isObject(report)) Object.assign(report, { ...fresh, ...report });
     }
   },
   11: (state) => {
     // v12: khách quen có tên gọi.
     if (!Array.isArray(state.loyalty)) return;
     for (const profile of state.loyalty) {
-      if (!isObject(profile) || typeof profile.name === 'string') continue;
+      if (!isObject(profile) || typeof profile.name === "string") continue;
       const look = isObject(profile.look) ? profile.look : {};
-      const archetype = typeof profile.archetypeId === 'string' && profile.archetypeId in ARCHETYPES ? (profile.archetypeId as ArchetypeId) : 'curious';
-      profile.name = loyalName(String(profile.id), archetype, isNum(look.hairStyle) ? look.hairStyle : 0);
+      const archetype =
+        typeof profile.archetypeId === "string" &&
+        profile.archetypeId in ARCHETYPES
+          ? (profile.archetypeId as ArchetypeId)
+          : "curious";
+      profile.name = loyalName(
+        String(profile.id),
+        archetype,
+        isNum(look.hairStyle) ? look.hairStyle : 0,
+      );
     }
   },
   12: (state) => {
     // v13: người chơi hiển thị là "Tôi"; đánh giá có người ký tên (hoặc ẩn danh) và độ quen.
-    const player = isObject(state.workers) ? state.workers[PLAYER_WORKER_ID] : undefined;
-    if (isObject(player) && player.name === 'An') player.name = 'Tôi';
+    const player = isObject(state.workers)
+      ? state.workers[PLAYER_WORKER_ID]
+      : undefined;
+    if (isObject(player) && player.name === "An") player.name = "Tôi";
     // Đánh giá cũ coi như ẩn danh của khách mới.
     if (!Array.isArray(state.reviews)) return;
     for (const review of state.reviews) {
       if (!isObject(review)) continue;
-      if (!(review.author === null || typeof review.author === 'string')) review.author = null;
-      if (typeof review.familiarity !== 'string') review.familiarity = 'new';
+      if (!(review.author === null || typeof review.author === "string"))
+        review.author = null;
+      if (typeof review.familiarity !== "string") review.familiarity = "new";
       if (!isNum(review.visits)) review.visits = 0;
     }
   },
@@ -328,23 +434,31 @@ function mergeConfig(state: Loose): void {
   state.config = {
     ...defaults,
     ...saved,
-    reputation: { ...defaults.reputation, ...(isObject(saved.reputation) ? saved.reputation : {}) },
-    patienceRate: { ...defaults.patienceRate, ...(isObject(saved.patienceRate) ? saved.patienceRate : {}) },
+    reputation: {
+      ...defaults.reputation,
+      ...(isObject(saved.reputation) ? saved.reputation : {}),
+    },
+    patienceRate: {
+      ...defaults.patienceRate,
+      ...(isObject(saved.patienceRate) ? saved.patienceRate : {}),
+    },
   };
 }
 
-const DELIVERY_STATUSES = ['packing', 'packed', 'awaiting-pickup', 'shipping'];
+const DELIVERY_STATUSES = ["packing", "packed", "awaiting-pickup", "shipping"];
 
 function isValidDelivery(d: unknown): boolean {
   return (
     isObject(d) &&
-    typeof d.id === 'string' &&
-    (d.source === 'online' || d.source === 'backorder') &&
-    typeof d.archetypeId === 'string' &&
+    typeof d.id === "string" &&
+    (d.source === "online" || d.source === "backorder") &&
+    typeof d.archetypeId === "string" &&
     d.archetypeId in ARCHETYPES &&
     DELIVERY_STATUSES.includes(d.status as string) &&
     [d.createdAtMs, d.dueDay, d.dueAtMs].every(isNum) &&
-    [d.price, d.pickupAtMs, d.deliverAtMs].every((v) => v === null || isNum(v)) &&
+    [d.price, d.pickupAtMs, d.deliverAtMs].every(
+      (v) => v === null || isNum(v),
+    ) &&
     Array.isArray(d.handledBy) &&
     Array.isArray(d.items) &&
     d.items.length > 0 &&
@@ -362,34 +476,104 @@ function isValidDelivery(d: unknown): boolean {
   );
 }
 
-const isTraitList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => typeof id === 'string' && id in TRAITS);
+const isTraitList = (v: unknown): boolean =>
+  Array.isArray(v) && v.every((id) => typeof id === "string" && id in TRAITS);
 
-const isShiftList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => SHIFT_IDS.includes(id as ShiftId));
+const isShiftList = (v: unknown): boolean =>
+  Array.isArray(v) && v.every((id) => SHIFT_IDS.includes(id as ShiftId));
 
 function isValidState(state: Loose): state is SimState & Loose {
   const s = state as Partial<Record<keyof SimState, unknown>>;
-  if (![s.seed, s.tick, s.timeMs, s.nextId, s.money, s.nextSpawnAtMs, s.day, s.dayStartedAtMs].every(isNum)) return false;
+  // Neither value changes through upgrades. Keep the offline work budget fixed for imported saves.
+  if (
+    !isObject(s.config) ||
+    s.config.tickMs !== DEFAULT_CONFIG.tickMs ||
+    s.config.offlineCapMs !== DEFAULT_CONFIG.offlineCapMs
+  )
+    return false;
+  if (
+    ![
+      s.seed,
+      s.tick,
+      s.timeMs,
+      s.nextId,
+      s.money,
+      s.nextSpawnAtMs,
+      s.day,
+      s.dayStartedAtMs,
+    ].every(isNum)
+  )
+    return false;
   if ((s.money as number) < 0) return false;
   if (
     !isObject(s.rng) ||
-    !['spawn', 'customer', 'ai', 'review', 'staff', 'delivery'].every((k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s))
+    !["spawn", "customer", "ai", "review", "staff", "delivery"].every(
+      (k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s),
+    )
   )
     return false;
   if (!isObject(s.stock) || !isObject(s.prices)) return false;
   for (const id of PRODUCT_IDS) {
     const entry = s.stock[id];
-    if (!isObject(entry) || !isNum(entry.shelf) || !isNum(entry.capacity) || !Number.isInteger(entry.shelf) || !Number.isInteger(entry.capacity) || entry.capacity < 0 || entry.shelf < 0 || entry.shelf > entry.capacity) return false;
-    if (!Array.isArray(entry.batches) || !entry.batches.every((b: unknown) => isObject(b) && isNum(b.qty) && Number.isInteger(b.qty) && b.qty > 0 && isNum(b.expiresAtMs))) return false;
-    if (entry.batches.reduce((sum: number, b: { qty: number }) => sum + b.qty, 0) !== entry.shelf) return false;
+    if (
+      !isObject(entry) ||
+      !isNum(entry.shelf) ||
+      !isNum(entry.capacity) ||
+      !Number.isInteger(entry.shelf) ||
+      !Number.isInteger(entry.capacity) ||
+      entry.capacity < 0 ||
+      entry.shelf < 0 ||
+      entry.shelf > entry.capacity
+    )
+      return false;
+    if (
+      !Array.isArray(entry.batches) ||
+      !entry.batches.every(
+        (b: unknown) =>
+          isObject(b) &&
+          isNum(b.qty) &&
+          Number.isInteger(b.qty) &&
+          b.qty > 0 &&
+          isNum(b.expiresAtMs),
+      )
+    )
+      return false;
+    if (
+      entry.batches.reduce(
+        (sum: number, b: { qty: number }) => sum + b.qty,
+        0,
+      ) !== entry.shelf
+    )
+      return false;
     if (!isNum(s.prices[id])) return false;
   }
-  if (!isObject(s.workers) || !isObject(s.customers) || !isObject(s.orders)) return false;
-  if (!Array.isArray(s.loyalty) || !s.loyalty.every((p: unknown) => isObject(p) && typeof p.id === 'string' && typeof p.name === 'string' && isNum(p.visits) && isNum(p.goodVisits) && p.goodVisits <= p.visits && isNum(p.nextEligibleAtMs) && isObject(p.look))) return false;
-  if (!isObject(s.stats) || !isNum(s.stats.expiredStock) || !isNum(s.stats.returningCustomers)) return false;
+  if (!isObject(s.workers) || !isObject(s.customers) || !isObject(s.orders))
+    return false;
+  if (
+    !Array.isArray(s.loyalty) ||
+    !s.loyalty.every(
+      (p: unknown) =>
+        isObject(p) &&
+        typeof p.id === "string" &&
+        typeof p.name === "string" &&
+        isNum(p.visits) &&
+        isNum(p.goodVisits) &&
+        p.goodVisits <= p.visits &&
+        isNum(p.nextEligibleAtMs) &&
+        isObject(p.look),
+    )
+  )
+    return false;
+  if (
+    !isObject(s.stats) ||
+    !isNum(s.stats.expiredStock) ||
+    !isNum(s.stats.returningCustomers)
+  )
+    return false;
   for (const worker of Object.values(s.workers)) {
     if (
       !isObject(worker) ||
-      typeof worker.id !== 'string' ||
+      typeof worker.id !== "string" ||
       !isNum(worker.speed) ||
       !isNum(worker.wage) ||
       !isNum(worker.wageOwed) ||
@@ -400,21 +584,23 @@ function isValidState(state: Loose): state is SimState & Loose {
       !isNum(worker.level) ||
       !isNum(worker.xp) ||
       !isNum(worker.fatigue) ||
-      typeof worker.resigning !== 'boolean' ||
+      typeof worker.resigning !== "boolean" ||
       !isNum(worker.streak) ||
       !BACK_STATION_IDS.includes(worker.station as BackStationId) ||
       !(worker.restDay === null || isNum(worker.restDay)) ||
       !isObject(worker.look) ||
-      (worker.look.gender !== 'female' && worker.look.gender !== 'male')
+      (worker.look.gender !== "female" && worker.look.gender !== "male")
     )
       return false;
   }
   if (
     !isObject(s.prep) ||
-    typeof s.prep.required !== 'boolean' ||
+    typeof s.prep.required !== "boolean" ||
     !(s.prep.openedAtMs === null || isNum(s.prep.openedAtMs)) ||
     !Array.isArray(s.prep.done) ||
-    !s.prep.done.every((id: unknown) => PREP_TASK_IDS.includes(id as PrepTaskId))
+    !s.prep.done.every((id: unknown) =>
+      PREP_TASK_IDS.includes(id as PrepTaskId),
+    )
   )
     return false;
   if (
@@ -425,30 +611,86 @@ function isValidState(state: Loose): state is SimState & Loose {
     !Array.isArray(s.ratingMilestones)
   )
     return false;
-  if (typeof s.keepCounterOnShiftChange !== 'boolean') return false;
-  if (!Array.isArray(s.recruits) || !isNum(s.recruitRerollDay) || !isNum(s.stats.tips) || !isNum(s.stats.pilfered)) return false;
+  if (typeof s.keepCounterOnShiftChange !== "boolean") return false;
+  if (
+    !Array.isArray(s.recruits) ||
+    !isNum(s.recruitRerollDay) ||
+    !isNum(s.stats.tips) ||
+    !isNum(s.stats.pilfered)
+  )
+    return false;
   if (
     !s.recruits.every(
-      (r: unknown) => r === null || (isObject(r) && typeof r.id === 'string' && isTraitList(r.traits) && isTraitList(r.hiddenTraits)),
+      (r: unknown) =>
+        r === null ||
+        (isObject(r) &&
+          typeof r.id === "string" &&
+          isTraitList(r.traits) &&
+          isTraitList(r.hiddenTraits)),
     )
   ) {
     return false;
   }
-  if (!isNum(s.stats.costOfSales) || !isNum(s.stats.expiredCost) || !isNum(s.stats.waitMsSum) || !isNum(s.stats.servedCount)) return false;
+  if (
+    !isNum(s.stats.costOfSales) ||
+    !isNum(s.stats.expiredCost) ||
+    !isNum(s.stats.waitMsSum) ||
+    !isNum(s.stats.servedCount)
+  )
+    return false;
   for (const customer of Object.values(s.customers)) {
-    if (!isObject(customer) || typeof customer.id !== 'string' || !(customer.loyaltyId === null || typeof customer.loyaltyId === 'string')) return false;
+    if (
+      !isObject(customer) ||
+      typeof customer.id !== "string" ||
+      !(customer.loyaltyId === null || typeof customer.loyaltyId === "string")
+    )
+      return false;
   }
   for (const order of Object.values(s.orders)) {
-    if (!isObject(order) || typeof order.id !== 'string' || !(order.productExpiresAtMs === null || isNum(order.productExpiresAtMs))) return false;
+    if (
+      !isObject(order) ||
+      typeof order.id !== "string" ||
+      !(order.productExpiresAtMs === null || isNum(order.productExpiresAtMs))
+    )
+      return false;
   }
   const workers = s.workers;
   if (!Array.isArray(s.counters) || s.counters.length === 0) return false;
-  if (!s.counters.every((c: unknown) => isObject(c) && typeof c.id === 'string' && (c.customerId === null || typeof c.customerId === 'string') && (c.operatorId === null || (typeof c.operatorId === 'string' && isObject(workers[c.operatorId]))))) return false;
-  const assigned = s.counters.map((c: { operatorId: string | null }) => c.operatorId).filter((id: string | null): id is string => id !== null);
+  if (
+    !s.counters.every(
+      (c: unknown) =>
+        isObject(c) &&
+        typeof c.id === "string" &&
+        (c.customerId === null || typeof c.customerId === "string") &&
+        (c.operatorId === null ||
+          (typeof c.operatorId === "string" &&
+            isObject(workers[c.operatorId]))),
+    )
+  )
+    return false;
+  const assigned = s.counters
+    .map((c: { operatorId: string | null }) => c.operatorId)
+    .filter((id: string | null): id is string => id !== null);
   if (new Set(assigned).size !== assigned.length) return false;
-  if (!Array.isArray(s.queue) || !Array.isArray(s.upgrades) || !Array.isArray(s.interactions)) return false;
-  if (!isNum(s.nextDeliveryAtMs) || !Array.isArray(s.deliveries) || !s.deliveries.every(isValidDelivery)) return false;
-  if (!Array.isArray(s.reviews) || !Array.isArray(s.complaints) || !Array.isArray(s.dayReports)) return false;
-  if (!isObject(s.reputation) || !isObject(s.stats) || !isObject(s.dayStart)) return false;
+  if (
+    !Array.isArray(s.queue) ||
+    !Array.isArray(s.upgrades) ||
+    !Array.isArray(s.interactions)
+  )
+    return false;
+  if (
+    !isNum(s.nextDeliveryAtMs) ||
+    !Array.isArray(s.deliveries) ||
+    !s.deliveries.every(isValidDelivery)
+  )
+    return false;
+  if (
+    !Array.isArray(s.reviews) ||
+    !Array.isArray(s.complaints) ||
+    !Array.isArray(s.dayReports)
+  )
+    return false;
+  if (!isObject(s.reputation) || !isObject(s.stats) || !isObject(s.dayStart))
+    return false;
   return true;
 }

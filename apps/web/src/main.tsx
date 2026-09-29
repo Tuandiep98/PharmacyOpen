@@ -1,46 +1,56 @@
-import '@fontsource-variable/nunito';
-import './styles.css';
-import './ui/theme.css';
-import { Simulation } from '@pharmacy/simulation';
-import { StrictMode } from 'react';
-import { createRoot } from 'react-dom/client';
-import { App } from './App';
-import { unlockAudioOnFirstGesture } from './audio/sfx';
-import { GameBridge } from './game/GameBridge';
-import { loadLatest, writeSave } from './game/persistence';
-import { GameContext } from './game/useGame';
-import { useUi } from './ui/uiStore';
+import "@fontsource-variable/nunito";
+import "./styles.css";
+import "./ui/theme.css";
+import { Simulation } from "@pharmacy/simulation";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./App";
+import { unlockAudioOnFirstGesture } from "./audio/sfx";
+import { GameBridge } from "./game/GameBridge";
+import { loadLatest, writeSave } from "./game/persistence";
+import { GameContext } from "./game/useGame";
+import { useUi } from "./ui/uiStore";
 
 /** Vắng mặt ít hơn mức này thì không hiện hộp thoại tổng kết. */
 const OFFLINE_DIALOG_MIN_MS = 60_000;
 
 const { save, hadCorrupt } = loadLatest();
 // Seed chọn ở tầng web (được phép dùng API trình duyệt); mô phỏng chỉ nhận con số này.
-const sim = save ? Simulation.fromState(save.state) : Simulation.create(crypto.getRandomValues(new Uint32Array(1))[0]!);
+const sim = save
+  ? Simulation.fromState(save.state)
+  : Simulation.create(crypto.getRandomValues(new Uint32Array(1))[0]!);
 const bridge = new GameBridge(sim, { save: writeSave });
 
 if (save && save.savedAtWallMs > 0) {
   const summary = bridge.catchUp(Date.now() - save.savedAtWallMs);
-  if (summary.awayMs >= OFFLINE_DIALOG_MIN_MS) useUi.getState().setOffline(summary);
+  if (summary.awayMs >= OFFLINE_DIALOG_MIN_MS)
+    useUi.getState().setOffline(summary);
 }
-if (hadCorrupt) useUi.getState().pushToast('warn', 'Không đọc được bản lưu cũ nên đã mở tiệm mới. Bản cũ vẫn được cất riêng.');
+if (hadCorrupt)
+  useUi
+    .getState()
+    .pushToast(
+      "warn",
+      "Không đọc được bản lưu cũ nên đã mở tiệm mới. Bản cũ vẫn được cất riêng.",
+    );
 
 bridge.attach();
 bridge.onOffline((summary) => {
-  if (summary.awayMs >= OFFLINE_DIALOG_MIN_MS) useUi.getState().setOffline(summary);
+  if (summary.awayMs >= OFFLINE_DIALOG_MIN_MS)
+    useUi.getState().setOffline(summary);
 });
 unlockAudioOnFirstGesture();
 
 // Chạy offline như ứng dụng (PWA). Chỉ đăng ký ở bản build để không cache nhầm khi dev.
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
       // Không có service worker vẫn chơi bình thường, chỉ không mở được khi mất mạng.
     });
   });
 }
 
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <GameContext.Provider value={bridge}>
       <App />

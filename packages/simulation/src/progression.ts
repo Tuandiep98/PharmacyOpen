@@ -1,7 +1,7 @@
-import { PRODUCT_IDS, PRODUCTS } from './content/products';
-import type { ProductId } from './content/types';
-import { UPGRADES } from './content/upgrades';
-import { SHIFT_IDS, type DeepReadonly, type SimState } from './types';
+import { PRODUCT_IDS, PRODUCTS } from "./content/products";
+import type { ProductId } from "./content/types";
+import { UPGRADES } from "./content/upgrades";
+import { SHIFT_IDS, type DeepReadonly, type SimState } from "./types";
 
 export const MILESTONES = [
   { level: 1, sales: 0, day: 1, slots: 4 },
@@ -12,22 +12,46 @@ export const MILESTONES = [
 ] as const;
 
 export function playerLevel(state: DeepReadonly<SimState>): number {
-  if (state.upgrades.includes('warehouse-5') && state.upgrades.includes('storefront-5')) return 5;
-  return MILESTONES.reduce((level, milestone) =>
-    state.stats.sales >= milestone.sales && state.day >= milestone.day ? milestone.level : level, 1);
+  if (
+    state.upgrades.includes("warehouse-5") &&
+    state.upgrades.includes("storefront-5")
+  )
+    return 5;
+  return MILESTONES.reduce(
+    (level, milestone) =>
+      state.stats.sales >= milestone.sales && state.day >= milestone.day
+        ? milestone.level
+        : level,
+    1,
+  );
 }
 
-export function facilityLevel(state: DeepReadonly<SimState>, facility: 'warehouse' | 'storefront' | 'wide-shelf'): number {
-  return 1 + state.upgrades.filter((id) => id === facility || id.startsWith(`${facility}-`)).length;
+export function facilityLevel(
+  state: DeepReadonly<SimState>,
+  facility: "warehouse" | "storefront" | "wide-shelf",
+): number {
+  return (
+    1 +
+    state.upgrades.filter(
+      (id) => id === facility || id.startsWith(`${facility}-`),
+    ).length
+  );
 }
 
 export function productLevel(id: ProductId): number {
   return Math.floor(PRODUCT_IDS.indexOf(id) / 4) + 1;
 }
 
-export function isProductUnlocked(state: DeepReadonly<SimState>, id: ProductId): boolean {
+export function isProductUnlocked(
+  state: DeepReadonly<SimState>,
+  id: ProductId,
+): boolean {
   const level = productLevel(id);
-  return level <= playerLevel(state) && level <= facilityLevel(state, 'warehouse') && level <= facilityLevel(state, 'storefront');
+  return (
+    level <= playerLevel(state) &&
+    level <= facilityLevel(state, "warehouse") &&
+    level <= facilityLevel(state, "storefront")
+  );
 }
 
 export function unlockedProducts(state: DeepReadonly<SimState>): ProductId[] {
@@ -40,16 +64,29 @@ export function trendingProduct(state: DeepReadonly<SimState>): ProductId {
   return visible[(state.day * 3 + Math.floor(state.day / 3)) % visible.length]!;
 }
 
-export function isTrending(state: DeepReadonly<SimState>, id: ProductId): boolean {
+export function isTrending(
+  state: DeepReadonly<SimState>,
+  id: ProductId,
+): boolean {
   return trendingProduct(state) === id;
 }
 
-export function stockUnitCost(state: DeepReadonly<SimState>, id: ProductId): number {
-  return isTrending(state, id) ? Math.ceil(PRODUCTS[id].cost * 1.2) : PRODUCTS[id].cost;
+export function stockUnitCost(
+  state: DeepReadonly<SimState>,
+  id: ProductId,
+): number {
+  return isTrending(state, id)
+    ? Math.ceil(PRODUCTS[id].cost * 1.2)
+    : PRODUCTS[id].cost;
 }
 
-export function suggestedPrice(state: DeepReadonly<SimState>, id: ProductId): number {
-  return isTrending(state, id) ? Math.ceil(PRODUCTS[id].referencePrice * 1.2) : PRODUCTS[id].referencePrice;
+export function suggestedPrice(
+  state: DeepReadonly<SimState>,
+  id: ProductId,
+): number {
+  return isTrending(state, id)
+    ? Math.ceil(PRODUCTS[id].referencePrice * 1.2)
+    : PRODUCTS[id].referencePrice;
 }
 
 /** Chỗ nhân viên mỗi ca khi mới mở tiệm (không tính người chơi). */
@@ -68,7 +105,7 @@ export function staffLimits(state: DeepReadonly<SimState>): StaffLimits {
   let reserve = 0;
   for (const id of state.upgrades) {
     for (const effect of UPGRADES[id]?.effects ?? []) {
-      if (effect.type !== 'staff') continue;
+      if (effect.type !== "staff") continue;
       perShift += effect.perShift;
       reserve += effect.reserve;
     }
@@ -78,6 +115,12 @@ export function staffLimits(state: DeepReadonly<SimState>): StaffLimits {
 
 /** Nâng cấp kế tiếp (chưa mua) mở thêm chỗ nhân viên, để giao diện gợi ý đường mở rộng đội. */
 export function nextStaffUpgrade(state: DeepReadonly<SimState>): string | null {
-  const order = ['storefront-2', 'storefront-3', 'counter-2', 'storefront-4', 'storefront-5'];
+  const order = [
+    "storefront-2",
+    "storefront-3",
+    "counter-2",
+    "storefront-4",
+    "storefront-5",
+  ];
   return order.find((id) => !state.upgrades.includes(id)) ?? null;
 }

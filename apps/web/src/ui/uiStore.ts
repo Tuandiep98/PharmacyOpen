@@ -1,18 +1,22 @@
-import type { DayReport, OfflineSummary, ProductId } from '@pharmacy/simulation';
-import { create } from 'zustand';
-import type { CatalogCategory } from './catalog';
+import type {
+  DayReport,
+  OfflineSummary,
+  ProductId,
+} from "@pharmacy/simulation";
+import { create } from "zustand";
+import type { CatalogCategory } from "./catalog";
 
 export type Selection =
-  | { kind: 'customer'; id: string }
-  | { kind: 'product'; id: ProductId }
-  | { kind: 'worker'; id: string }
-  | { kind: 'counter'; id: string }
-  | { kind: 'deliveries' }
-  | { kind: 'ledger' }
+  | { kind: "customer"; id: string }
+  | { kind: "product"; id: ProductId }
+  | { kind: "worker"; id: string }
+  | { kind: "counter"; id: string }
+  | { kind: "deliveries" }
+  | { kind: "ledger" }
   | null;
 
-export type Tab = 'store' | 'staff' | 'inventory' | 'reviews' | 'expansion';
-export type ToastTone = 'good' | 'bad' | 'warn' | 'info';
+export type Tab = "store" | "staff" | "inventory" | "reviews" | "expansion";
+export type ToastTone = "good" | "bad" | "warn" | "info";
 
 export interface Toast {
   id: number;
@@ -68,9 +72,9 @@ const MAX_TOASTS = 3;
 
 /** Chỉ chứa trạng thái giao diện; state game luôn đọc từ GameBridge, không sao chép vào đây. */
 export const useUi = create<UiState>((set) => ({
-  tab: 'store',
+  tab: "store",
   selection: null,
-  activeCounterId: 'counter-1',
+  activeCounterId: "counter-1",
   setActiveCounterId: (activeCounterId) => set({ activeCounterId }),
   drag: null,
   toasts: [],
@@ -78,16 +82,23 @@ export const useUi = create<UiState>((set) => ({
   offline: null,
   daySummary: null,
   setDaySummary: (daySummary) => set({ daySummary }),
-  catalogCategory: 'all',
+  catalogCategory: "all",
   catalogPage: 0,
-  setCatalogCategory: (catalogCategory) => set({ catalogCategory, catalogPage: 0 }),
+  setCatalogCategory: (catalogCategory) =>
+    set({ catalogCategory, catalogPage: 0 }),
   setCatalogPage: (catalogPage) => set({ catalogPage }),
   setOffline: (offline) => set({ offline }),
   setTab: (tab) => set({ tab }),
   select: (selection) => set({ selection }),
   setDrag: (drag) => set({ drag }),
-  pushToast: (tone, text) => set((s) => ({ toasts: [...s.toasts, { id: ++seq, tone, text }].slice(-MAX_TOASTS) })),
-  dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-  pushFloater: (text, x, y) => set((s) => ({ floaters: [...s.floaters, { id: ++seq, text, x, y }] })),
-  dropFloater: (id) => set((s) => ({ floaters: s.floaters.filter((f) => f.id !== id) })),
+  pushToast: (tone, text) =>
+    set((s) => ({
+      toasts: [...s.toasts, { id: ++seq, tone, text }].slice(-MAX_TOASTS),
+    })),
+  dismissToast: (id) =>
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  pushFloater: (text, x, y) =>
+    set((s) => ({ floaters: [...s.floaters, { id: ++seq, text, x, y }] })),
+  dropFloater: (id) =>
+    set((s) => ({ floaters: s.floaters.filter((f) => f.id !== id) })),
 }));

@@ -1,12 +1,19 @@
-import { createSave, loadSave, type DeepReadonly, type LoadResult, type SimState } from '@pharmacy/simulation';
+import {
+  createSave,
+  loadSave,
+  type DeepReadonly,
+  type LoadResult,
+  type SimState,
+} from "@pharmacy/simulation";
 
 /*
  * Lưu tự động vào localStorage với 2 ô luân phiên: nếu lần ghi mới nhất bị hỏng (tắt tab giữa chừng,
  * đầy bộ nhớ…) vẫn còn bản trước đó. Save nhỏ (lịch sử đã được cắt gọn) nên không cần IndexedDB.
  */
 
-const SLOTS = ['bo-cong-anh.save.a', 'bo-cong-anh.save.b'] as const;
-const CORRUPT_KEY = 'bo-cong-anh.save.corrupt';
+const SLOTS = ["bo-cong-anh.save.a", "bo-cong-anh.save.b"] as const;
+const CORRUPT_KEY = "bo-cong-anh.save.corrupt";
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 type Loaded = Extract<LoadResult, { ok: true }>;
 
@@ -38,7 +45,7 @@ export function loadLatest(): StartupLoad {
     try {
       result = loadSave(JSON.parse(raw));
     } catch {
-      result = { ok: false, error: 'corrupt' };
+      result = { ok: false, error: "corrupt" };
     }
     if (!result.ok) {
       hadCorrupt = true;
@@ -63,7 +70,10 @@ export function loadLatest(): StartupLoad {
 export function writeSave(state: DeepReadonly<SimState>): boolean {
   if (!enabled) return false;
   try {
-    localStorage.setItem(SLOTS[nextSlot]!, JSON.stringify(createSave(state, Date.now())));
+    localStorage.setItem(
+      SLOTS[nextSlot]!,
+      JSON.stringify(createSave(state, Date.now())),
+    );
     nextSlot = (nextSlot + 1) % SLOTS.length;
     return true;
   } catch {
@@ -87,9 +97,11 @@ export function resetAndReload(): void {
 }
 
 export function downloadSave(state: DeepReadonly<SimState>): void {
-  const blob = new Blob([JSON.stringify(createSave(state, Date.now()))], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify(createSave(state, Date.now()))], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = `bo-cong-anh-ngay-${state.day}.json`;
   a.click();
@@ -98,11 +110,13 @@ export function downloadSave(state: DeepReadonly<SimState>): void {
 
 /** Đọc file save người chơi chọn; hợp lệ thì ghi vào cả hai ô và tải lại trang. */
 export async function importSaveFile(file: File): Promise<LoadResult> {
+  if (file.size > MAX_IMPORT_BYTES)
+    return { ok: false, error: "file-too-large" };
   let result: LoadResult;
   try {
     result = loadSave(JSON.parse(await file.text()));
   } catch {
-    result = { ok: false, error: 'not-a-save' };
+    result = { ok: false, error: "not-a-save" };
   }
   if (!result.ok) return result;
   disable();
@@ -111,7 +125,7 @@ export async function importSaveFile(file: File): Promise<LoadResult> {
     const text = JSON.stringify(createSave(result.state, Date.now()));
     for (const key of SLOTS) localStorage.setItem(key, text);
   } catch {
-    return { ok: false, error: 'corrupt' };
+    return { ok: false, error: "corrupt" };
   }
   location.reload();
   return result;

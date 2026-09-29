@@ -1,7 +1,7 @@
-import { PRODUCT_IDS, PRODUCTS } from './content/products';
-import type { ProductId } from './content/types';
-import type { Emit } from './events';
-import type { DeepReadonly, SimState, StockEntry } from './types';
+import { PRODUCT_IDS, PRODUCTS } from "./content/products";
+import type { ProductId } from "./content/types";
+import type { Emit } from "./events";
+import type { DeepReadonly, SimState, StockEntry } from "./types";
 
 /** FIFO theo hạn dùng; shelf luôn bằng tổng số món trong các lô. */
 export function takeStock(entry: StockEntry): number | null {
@@ -14,7 +14,11 @@ export function takeStock(entry: StockEntry): number | null {
   return first.expiresAtMs;
 }
 
-export function addStock(entry: StockEntry, qty: number, expiresAtMs: number): void {
+export function addStock(
+  entry: StockEntry,
+  qty: number,
+  expiresAtMs: number,
+): void {
   if (qty <= 0) return;
   const batch = entry.batches.find((b) => b.expiresAtMs === expiresAtMs);
   if (batch) batch.qty += qty;
@@ -35,7 +39,7 @@ export function expireStock(state: SimState, emit: Emit): void {
       entry.shelf -= expired;
       state.stats.expiredStock += expired;
       state.stats.expiredCost += expired * PRODUCTS[id].cost;
-      emit({ type: 'stockExpired', productId: id, qty: expired });
+      emit({ type: "stockExpired", productId: id, qty: expired });
     }
   }
 }
@@ -44,7 +48,11 @@ export function expireStock(state: SimState, emit: Emit): void {
  * Trả món đã lấy khỏi kệ về lại kệ (khách từ chối, bỏ đi, đơn ship bị huỷ). Món đã hết hạn
  * hoặc kệ đã đầy thì tính là hàng huỷ.
  */
-export function returnUnits(state: SimState, productId: ProductId, expiries: readonly number[]): void {
+export function returnUnits(
+  state: SimState,
+  productId: ProductId,
+  expiries: readonly number[],
+): void {
   const entry = state.stock[productId];
   for (const expiresAtMs of expiries) {
     if (expiresAtMs > state.timeMs && entry.shelf < entry.capacity) {
@@ -56,6 +64,9 @@ export function returnUnits(state: SimState, productId: ProductId, expiries: rea
   }
 }
 
-export function nextExpiry(state: DeepReadonly<SimState>, id: ProductId): number | null {
+export function nextExpiry(
+  state: DeepReadonly<SimState>,
+  id: ProductId,
+): number | null {
   return state.stock[id].batches[0]?.expiresAtMs ?? null;
 }

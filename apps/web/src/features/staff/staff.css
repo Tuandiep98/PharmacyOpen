@@ -191,7 +191,9 @@
   height: 22px;
   accent-color: var(--primary);
 }
-.policy-toggle > span { display: grid; }
+.policy-toggle > span {
+  display: grid;
+}
 .rest-line {
   display: flex;
   flex-wrap: wrap;
@@ -370,7 +372,9 @@
   border-radius: 50%;
   background: var(--sun);
   box-shadow: 0 2px 0 rgb(38 58 54 / 35%);
-  transition: transform 180ms var(--sheet-ease), background-color 180ms ease;
+  transition:
+    transform 180ms var(--sheet-ease),
+    background-color 180ms ease;
 }
 .swap-avatar:hover .swap-badge {
   transform: rotate(-30deg);

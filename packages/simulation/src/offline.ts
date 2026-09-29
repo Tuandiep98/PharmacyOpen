@@ -1,6 +1,6 @@
-import { canRunUnattended } from './economy';
-import type { Simulation } from './simulation';
-import type { SimState } from './types';
+import { canRunUnattended } from "./economy";
+import type { Simulation } from "./simulation";
+import type { SimState } from "./types";
 
 /*
  * Tiến trình khi vắng mặt: chạy ĐÚNG mô phỏng thật (cùng NPC, cùng luật, cùng seed) trong khoảng
@@ -49,7 +49,8 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
 
   let complaints = 0;
   const countEvents = () => {
-    for (const e of sim.drainEvents()) if (e.type === 'complaintOpened') complaints++;
+    for (const e of sim.drainEvents())
+      if (e.type === "complaintOpened") complaints++;
   };
   countEvents();
   for (let i = 0; i < ticks; i++) {
@@ -74,15 +75,20 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
     stockCost: after.stats.spentOnStock - before.stats.spentOnStock,
     wages: after.stats.spentOnWages - before.stats.spentOnWages,
     reviews,
-    avgStars: reviews > 0 ? (after.reputation.starsSum - before.reputation.starsSum) / reviews : null,
+    avgStars:
+      reviews > 0
+        ? (after.reputation.starsSum - before.reputation.starsSum) / reviews
+        : null,
     complaints,
-    openComplaints: after.complaints.filter((c) => c.status === 'open').length,
+    openComplaints: after.complaints.filter((c) => c.status === "open").length,
     daysEnded: after.day - before.day,
     moneyDelta: after.money - before.money,
     expiredStock: after.stats.expiredStock - before.stats.expiredStock,
-    returningCustomers: after.stats.returningCustomers - before.stats.returningCustomers,
+    returningCustomers:
+      after.stats.returningCustomers - before.stats.returningCustomers,
     deliveries: after.stats.deliveries - before.stats.deliveries,
     lateDeliveries: after.stats.lateDeliveries - before.stats.lateDeliveries,
-    cancelledDeliveries: after.stats.cancelledDeliveries - before.stats.cancelledDeliveries,
+    cancelledDeliveries:
+      after.stats.cancelledDeliveries - before.stats.cancelledDeliveries,
   };
 }

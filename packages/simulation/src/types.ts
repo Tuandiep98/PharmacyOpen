@@ -1,5 +1,5 @@
-import type { ComplaintResponse } from './content/reviews';
-import type { BackStationId } from './content/stations';
+import type { ComplaintResponse } from "./content/reviews";
+import type { BackStationId } from "./content/stations";
 import type {
   ArchetypeId,
   ProductId,
@@ -11,21 +11,26 @@ import type {
   StaffLook,
   StaffRole,
   TraitId,
-} from './content/types';
-import type { RngState } from './rng';
+} from "./content/types";
+import type { RngState } from "./rng";
 
 export const SAVE_VERSION = 13;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
-export type ShiftId = 'morning' | 'afternoon';
-export const SHIFT_IDS: readonly ShiftId[] = ['morning', 'afternoon'];
+export type ShiftId = "morning" | "afternoon";
+export const SHIFT_IDS: readonly ShiftId[] = ["morning", "afternoon"];
 
 /** Chuẩn bị (chưa mở cửa) → mở cửa đón khách → đóng cửa (không nhận khách mới, phục vụ nốt). */
-export type DayPhase = 'prep' | 'open' | 'closing';
+export type DayPhase = "prep" | "open" | "closing";
 
 /** Việc chuẩn bị đầu ngày, lấy cảm hứng từ quy trình mở ca của nhà thuốc bán lẻ. */
-export type PrepTaskId = 'cash' | 'climate' | 'expiry' | 'shelves';
-export const PREP_TASK_IDS: readonly PrepTaskId[] = ['cash', 'climate', 'expiry', 'shelves'];
+export type PrepTaskId = "cash" | "climate" | "expiry" | "shelves";
+export const PREP_TASK_IDS: readonly PrepTaskId[] = [
+  "cash",
+  "climate",
+  "expiry",
+  "shelves",
+];
 
 export interface ReputationConfig {
   /** Điểm sao "mặc định" khi còn ít đánh giá (làm mượt kiểu Bayes). */
@@ -116,19 +121,25 @@ export interface SimConfig {
 }
 
 export type CustomerExpression =
-  | 'neutral'
-  | 'happy'
-  | 'grateful'
-  | 'thinking'
-  | 'confused'
-  | 'impatient'
-  | 'angry'
-  | 'unwell';
+  | "neutral"
+  | "happy"
+  | "grateful"
+  | "thinking"
+  | "confused"
+  | "impatient"
+  | "angry"
+  | "unwell";
 
-export type CustomerPhase = 'queue' | 'counter' | 'leaving';
+export type CustomerPhase = "queue" | "counter" | "leaving";
 
 /** backordered: hết hàng, khách đồng ý chờ đơn ship; went-elsewhere: hết hàng, khách đi mua chỗ khác. */
-export type CustomerOutcome = 'bought' | 'referred' | 'left-angry' | 'left-unserved' | 'backordered' | 'went-elsewhere';
+export type CustomerOutcome =
+  | "bought"
+  | "referred"
+  | "left-angry"
+  | "left-unserved"
+  | "backordered"
+  | "went-elsewhere";
 
 export interface CustomerLook {
   skin: number;
@@ -158,19 +169,24 @@ export interface Customer {
 }
 
 export type OrderState =
-  | 'deciding'
-  | 'retrieving'
-  | 'ready'
-  | 'checkingOut'
-  | 'referring'
+  | "deciding"
+  | "retrieving"
+  | "ready"
+  | "checkingOut"
+  | "referring"
   /** Đang báo khách tạm hết hàng và hỏi có muốn chờ giao sau không. */
-  | 'deferring'
-  | 'done'
-  | 'cancelled';
+  | "deferring"
+  | "done"
+  | "cancelled";
 
 /** Sự kiện khách quan của một lượt phục vụ, dùng cho hiệu suất nội bộ (bước 4). */
 export type InteractionFact =
-  'correct-item' | 'wrong-item' | 'safety-warning' | 'appropriate-referral' | 'unnecessary-referral' | 'customer-left';
+  | "correct-item"
+  | "wrong-item"
+  | "safety-warning"
+  | "appropriate-referral"
+  | "unnecessary-referral"
+  | "customer-left";
 
 export interface Order {
   id: string;
@@ -191,21 +207,32 @@ export interface Order {
   price: number | null;
 }
 
-export type WorkerExpression = 'neutral' | 'focused' | 'happy' | 'worried';
+export type WorkerExpression = "neutral" | "focused" | "happy" | "worried";
 
 /** Việc không gắn với khách ở quầy, có thời lượng: bổ sung kệ, gói một món vào đơn ship, ghi phiếu gửi đơn. */
 export type WorkerTask =
-  | { kind: 'restock'; productId: ProductId; timerMs: number; timerTotalMs: number }
-  | { kind: 'pack'; deliveryId: string; productId: ProductId; timerMs: number; timerTotalMs: number }
-  | { kind: 'label'; deliveryId: string; timerMs: number; timerTotalMs: number }
+  | {
+      kind: "restock";
+      productId: ProductId;
+      timerMs: number;
+      timerTotalMs: number;
+    }
+  | {
+      kind: "pack";
+      deliveryId: string;
+      productId: ProductId;
+      timerMs: number;
+      timerTotalMs: number;
+    }
+  | { kind: "label"; deliveryId: string; timerMs: number; timerTotalMs: number }
   /** Nhân viên "Siêu lười" lướt điện thoại vài giây trước khi làm việc. */
-  | { kind: 'slack'; timerMs: number; timerTotalMs: number };
+  | { kind: "slack"; timerMs: number; timerTotalMs: number };
 
 export interface Worker {
   id: string;
   name: string;
   role: StaffRole;
-  controller: 'player' | 'ai';
+  controller: "player" | "ai";
   /** Hệ số tốc độ thao tác (1 = chuẩn). */
   speed: number;
   knowledge: number;
@@ -302,7 +329,7 @@ export interface Review {
 export interface Complaint {
   id: string;
   reviewId: string;
-  status: 'open' | 'resolved' | 'closed';
+  status: "open" | "resolved" | "closed";
   response: ComplaintResponse | null;
   improved: boolean;
   atMs: number;
@@ -323,10 +350,11 @@ export interface Counter {
 }
 
 /** online: đơn đặt qua mạng; backorder: khách ở quầy gặp lúc hết hàng và đồng ý chờ giao. */
-export type DeliverySource = 'online' | 'backorder';
+export type DeliverySource = "online" | "backorder";
 
 /** Gói hàng → ghi phiếu & gửi → chờ shipper tới lấy → đang giao. Giao xong hoặc huỷ thì đơn rời danh sách. */
-export type DeliveryStatus = 'packing' | 'packed' | 'awaiting-pickup' | 'shipping';
+export type DeliveryStatus =
+  "packing" | "packed" | "awaiting-pickup" | "shipping";
 
 export interface DeliveryItem {
   productId: ProductId;
@@ -499,7 +527,14 @@ export interface SimState {
   nextId: number;
   money: number;
   config: SimConfig;
-  rng: { spawn: RngState; customer: RngState; ai: RngState; review: RngState; staff: RngState; delivery: RngState };
+  rng: {
+    spawn: RngState;
+    customer: RngState;
+    ai: RngState;
+    review: RngState;
+    staff: RngState;
+    delivery: RngState;
+  };
   nextSpawnAtMs: number;
   customers: Record<string, Customer>;
   queue: string[];

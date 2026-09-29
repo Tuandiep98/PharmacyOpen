@@ -18,7 +18,10 @@ export function nextInt(r: RngState, min: number, max: number): number {
   return min + Math.floor(nextFloat(r) * (max - min + 1));
 }
 
-export function pickWeighted<T>(r: RngState, entries: ReadonlyArray<readonly [T, number]>): T {
+export function pickWeighted<T>(
+  r: RngState,
+  entries: ReadonlyArray<readonly [T, number]>,
+): T {
   const total = entries.reduce((sum, [, w]) => sum + w, 0);
   let roll = nextFloat(r) * total;
   for (const [value, weight] of entries) {
@@ -26,7 +29,7 @@ export function pickWeighted<T>(r: RngState, entries: ReadonlyArray<readonly [T,
     if (roll < 0) return value;
   }
   const last = entries[entries.length - 1];
-  if (!last) throw new Error('pickWeighted: danh sách rỗng');
+  if (!last) throw new Error("pickWeighted: danh sách rỗng");
   return last[0];
 }
 

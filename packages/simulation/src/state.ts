@@ -1,12 +1,12 @@
-import { cloneConfig, DEFAULT_CONFIG } from './config';
-import { PRODUCT_IDS, PRODUCTS } from './content/products';
-import { returnUnits } from './stock';
-import type { ProductId, StaffCandidateDef } from './content/types';
-import type { Emit } from './events';
-import { recordInteraction } from './reputation';
-import { recordVisit } from './loyalty';
-import { refreshRecruits } from './recruit';
-import { createStream } from './rng';
+import { cloneConfig, DEFAULT_CONFIG } from "./config";
+import { PRODUCT_IDS, PRODUCTS } from "./content/products";
+import { returnUnits } from "./stock";
+import type { ProductId, StaffCandidateDef } from "./content/types";
+import type { Emit } from "./events";
+import { recordInteraction } from "./reputation";
+import { recordVisit } from "./loyalty";
+import { refreshRecruits } from "./recruit";
+import { createStream } from "./rng";
 import {
   SAVE_VERSION,
   SHIFT_IDS,
@@ -17,40 +17,52 @@ import {
   type SimStats,
   type StockEntry,
   type Worker,
-} from './types';
+} from "./types";
 
-export const PLAYER_WORKER_ID = 'w-player';
+export const PLAYER_WORKER_ID = "w-player";
 
-export function createInitialState(seed: number, config: SimConfig = DEFAULT_CONFIG): SimState {
+export function createInitialState(
+  seed: number,
+  config: SimConfig = DEFAULT_CONFIG,
+): SimState {
   const stock = {} as Record<ProductId, StockEntry>;
-  for (const [index, id] of PRODUCT_IDS.entries()) stock[id] = {
-    shelf: index < 4 ? PRODUCTS[id].shelfCapacity : 0,
-    capacity: PRODUCTS[id].shelfCapacity,
-    batches: index < 4 ? [{ qty: PRODUCTS[id].shelfCapacity, expiresAtMs: config.stockShelfLifeMs }] : [],
-  };
+  for (const [index, id] of PRODUCT_IDS.entries())
+    stock[id] = {
+      shelf: index < 4 ? PRODUCTS[id].shelfCapacity : 0,
+      capacity: PRODUCTS[id].shelfCapacity,
+      batches:
+        index < 4
+          ? [
+              {
+                qty: PRODUCTS[id].shelfCapacity,
+                expiresAtMs: config.stockShelfLifeMs,
+              },
+            ]
+          : [],
+    };
 
   const player: Worker = {
     id: PLAYER_WORKER_ID,
     // Người chơi tự xưng "Tôi" trên mọi màn hình; khách ở quầy gọi bằng danh xưng (em, cháu…).
-    name: 'Tôi',
-    role: 'pharmacist',
-    controller: 'player',
+    name: "Tôi",
+    role: "pharmacist",
+    controller: "player",
     speed: 1,
     // Người chơi tự chọn món nên knowledge không dùng; communication áp dụng như mọi nhân viên.
     knowledge: 1,
     communication: 0.7,
     traits: [],
     hiddenTraits: [],
-    rarity: 'common',
-    look: { gender: 'female', skin: 1, hair: 0, hairStyle: 0, messy: false },
+    rarity: "common",
+    look: { gender: "female", skin: 1, hair: 0, hairStyle: 0, messy: false },
     wage: 0,
     wageOwed: 0,
     shifts: [...SHIFT_IDS],
-    shiftsToday: ['morning'],
+    shiftsToday: ["morning"],
     orderId: null,
     task: null,
     thinkUntilMs: 0,
-    expression: 'neutral',
+    expression: "neutral",
     emoteUntilMs: 0,
     served: 0,
     perfSum: 0,
@@ -64,7 +76,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     arrivesAtMs: 0,
     streak: 0,
     restDay: null,
-    station: 'support',
+    station: "support",
   };
 
   const prices = {} as Record<ProductId, number>;
@@ -109,17 +121,19 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     money: ownConfig.startingMoney,
     config: ownConfig,
     rng: {
-      spawn: createStream(seed, 'spawn'),
-      customer: createStream(seed, 'customer'),
-      ai: createStream(seed, 'ai'),
-      review: createStream(seed, 'review'),
-      staff: createStream(seed, 'staff'),
-      delivery: createStream(seed, 'delivery'),
+      spawn: createStream(seed, "spawn"),
+      customer: createStream(seed, "customer"),
+      ai: createStream(seed, "ai"),
+      review: createStream(seed, "review"),
+      staff: createStream(seed, "staff"),
+      delivery: createStream(seed, "delivery"),
     },
     nextSpawnAtMs: ownConfig.firstSpawnMs,
     customers: {},
     queue: [],
-    counters: [{ id: 'counter-1', customerId: null, operatorId: PLAYER_WORKER_ID }],
+    counters: [
+      { id: "counter-1", customerId: null, operatorId: PLAYER_WORKER_ID },
+    ],
     workers: { [PLAYER_WORKER_ID]: player },
     orders: {},
     deliveries: [],
@@ -132,7 +146,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     dayReports: [],
     // Ngày khai trương: tiệm đã chuẩn bị sẵn và mở cửa ngay; từ ngày 2 mới có pha chuẩn bị.
     prep: { required: false, openedAtMs: 0, done: [] },
-    shiftMark: { shift: 'morning', stats: { ...stats } },
+    shiftMark: { shift: "morning", stats: { ...stats } },
     shiftSummaries: [],
     ratingMilestones: [],
     recruits: [],
@@ -144,7 +158,12 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     complaints: [],
     reputation: { starsSum: 0, count: 0, histogram: [0, 0, 0, 0, 0] },
     stats,
-    dayStart: { money: ownConfig.startingMoney, stats: { ...stats }, starsSum: 0, reviewCount: 0 },
+    dayStart: {
+      money: ownConfig.startingMoney,
+      stats: { ...stats },
+      starsSum: 0,
+      reviewCount: 0,
+    },
   };
   refreshRecruits(state);
   return state;
@@ -155,7 +174,7 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     id: `w-${candidate.id}`,
     name: candidate.name,
     role: candidate.role,
-    controller: 'ai',
+    controller: "ai",
     speed: candidate.speed,
     knowledge: candidate.knowledge,
     communication: candidate.communication,
@@ -171,7 +190,7 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     orderId: null,
     task: null,
     thinkUntilMs: 0,
-    expression: 'neutral',
+    expression: "neutral",
     emoteUntilMs: 0,
     served: 0,
     perfSum: 0,
@@ -185,7 +204,7 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     arrivesAtMs: 0,
     streak: 0,
     restDay: null,
-    station: 'support',
+    station: "support",
   };
 }
 
@@ -197,7 +216,9 @@ export function newId(state: SimState, prefix: string): string {
 export function returnReservedStock(state: SimState, orderId: string): void {
   const order = state.orders[orderId];
   if (!order?.productId) return;
-  returnUnits(state, order.productId, [order.productExpiresAtMs ?? state.timeMs]);
+  returnUnits(state, order.productId, [
+    order.productExpiresAtMs ?? state.timeMs,
+  ]);
   order.productId = null;
   order.productExpiresAtMs = null;
 }
@@ -206,8 +227,19 @@ export function returnReservedStock(state: SimState, orderId: string): void {
  * Kết thúc lượt của khách: ghi nhận tương tác (hiệu suất, đánh giá, danh tiếng), giải phóng quầy,
  * nhân viên và cho khách rời cửa hàng.
  */
-export function dismissCustomer(state: SimState, customer: Customer, outcome: CustomerOutcome, emit: Emit): void {
-  recordInteraction(state, customer, customer.orderId ? state.orders[customer.orderId] : undefined, outcome, emit);
+export function dismissCustomer(
+  state: SimState,
+  customer: Customer,
+  outcome: CustomerOutcome,
+  emit: Emit,
+): void {
+  recordInteraction(
+    state,
+    customer,
+    customer.orderId ? state.orders[customer.orderId] : undefined,
+    outcome,
+    emit,
+  );
   recordVisit(state, customer, outcome);
   if (customer.orderId) {
     const order = state.orders[customer.orderId];
@@ -226,16 +258,18 @@ export function dismissCustomer(state: SimState, customer: Customer, outcome: Cu
     if (counter.customerId === customer.id) counter.customerId = null;
   }
   state.queue = state.queue.filter((id) => id !== customer.id);
-  customer.phase = 'leaving';
+  customer.phase = "leaving";
   customer.outcome = outcome;
   customer.leaveAtMs = state.timeMs + state.config.leaveMs;
   const waitedTooLong = customer.patienceMs / customer.patienceMaxMs < 0.35;
   customer.expression =
-    outcome === 'bought'
-      ? waitedTooLong ? 'neutral' : 'happy'
-      : outcome === 'referred'
-        ? 'grateful'
-        : outcome === 'left-angry'
-          ? 'angry'
-          : 'neutral';
+    outcome === "bought"
+      ? waitedTooLong
+        ? "neutral"
+        : "happy"
+      : outcome === "referred"
+        ? "grateful"
+        : outcome === "left-angry"
+          ? "angry"
+          : "neutral";
 }

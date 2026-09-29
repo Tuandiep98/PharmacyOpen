@@ -1,4 +1,4 @@
-import type { SimConfig } from './types';
+import type { SimConfig } from "./types";
 
 // Số cân bằng tạm thời — sẽ tinh chỉnh bằng balance simulator.
 export const DEFAULT_CONFIG: SimConfig = {
@@ -63,7 +63,10 @@ export function cloneConfig(config: SimConfig): SimConfig {
   return {
     ...config,
     spawnIntervalMs: [config.spawnIntervalMs[0], config.spawnIntervalMs[1]],
-    deliveryIntervalMs: [config.deliveryIntervalMs[0], config.deliveryIntervalMs[1]],
+    deliveryIntervalMs: [
+      config.deliveryIntervalMs[0],
+      config.deliveryIntervalMs[1],
+    ],
     patienceRate: { ...config.patienceRate },
     reputation: { ...config.reputation },
   };

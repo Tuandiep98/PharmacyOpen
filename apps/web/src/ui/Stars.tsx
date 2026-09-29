@@ -1,11 +1,29 @@
 /** Dãy 5 sao; `value` có thể lẻ (4,3 → 4 sao đầy + 1 sao tô 30%). */
-export function Stars({ value, size = 16, label }: { value: number; size?: number; label?: string }) {
+export function Stars({
+  value,
+  size = 16,
+  label,
+}: {
+  value: number;
+  size?: number;
+  label?: string;
+}) {
   return (
-    <span className="stars" role="img" aria-label={label ?? `${formatRating(value)} trên 5 sao`}>
+    <span
+      className="stars"
+      role="img"
+      aria-label={label ?? `${formatRating(value)} trên 5 sao`}
+    >
       {[0, 1, 2, 3, 4].map((i) => {
         const fill = Math.max(0, Math.min(1, value - i));
         return (
-          <svg key={i} width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+          <svg
+            key={i}
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            aria-hidden
+          >
             <defs>
               <linearGradient id={`star-${i}-${Math.round(fill * 100)}`}>
                 <stop offset={`${fill * 100}%`} stopColor="#FFC94D" />
@@ -27,9 +45,12 @@ export function Stars({ value, size = 16, label }: { value: number; size?: numbe
 }
 
 export function formatRating(value: number): string {
-  return value.toLocaleString('vi-VN', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return value.toLocaleString("vi-VN", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  });
 }
 
 export function starText(stars: number): string {
-  return '★'.repeat(stars) + '☆'.repeat(5 - stars);
+  return "★".repeat(stars) + "☆".repeat(5 - stars);
 }

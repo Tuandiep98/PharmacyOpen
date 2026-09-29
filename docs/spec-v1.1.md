@@ -5,21 +5,21 @@
 
 ## 1. Quyết định thiết kế
 
-| Chủ đề | v1.0 | v1.1 (chốt) | Lý do |
-|---|---|---|---|
-| Góc nhìn | top-down/isometric, để cấu hình | **Diorama 2D nhìn chính diện**. Nhân vật đứng ở các điểm cố định (quầy, hàng chờ, sau quầy) | Không cần sắp xếp chiều sâu isometric, không cần pathfinding, art rẻ hơn nhiều |
-| Chuyển động | Vòng đời đi lại đầy đủ | **Không có animation đi bộ.** Khi đổi chỗ thì trượt nhẹ bằng CSS transition, lúc đứng yên có nhịp "thở" | Trạng thái quan trọng hơn chuyển động |
-| Thể hiện trạng thái | pose idle/walk/work… | **Biểu cảm khuôn mặt** (khách: 8 biểu cảm, dược sĩ: 4), bong bóng yêu cầu/tiến độ, thanh kiên nhẫn có cả độ dài lẫn ký hiệu "!", không chỉ dựa vào màu | Nhìn là hiểu, dễ tiếp cận |
-| Render | Phaser + React | **React + SVG** (bỏ Phaser) | Cảnh tĩnh ít đối tượng, không cần cầu nối hai hệ vẽ. Chỉ cân nhắc PixiJS nếu sau này cần hơn ~40 nhân vật hoặc hiệu ứng hạt |
-| Vai người chơi | để ngỏ | **Người chơi là quản lý, điều khiển dược sĩ "An" bằng chạm.** NPC ở bước 3 dùng đúng các `Command` mà người chơi dùng | Hợp với game idle trên điện thoại, không cần joystick |
-| Tiền | — | Số nguyên, đơn vị "xu" | Tránh sai số float, giữ tính tất định |
-| RNG | seeded | mulberry32, **mỗi hệ thống một luồng riêng** (`spawn`, `customer`, sau này thêm `review`…) | Thêm random ở hệ này không làm lệch hệ khác |
-| Vòng lặp | fixed timestep | Tick 100 ms. UI đọc lại khoảng 10 Hz. Mỗi khung hình chạy bù tối đa 10 tick. Tab ẩn thì dừng hẳn | Không bao giờ có vòng lặp đuổi kịp vô hạn |
-| Lưu trữ (bước 5) | Dexie | **localStorage + 2 ô luân phiên** + kiểm tra cấu trúc khi tải + migration theo phiên bản | Save chỉ vài chục KB (lịch sử đã cắt gọn) nên không cần IndexedDB; ô còn lại phòng khi lần ghi mới nhất hỏng |
-| Offline (bước 5) | giờ server | Dùng giờ client, chặn thời gian âm, **trần hiện tại 10 phút, chạy đúng mô phỏng thật** (không có công thức ước lượng). Người chơi tự đứng quầy thì tiệm đóng cửa khi vắng | Game chơi đơn, chưa có tài nguyên trả phí. Offline không thể lời hơn online vì dùng cùng mô phỏng |
-| Chỉ số nhân viên | 11 | **4**: `knowledge`, `speed`, `communication`, `morale`, cộng thêm trait | Người chơi đọc hiểu được |
-| Danh tiếng | 3 tầng | MVP: **sao công khai + hiệu suất nội bộ + danh tiếng cửa hàng**. Tầng thương hiệu và chi nhánh để sau | Chưa có chi nhánh |
-| Thuốc kê đơn | có kịch bản | **Không có trong MVP** | An toàn nội dung |
+| Chủ đề              | v1.0                            | v1.1 (chốt)                                                                                                                                                               | Lý do                                                                                                                       |
+| ------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Góc nhìn            | top-down/isometric, để cấu hình | **Diorama 2D nhìn chính diện**. Nhân vật đứng ở các điểm cố định (quầy, hàng chờ, sau quầy)                                                                               | Không cần sắp xếp chiều sâu isometric, không cần pathfinding, art rẻ hơn nhiều                                              |
+| Chuyển động         | Vòng đời đi lại đầy đủ          | **Không có animation đi bộ.** Khi đổi chỗ thì trượt nhẹ bằng CSS transition, lúc đứng yên có nhịp "thở"                                                                   | Trạng thái quan trọng hơn chuyển động                                                                                       |
+| Thể hiện trạng thái | pose idle/walk/work…            | **Biểu cảm khuôn mặt** (khách: 8 biểu cảm, dược sĩ: 4), bong bóng yêu cầu/tiến độ, thanh kiên nhẫn có cả độ dài lẫn ký hiệu "!", không chỉ dựa vào màu                    | Nhìn là hiểu, dễ tiếp cận                                                                                                   |
+| Render              | Phaser + React                  | **React + SVG** (bỏ Phaser)                                                                                                                                               | Cảnh tĩnh ít đối tượng, không cần cầu nối hai hệ vẽ. Chỉ cân nhắc PixiJS nếu sau này cần hơn ~40 nhân vật hoặc hiệu ứng hạt |
+| Vai người chơi      | để ngỏ                          | **Người chơi là quản lý, điều khiển dược sĩ "An" bằng chạm.** NPC ở bước 3 dùng đúng các `Command` mà người chơi dùng                                                     | Hợp với game idle trên điện thoại, không cần joystick                                                                       |
+| Tiền                | —                               | Số nguyên, đơn vị "xu"                                                                                                                                                    | Tránh sai số float, giữ tính tất định                                                                                       |
+| RNG                 | seeded                          | mulberry32, **mỗi hệ thống một luồng riêng** (`spawn`, `customer`, sau này thêm `review`…)                                                                                | Thêm random ở hệ này không làm lệch hệ khác                                                                                 |
+| Vòng lặp            | fixed timestep                  | Tick 100 ms. UI đọc lại khoảng 10 Hz. Mỗi khung hình chạy bù tối đa 10 tick. Tab ẩn thì dừng hẳn                                                                          | Không bao giờ có vòng lặp đuổi kịp vô hạn                                                                                   |
+| Lưu trữ (bước 5)    | Dexie                           | **localStorage + 2 ô luân phiên** + kiểm tra cấu trúc khi tải + migration theo phiên bản                                                                                  | Save chỉ vài chục KB (lịch sử đã cắt gọn) nên không cần IndexedDB; ô còn lại phòng khi lần ghi mới nhất hỏng                |
+| Offline (bước 5)    | giờ server                      | Dùng giờ client, chặn thời gian âm, **trần hiện tại 10 phút, chạy đúng mô phỏng thật** (không có công thức ước lượng). Người chơi tự đứng quầy thì tiệm đóng cửa khi vắng | Game chơi đơn, chưa có tài nguyên trả phí. Offline không thể lời hơn online vì dùng cùng mô phỏng                           |
+| Chỉ số nhân viên    | 11                              | **4**: `knowledge`, `speed`, `communication`, `morale`, cộng thêm trait                                                                                                   | Người chơi đọc hiểu được                                                                                                    |
+| Danh tiếng          | 3 tầng                          | MVP: **sao công khai + hiệu suất nội bộ + danh tiếng cửa hàng**. Tầng thương hiệu và chi nhánh để sau                                                                     | Chưa có chi nhánh                                                                                                           |
+| Thuốc kê đơn        | có kịch bản                     | **Không có trong MVP**                                                                                                                                                    | An toàn nội dung                                                                                                            |
 
 ## 2. Mini game bán hàng (vòng lõi)
 
@@ -37,6 +37,7 @@ Hàng chờ xếp ngang bên trái quầy, hiện tối đa 3 người, khách t
    - **chạm** vào món trên khay.
 
    Khi đang kéo, khách ở quầy sáng viền làm vùng thả. Bên dưới, UI gộp hai lệnh `startService` và `pickProduct`, nên vẫn qua đúng luật kiểm tra như NPC.
+
 4. Muốn khuyên khách đi khám thì bấm nút **"Khuyên đi khám"** ngay trên dãy sản phẩm.
 5. Dược sĩ lấy hàng (có thanh tiến độ). Nếu sai món, khách từ chối, hàng về lại kệ và khách mất một phần kiên nhẫn.
 6. Nếu đúng món, **thanh toán diễn ra tự động** (UI gửi lệnh `checkout`, vẫn được kiểm tra), xu bay lên từ máy tính tiền.
@@ -45,26 +46,27 @@ Hàng chờ xếp ngang bên trái quầy, hiện tối đa 3 người, khách t
 Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào khách đang xếp hàng hoặc vào dược sĩ sẽ mở bảng thông tin dạng overlay.
 
 **Luật an toàn (cứng trong simulation, có test bảo vệ):**
+
 - Với yêu cầu `refer`, lệnh `pickProduct` luôn bị từ chối với lý do `safety-referral-required`, đồng thời phát sự kiện `safetyWarning` và ghi lại fact. Người chơi hay NPC đều không bán được.
 - Khuyên đi khám không đem lại tiền, nhưng là hành động đúng. Từ bước 4 sẽ có điểm hiệu suất và danh tiếng.
 - Câu tư vấn dùng chung một mẫu, không chẩn đoán và không gợi ý thuốc.
 
 ## 3. Lộ trình
 
-| Bước | Nội dung | Trạng thái |
-|---|---|---|
-| 1 | Nền tảng: workspace, lint/typecheck/test, app shell, bridge, RNG/đồng hồ, schema sự kiện, thương hiệu hư cấu | ✅ |
-| 2 | Vertical slice: 1 phòng, 1 kệ, 1 quầy, 1 dược sĩ, 2 archetype khách, 5 sản phẩm, vòng yêu cầu → lấy hàng → thanh toán → xu | ✅ |
-| 3 | Tự động hoá: tuyển 1–2 NPC, FSM + chọn việc bằng utility, nâng cấp đơn giản, cảnh báo mất khách khi hàng chờ đầy | ✅ |
-| 4 | Đánh giá sao, hiệu suất nội bộ tách riêng, danh tiếng cửa hàng, khiếu nại | ✅ |
-| 5 | Kinh tế idle: ngày + lương, giá bán, sổ sách, lưu/tải có phiên bản, tiến trình offline có giới hạn, PWA service worker | ✅ (hạn dùng dời sang bước 6) |
-| 6 | Hạn dùng, khách quen, balance simulator | ✅ |
-| 7 | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding | ✅ |
-| 7b | Ca làm, mở/đóng cửa, chấm công, tổng kết ngày, xếp hạng sao | ✅ |
-| 7c | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính | ✅ |
-| 7d | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca | ✅ |
-| 7e | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được) | ✅ |
-| 8 | Online (tuỳ chọn) | |
+| Bước | Nội dung                                                                                                                   | Trạng thái                    |
+| ---- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------- |
+| 1    | Nền tảng: workspace, lint/typecheck/test, app shell, bridge, RNG/đồng hồ, schema sự kiện, thương hiệu hư cấu               | ✅                            |
+| 2    | Vertical slice: 1 phòng, 1 kệ, 1 quầy, 1 dược sĩ, 2 archetype khách, 5 sản phẩm, vòng yêu cầu → lấy hàng → thanh toán → xu | ✅                            |
+| 3    | Tự động hoá: tuyển 1–2 NPC, FSM + chọn việc bằng utility, nâng cấp đơn giản, cảnh báo mất khách khi hàng chờ đầy           | ✅                            |
+| 4    | Đánh giá sao, hiệu suất nội bộ tách riêng, danh tiếng cửa hàng, khiếu nại                                                  | ✅                            |
+| 5    | Kinh tế idle: ngày + lương, giá bán, sổ sách, lưu/tải có phiên bản, tiến trình offline có giới hạn, PWA service worker     | ✅ (hạn dùng dời sang bước 6) |
+| 6    | Hạn dùng, khách quen, balance simulator                                                                                    | ✅                            |
+| 7    | Nội dung (20 sản phẩm, 5 archetype), âm thanh, onboarding                                                                  | ✅                            |
+| 7b   | Ca làm, mở/đóng cửa, chấm công, tổng kết ngày, xếp hạng sao                                                                | ✅                            |
+| 7c   | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính               | ✅                            |
+| 7d   | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca                                         | ✅                            |
+| 7e   | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được)                                                 | ✅                            |
+| 8    | Online (tuỳ chọn)                                                                                                          |                               |
 
 ### Điều chỉnh sau bước 7: nhịp mở danh mục và nâng cấp
 
@@ -81,6 +83,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
   - `communication`: khách đang được người này phục vụ hao kiên nhẫn chậm hơn.
 
   `morale` và trait để sang bước 4–5.
+
 - **Quầy có người đứng quầy** (`counter.operatorId`). Chỉ người được giao mới được bắt đầu phục vụ khách ở quầy đó. Lệnh `assignCounter` dùng để giao quầy cho NPC hoặc lấy lại. Khi đổi người, đơn đang làm dở vẫn do người cũ hoàn tất.
 - **Mọi lệnh thao tác trên đơn đều kèm `workerId`**, và từ chối với lý do `not-your-order` nếu đơn không phải của người gửi. Nhờ vậy người chơi và NPC không thể giành đơn của nhau.
 - **AI của NPC** (`packages/simulation/src/ai.ts`) chỉ gửi Command, không có đường tắt.
@@ -104,6 +107,7 @@ Toàn bộ logic nằm trong `packages/simulation/src/reputation.ts`. Các hàm 
    - khách bỏ về khi đang được phục vụ: −30.
 
    Khách chưa được ai phục vụ thì không tính cho nhân viên nào.
+
 3. **Mức hài lòng chủ quan** tính theo tính cách khách:
    - yếu tố chung: kết cục, thời gian chờ nhân với `waitWeight`, số lần đưa nhầm, mức giao tiếp của nhân viên;
    - giá: bán cao hơn `referencePrice`, nhân với `priceSensitivity`;
@@ -122,6 +126,7 @@ Toàn bộ logic nằm trong `packages/simulation/src/reputation.ts`. Các hàm 
    Phản hồi **không bao giờ xoá đánh giá** và tối đa chỉ nâng thêm 1★. Mỗi khiếu nại chỉ phản hồi được một lần.
 
 Nội dung mới:
+
 - archetype "Khách khó tính";
 - giá tham khảo cho từng sản phẩm (kem chống nắng và nước rửa tay đang bán cao hơn giá tham khảo, cố ý để tạo tình huống chê giá);
 - 3 trait nhân viên: Chăm chỉ, Cẩn thận, Hoạt ngôn.

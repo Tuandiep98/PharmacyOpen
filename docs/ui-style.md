@@ -8,15 +8,15 @@ Tiệm nhỏ như một trang truyện tương tác: nền giấy sáng, kệ g�
 
 CSS lấy từ `apps/web/src/ui/theme.css`; SVG lấy từ `apps/web/src/art/palette.ts`.
 
-| Vai trò | Màu | Dùng cho |
-|---|---|---|
-| Giấy | `#FFFDF6` | khay, bảng chi tiết, hộp thoại |
-| Nền | `#F4F0E5` | nền ngoài cảnh |
-| Mực | `#263A36` | chữ chính, nét SVG |
-| Xanh lá | `#236B54` | hành động chính, quầy, trạng thái tốt |
-| Xanh nhạt | `#DCEFE3` | lựa chọn, nền nhấn |
-| Mật ong | `#E4A93B` | xu, tiến trình ngày, lưu ý nhẹ |
-| Gạch | `#A9433C` | lỗi, hàng hết, hành động nguy hiểm |
+| Vai trò   | Màu       | Dùng cho                              |
+| --------- | --------- | ------------------------------------- |
+| Giấy      | `#FFFDF6` | khay, bảng chi tiết, hộp thoại        |
+| Nền       | `#F4F0E5` | nền ngoài cảnh                        |
+| Mực       | `#263A36` | chữ chính, nét SVG                    |
+| Xanh lá   | `#236B54` | hành động chính, quầy, trạng thái tốt |
+| Xanh nhạt | `#DCEFE3` | lựa chọn, nền nhấn                    |
+| Mật ong   | `#E4A93B` | xu, tiến trình ngày, lưu ý nhẹ        |
+| Gạch      | `#A9433C` | lỗi, hàng hết, hành động nguy hiểm    |
 
 Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo thêm màu nhấn cho mỗi tab. Nét SVG chính rộng khoảng 2 đơn vị; bề mặt HTML dùng viền 1.5 px và góc 12–16 px. Thứ tự thị giác: cảnh → yêu cầu khách → sản phẩm/hành động → HUD → dữ liệu phụ.
 

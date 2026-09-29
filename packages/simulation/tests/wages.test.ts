@@ -1,6 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import { createInitialState, Simulation, wagesDueTonight, type SimState } from '../src';
-import { hireAllDay, runFor } from './helpers';
+import { describe, expect, it } from "vitest";
+import {
+  createInitialState,
+  Simulation,
+  wagesDueTonight,
+  type SimState,
+} from "../src";
+import { hireAllDay, runFor } from "./helpers";
 
 /** Tiệm có một nhân viên làm cả hai ca, đủ vốn trả lương. */
 function store(): { sim: Simulation; workerId: string } {
@@ -8,11 +13,11 @@ function store(): { sim: Simulation; workerId: string } {
   state.money = 5000;
   state.dayStart.money = 5000;
   const sim = new Simulation(state);
-  return { sim, workerId: hireAllDay(sim, 'dung') };
+  return { sim, workerId: hireAllDay(sim, "dung") };
 }
 
-describe('lương phải trả cuối ngày', () => {
-  it('đầu ngày tính đủ các ca theo lịch và khớp số tiền thực trả lúc đóng ngày', () => {
+describe("lương phải trả cuối ngày", () => {
+  it("đầu ngày tính đủ các ca theo lịch và khớp số tiền thực trả lúc đóng ngày", () => {
     const { sim, workerId } = store();
     const s = sim.snapshot as SimState;
     const wage = s.workers[workerId]!.wage;
@@ -25,12 +30,16 @@ describe('lương phải trả cuối ngày', () => {
     expect(sim.snapshot.stats.spentOnWages - spentBefore).toBe(projected.total);
   });
 
-  it('cộng nợ cũ và bỏ các ca của người nghỉ hôm nay', () => {
+  it("cộng nợ cũ và bỏ các ca của người nghỉ hôm nay", () => {
     const { sim, workerId } = store();
     const s = sim.snapshot as SimState;
     const worker = s.workers[workerId]!;
     worker.wageOwed = 7;
     worker.restDay = s.day;
-    expect(wagesDueTonight(s)).toEqual({ owed: 7, today: worker.wage * worker.shiftsToday.length, total: 7 + worker.wage * worker.shiftsToday.length });
+    expect(wagesDueTonight(s)).toEqual({
+      owed: 7,
+      today: worker.wage * worker.shiftsToday.length,
+      total: 7 + worker.wage * worker.shiftsToday.length,
+    });
   });
 });

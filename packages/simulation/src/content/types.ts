@@ -1,10 +1,26 @@
 export type ProductId =
-  | 'mask' | 'bandage' | 'sunscreen' | 'sanitizer' | 'lipbalm'
-  | 'soap' | 'tissues' | 'wipes' | 'cottonpads' | 'toothbrush'
-  | 'toothpaste' | 'floss' | 'cottonswab' | 'comb' | 'gauze'
-  | 'tape' | 'elasticbandage' | 'moisturizer' | 'cleanser' | 'handcream';
+  | "mask"
+  | "bandage"
+  | "sunscreen"
+  | "sanitizer"
+  | "lipbalm"
+  | "soap"
+  | "tissues"
+  | "wipes"
+  | "cottonpads"
+  | "toothbrush"
+  | "toothpaste"
+  | "floss"
+  | "cottonswab"
+  | "comb"
+  | "gauze"
+  | "tape"
+  | "elasticbandage"
+  | "moisturizer"
+  | "cleanser"
+  | "handcream";
 
-export type ProductCategory = 'hygiene' | 'first-aid' | 'skin-care';
+export type ProductCategory = "hygiene" | "first-aid" | "skin-care";
 
 export interface ProductDef {
   id: ProductId;
@@ -23,25 +39,25 @@ export interface ProductDef {
 
 /** Đặc điểm nhân viên: tác động theo ngữ cảnh, một số có lợi, một số có hại, một số vừa lợi vừa hại. */
 export type TraitId =
-  | 'hardworking'
-  | 'meticulous'
-  | 'talkative'
-  | 'ironman'
-  | 'lucky'
-  | 'silver-tongue'
-  | 'sharp-memory'
-  | 'quick-hands'
-  | 'regulars-favorite'
-  | 'tidy'
-  | 'lazy'
-  | 'slow-learner'
-  | 'hot-tempered'
-  | 'late'
-  | 'sticky-fingers'
-  | 'reckless';
+  | "hardworking"
+  | "meticulous"
+  | "talkative"
+  | "ironman"
+  | "lucky"
+  | "silver-tongue"
+  | "sharp-memory"
+  | "quick-hands"
+  | "regulars-favorite"
+  | "tidy"
+  | "lazy"
+  | "slow-learner"
+  | "hot-tempered"
+  | "late"
+  | "sticky-fingers"
+  | "reckless";
 
 /** good: có lợi, bad: có hại, mixed: vừa lợi vừa hại (giao diện tô màu theo loại này). */
-export type TraitTone = 'good' | 'bad' | 'mixed';
+export type TraitTone = "good" | "bad" | "mixed";
 
 export interface TraitDef {
   id: TraitId;
@@ -53,7 +69,7 @@ export interface TraitDef {
 }
 
 /** Độ hiếm của ứng viên: quyết định khoảng chỉ số và số đặc điểm. */
-export type Rarity = 'common' | 'good' | 'rare' | 'legendary';
+export type Rarity = "common" | "good" | "rare" | "legendary";
 
 /**
  * Mã lý do của một đánh giá. Phân nhóm để quy trách nhiệm đúng chỗ:
@@ -62,34 +78,34 @@ export type Rarity = 'common' | 'good' | 'rare' | 'legendary';
  * - praise: điểm cộng.
  */
 /** Độ quen của người viết đánh giá: khách mới, khách quen mặt (ghé 1–2 lần), khách thân (từ 3 lần). */
-export type ReviewerFamiliarity = 'new' | 'known' | 'close';
+export type ReviewerFamiliarity = "new" | "known" | "close";
 
 export type ReasonCode =
-  | 'correct-item'
-  | 'fair-price'
-  | 'helpful-advice'
-  | 'fast-service'
-  | 'friendly-staff'
-  | 'long-queue'
-  | 'price-high'
-  | 'slow-service'
-  | 'wrong-item'
-  | 'unneeded-referral'
-  | 'too-chatty'
-  | 'rude-staff'
-  | 'strict-customer'
-  | 'out-of-stock'
-  | 'late-delivery'
-  | 'on-time-delivery'
-  | 'awkward-talk'
-  | 'patient-advice';
+  | "correct-item"
+  | "fair-price"
+  | "helpful-advice"
+  | "fast-service"
+  | "friendly-staff"
+  | "long-queue"
+  | "price-high"
+  | "slow-service"
+  | "wrong-item"
+  | "unneeded-referral"
+  | "too-chatty"
+  | "rude-staff"
+  | "strict-customer"
+  | "out-of-stock"
+  | "late-delivery"
+  | "on-time-delivery"
+  | "awkward-talk"
+  | "patient-advice";
 
 /**
  * named: khách gọi đúng tên sản phẩm.
  * need: khách mô tả nhu cầu sinh hoạt thường ngày (không phải triệu chứng bệnh).
  * refer: khách mô tả triệu chứng → hành động đúng duy nhất là khuyên đi khám, không bán.
  */
-export type RequestKind = 'named' | 'need' | 'refer';
+export type RequestKind = "named" | "need" | "refer";
 
 export interface RequestDef {
   id: string;
@@ -101,9 +117,9 @@ export interface RequestDef {
   acceptable: ProductId[];
 }
 
-export type StaffRole = 'pharmacist' | 'clerk';
+export type StaffRole = "pharmacist" | "clerk";
 
-export type Gender = 'female' | 'male';
+export type Gender = "female" | "male";
 
 export interface StaffLook {
   gender: Gender;
@@ -137,14 +153,14 @@ export interface StaffCandidateDef {
 }
 
 export type UpgradeEffect =
-  | { type: 'catalog'; facility: 'warehouse' | 'storefront'; add: number }
-  | { type: 'scale'; key: 'checkoutMs' | 'retrieveMs'; factor: number }
-  | { type: 'shelfCapacity'; add: number }
-  | { type: 'queue'; addMax: number; patienceFactor: number }
-  | { type: 'spawnInterval'; factor: number }
-  | { type: 'counter' }
+  | { type: "catalog"; facility: "warehouse" | "storefront"; add: number }
+  | { type: "scale"; key: "checkoutMs" | "retrieveMs"; factor: number }
+  | { type: "shelfCapacity"; add: number }
+  | { type: "queue"; addMax: number; patienceFactor: number }
+  | { type: "spawnInterval"; factor: number }
+  | { type: "counter" }
   /** Thêm chỗ nhân viên: mỗi ca (`perShift`) và người dự phòng để luân phiên nghỉ (`reserve`). Tính trong progression.ts. */
-  | { type: 'staff'; perShift: number; reserve: number };
+  | { type: "staff"; perShift: number; reserve: number };
 
 export interface UpgradeDef {
   id: string;
@@ -155,7 +171,8 @@ export interface UpgradeDef {
   effects: UpgradeEffect[];
 }
 
-export type ArchetypeId = 'hurried' | 'curious' | 'demanding' | 'careful' | 'thrifty';
+export type ArchetypeId =
+  "hurried" | "curious" | "demanding" | "careful" | "thrifty";
 
 export interface ArchetypeDef {
   id: ArchetypeId;

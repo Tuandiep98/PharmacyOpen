@@ -59,7 +59,7 @@
   border-color: #6f2820;
 }
 .nametag-loyal::before {
-  content: '♥ ';
+  content: "♥ ";
   color: #ffc9bd;
 }
 
@@ -79,7 +79,7 @@
   animation: speech-pop 180ms var(--sheet-ease) both;
 }
 .speech::after {
-  content: '';
+  content: "";
   position: absolute;
   bottom: -7px;
   width: 10px;
@@ -124,7 +124,7 @@
   border-color: #9a3a2e;
 }
 .speech.regular:not(.compact)::before {
-  content: '♥';
+  content: "♥";
   position: absolute;
   top: -9px;
   right: -7px;
@@ -274,10 +274,15 @@
   animation: speech-text-in 220ms ease-out both;
 }
 .speech {
-  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
 }
 .overlay-anchor {
-  transition: left 450ms var(--sheet-ease), top 450ms var(--sheet-ease);
+  transition:
+    left 450ms var(--sheet-ease),
+    top 450ms var(--sheet-ease);
 }
 @keyframes speech-text-in {
   from {

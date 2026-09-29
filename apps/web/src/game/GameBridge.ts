@@ -7,7 +7,7 @@ import {
   type SimEvent,
   type Simulation,
   type SimState,
-} from '@pharmacy/simulation';
+} from "@pharmacy/simulation";
 
 /** Tối đa số tick chạy bù trong một khung hình, tránh vòng lặp đuổi kịp không giới hạn. */
 const MAX_TICKS_PER_FRAME = 10;
@@ -86,15 +86,15 @@ export class GameBridge {
   attach(): void {
     if (this.attached) return;
     this.attached = true;
-    document.addEventListener('visibilitychange', this.onVisibility);
-    window.addEventListener('pagehide', this.save);
+    document.addEventListener("visibilitychange", this.onVisibility);
+    window.addEventListener("pagehide", this.save);
     this.autosaveId = window.setInterval(this.save, AUTOSAVE_MS);
   }
 
   detach(): void {
     this.attached = false;
-    document.removeEventListener('visibilitychange', this.onVisibility);
-    window.removeEventListener('pagehide', this.save);
+    document.removeEventListener("visibilitychange", this.onVisibility);
+    window.removeEventListener("pagehide", this.save);
     window.clearInterval(this.autosaveId);
     this.setRunning(false);
   }
@@ -125,7 +125,8 @@ export class GameBridge {
       return;
     }
     if (!this.running) return;
-    const awayMs = this.hiddenAtWallMs === null ? 0 : Date.now() - this.hiddenAtWallMs;
+    const awayMs =
+      this.hiddenAtWallMs === null ? 0 : Date.now() - this.hiddenAtWallMs;
     this.hiddenAtWallMs = null;
     if (awayMs >= MIN_AWAY_MS) {
       const summary = this.catchUp(awayMs);
@@ -136,7 +137,10 @@ export class GameBridge {
 
   private frame = (now: number): void => {
     const tickMs = this.sim.snapshot.config.tickMs;
-    this.accumulator += Math.min(now - this.lastFrame, tickMs * MAX_TICKS_PER_FRAME);
+    this.accumulator += Math.min(
+      now - this.lastFrame,
+      tickMs * MAX_TICKS_PER_FRAME,
+    );
     this.lastFrame = now;
     let ticks = 0;
     while (this.accumulator >= tickMs && ticks < MAX_TICKS_PER_FRAME) {
@@ -145,7 +149,8 @@ export class GameBridge {
       ticks++;
     }
     if (ticks > 0) this.publish();
-    if (this.running && !document.hidden) this.rafId = requestAnimationFrame(this.frame);
+    if (this.running && !document.hidden)
+      this.rafId = requestAnimationFrame(this.frame);
   };
 
   private publish(): void {

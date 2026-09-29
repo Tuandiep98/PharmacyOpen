@@ -1,8 +1,8 @@
-import { applyCommand, type Command, type CommandResult } from './commands';
-import type { EventInput, SimEvent } from './events';
-import { createInitialState } from './state';
-import { tick } from './tick';
-import type { DeepReadonly, SimState } from './types';
+import { applyCommand, type Command, type CommandResult } from "./commands";
+import type { EventInput, SimEvent } from "./events";
+import { createInitialState } from "./state";
+import { tick } from "./tick";
+import type { DeepReadonly, SimState } from "./types";
 
 /** Giữ tối đa chừng này lệnh gần nhất để debug; game idle chạy lâu không được phình bộ nhớ. */
 const MAX_COMMAND_LOG = 5000;
@@ -42,7 +42,8 @@ export class Simulation {
 
   dispatch(command: Command): CommandResult {
     this.commandLog.push({ tick: this.state.tick, command });
-    if (this.commandLog.length > MAX_COMMAND_LOG) this.commandLog.splice(0, this.commandLog.length - MAX_COMMAND_LOG);
+    if (this.commandLog.length > MAX_COMMAND_LOG)
+      this.commandLog.splice(0, this.commandLog.length - MAX_COMMAND_LOG);
     return applyCommand(this.state, command, this.emit);
   }
 
@@ -62,11 +63,16 @@ export class Simulation {
 }
 
 /** Phát lại một luồng lệnh từ state ban đầu; dùng cho test tất định và tái hiện lỗi. */
-export function replay(initial: SimState, commands: readonly RecordedCommand[], ticks: number): SimState {
+export function replay(
+  initial: SimState,
+  commands: readonly RecordedCommand[],
+  ticks: number,
+): SimState {
   const sim = new Simulation(clone(initial));
   let i = 0;
   for (let t = 0; t <= ticks; t++) {
-    while (i < commands.length && commands[i]!.tick === sim.snapshot.tick) sim.dispatch(commands[i++]!.command);
+    while (i < commands.length && commands[i]!.tick === sim.snapshot.tick)
+      sim.dispatch(commands[i++]!.command);
     if (t < ticks) sim.step();
   }
   return sim.serialize();

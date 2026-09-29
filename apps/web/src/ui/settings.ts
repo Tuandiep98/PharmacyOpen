@@ -1,18 +1,18 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-const KEY = 'idle-pharmacy.settings.v1';
+const KEY = "idle-pharmacy.settings.v1";
 
 interface Settings {
   sound: boolean;
   toggleSound: () => void;
 }
 
-function load(): Pick<Settings, 'sound'> {
+function load(): Pick<Settings, "sound"> {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as { sound?: unknown };
-      if (typeof parsed.sound === 'boolean') return { sound: parsed.sound };
+      if (typeof parsed.sound === "boolean") return { sound: parsed.sound };
     }
   } catch {
     // Bộ nhớ bị chặn hoặc dữ liệu hỏng: dùng mặc định.
