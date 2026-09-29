@@ -1,5 +1,7 @@
 import { cloneConfig, DEFAULT_CONFIG } from './config';
+import { ARCHETYPES } from './content/archetypes';
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
+import type { ProductId } from './content/types';
 import { STAFF_CANDIDATES, TRAITS } from './content/staff';
 import { BACK_STATION_IDS, type BackStationId } from './content/stations';
 import { levelFor, refreshRecruits } from './recruit';
@@ -209,8 +211,6 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
     // v7: nhân viên mới — nhiều đặc điểm, độ hiếm, giới tính, tay nghề, mệt mỏi; lương tính theo ca;
     // danh sách ứng viên hằng ngày (sinh sau khi tải, xem loadSave).
     if (isObject(state.rng)) state.rng.staff = createStream(isNum(state.seed) ? state.seed : 0, 'staff');
-    const config = isObject(state.config) ? state.config : {};
-    if (config.maxStaff === 2) config.maxStaff = DEFAULT_CONFIG.maxStaff;
     for (const stats of [
       state.stats,
       isObject(state.dayStart) ? state.dayStart.stats : null,
@@ -266,6 +266,34 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
         if (isObject(worker) && typeof worker.station !== 'string') worker.station = 'support';
     }
   },
+  9: (state) => {
+    // v10: số chỗ nhân viên suy ra từ nâng cấp đã mua (progression.ts), không còn nằm trong config.
+    // Đội đông hơn giới hạn mới được giữ nguyên, chỉ không tuyển thêm được tới khi nâng cấp.
+    if (isObject(state.config)) {
+      delete state.config.maxStaff;
+      delete state.config.maxPerShift;
+    }
+  },
+  10: (state) => {
+    // v11: đơn ship (online và khách hẹn giao sau vì hết hàng), số liệu giao hàng trong sổ sách.
+    if (isObject(state.rng)) state.rng.delivery = createStream(isNum(state.seed) ? state.seed : 0, 'delivery');
+    if (!Array.isArray(state.deliveries)) state.deliveries = [];
+    const config = isObject(state.config) ? state.config : {};
+    if (!isNum(state.nextDeliveryAtMs)) {
+      state.nextDeliveryAtMs = (isNum(state.timeMs) ? state.timeMs : 0) + (isNum(config.firstDeliveryMs) ? config.firstDeliveryMs : DEFAULT_CONFIG.firstDeliveryMs);
+    }
+    const fresh = { deliveries: 0, lateDeliveries: 0, cancelledDeliveries: 0, backorders: 0, wentElsewhere: 0 };
+    for (const stats of [
+      state.stats,
+      isObject(state.dayStart) ? state.dayStart.stats : null,
+      isObject(state.shiftMark) ? state.shiftMark.stats : null,
+    ]) {
+      if (isObject(stats)) for (const [key, value] of Object.entries(fresh)) if (!isNum(stats[key])) stats[key] = value;
+    }
+    if (Array.isArray(state.dayReports)) {
+      for (const report of state.dayReports) if (isObject(report)) Object.assign(report, { ...fresh, ...report });
+    }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -280,6 +308,35 @@ function mergeConfig(state: Loose): void {
   };
 }
 
+const DELIVERY_STATUSES = ['packing', 'packed', 'awaiting-pickup', 'shipping'];
+
+function isValidDelivery(d: unknown): boolean {
+  return (
+    isObject(d) &&
+    typeof d.id === 'string' &&
+    (d.source === 'online' || d.source === 'backorder') &&
+    typeof d.archetypeId === 'string' &&
+    d.archetypeId in ARCHETYPES &&
+    DELIVERY_STATUSES.includes(d.status as string) &&
+    [d.createdAtMs, d.dueDay, d.dueAtMs].every(isNum) &&
+    [d.price, d.pickupAtMs, d.deliverAtMs].every((v) => v === null || isNum(v)) &&
+    Array.isArray(d.handledBy) &&
+    Array.isArray(d.items) &&
+    d.items.length > 0 &&
+    d.items.every(
+      (i: unknown) =>
+        isObject(i) &&
+        PRODUCT_IDS.includes(i.productId as ProductId) &&
+        isNum(i.qty) &&
+        Number.isInteger(i.qty) &&
+        i.qty > 0 &&
+        Array.isArray(i.packed) &&
+        i.packed.length <= i.qty &&
+        i.packed.every(isNum),
+    )
+  );
+}
+
 const isTraitList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => typeof id === 'string' && id in TRAITS);
 
 const isShiftList = (v: unknown): boolean => Array.isArray(v) && v.every((id) => SHIFT_IDS.includes(id as ShiftId));
@@ -290,7 +347,7 @@ function isValidState(state: Loose): state is SimState & Loose {
   if ((s.money as number) < 0) return false;
   if (
     !isObject(s.rng) ||
-    !['spawn', 'customer', 'ai', 'review', 'staff'].every((k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s))
+    !['spawn', 'customer', 'ai', 'review', 'staff', 'delivery'].every((k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s))
   )
     return false;
   if (!isObject(s.stock) || !isObject(s.prices)) return false;
@@ -365,6 +422,7 @@ function isValidState(state: Loose): state is SimState & Loose {
   const assigned = s.counters.map((c: { operatorId: string | null }) => c.operatorId).filter((id: string | null): id is string => id !== null);
   if (new Set(assigned).size !== assigned.length) return false;
   if (!Array.isArray(s.queue) || !Array.isArray(s.upgrades) || !Array.isArray(s.interactions)) return false;
+  if (!isNum(s.nextDeliveryAtMs) || !Array.isArray(s.deliveries) || !s.deliveries.every(isValidDelivery)) return false;
   if (!Array.isArray(s.reviews) || !Array.isArray(s.complaints) || !Array.isArray(s.dayReports)) return false;
   if (!isObject(s.reputation) || !isObject(s.stats) || !isObject(s.dayStart)) return false;
   return true;

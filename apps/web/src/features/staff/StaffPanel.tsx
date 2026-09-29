@@ -4,17 +4,20 @@ import {
   isOnDuty,
   LEVEL_XP,
   MAX_LEVEL,
+  nextStaffUpgrade,
   PLAYER_WORKER_ID,
   QUIT_FATIGUE,
   RARITIES,
   retainWage,
   SHIFT_IDS,
   shiftHeadcount,
+  staffLimits,
   stationHeadcount,
   stationOf,
   STATION_IDS,
   STATIONS,
   TRAITS,
+  UPGRADES,
   type DeepReadonly,
   type StationId,
   type Rarity,
@@ -35,7 +38,8 @@ import { PadlockIcon, StaffIcon, WarningIcon } from '../../art/Icons';
 import { REJECT_TEXT } from '../store/rejectText';
 import { useServiceActions } from '../store/useServiceActions';
 import { DismissButton } from './DismissButton';
-import { workerProgress, workerStatus } from './workerStatus';
+import { CounterCard } from './CounterAssign';
+import { workerStatus } from './workerStatus';
 import './staff.css';
 
 const ROLE: Record<string, string> = { pharmacist: 'Dược sĩ', clerk: 'Nhân viên bán hàng' };
@@ -198,32 +202,14 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   const { assignCounter } = useServiceActions();
   const team = Object.values(state.workers);
   const staffCount = team.filter((w) => w.controller === 'ai').length;
+  const limits = staffLimits(state);
   const counterOf = (workerId: string) => state.counters.findIndex((c) => c.operatorId === workerId);
 
   return (
     <div className="panel">
-      <PanelHeading description="Mỗi nhân viên thường làm một ca; ca còn lại cần người khác.">Nhân sự</PanelHeading>
+      <PanelHeading description="Chạm một người trong ô quầy để giao quầy. Mỗi nhân viên thường làm một ca; ca còn lại cần người khác.">Nhân sự</PanelHeading>
 
-      {state.counters.map((counter, index) => {
-        const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
-        const progress = operator ? workerProgress(state, operator) : null;
-        return <section key={counter.id} className="counter-summary" aria-label={`Trạng thái quầy ${index + 1}`}>
-          <div className="counter-summary-head">
-            <span className="counter-summary-label">Quầy {index + 1}</span>
-            <span className="small muted">{counter.customerId ? 'Đang có khách' : !operator ? 'Chưa có người đứng' : `${state.queue.length} khách đang chờ`}</span>
-          </div>
-          <div className="counter-summary-main">
-            {operator && <WorkerPortrait worker={operator} size={48} />}
-            <div className="counter-summary-text">
-              <strong>{operator ? `${operator.name}${operator.id === PLAYER_WORKER_ID ? ' (bạn)' : ''}` : 'Quầy chưa mở'}</strong>
-              <span>{operator ? workerStatus(state, operator) : 'Chọn người đứng quầy trong khay phục vụ.'}</span>
-            </div>
-            {operator?.id !== PLAYER_WORKER_ID && <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>}
-          </div>
-          {!operator && team.filter((w) => w.controller === 'ai' && isOnDuty(state, w) && counterOf(w.id) < 0).map((w) => <GameButton key={w.id} size="small" onClick={() => assignCounter(w.id, counter.id)}>Giao cho {w.name}</GameButton>)}
-          {progress !== null && <span className="progress-track" role="progressbar" aria-label={`Tiến độ công việc của ${operator?.name}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress * 100)}><span className="progress-fill" style={{ width: `${progress * 100}%` }} /></span>}
-        </section>;
-      })}
+      {state.counters.map((counter) => <CounterCard key={counter.id} state={state} counterId={counter.id} />)}
 
       <CounterPolicy state={state} />
       <ShiftCoverage state={state} />
@@ -232,9 +218,10 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
       <h3>
         Đội ngũ{' '}
         <span className="muted small">
-          ({staffCount}/{state.config.maxStaff} nhân viên)
+          ({staffCount}/{limits.total} nhân viên · {limits.perShift} người mỗi ca)
         </span>
       </h3>
+      <StaffCapacityHint state={state} full={staffCount >= limits.total} />
       <ul className="card-list team-list">
         {team.map((w) => (
           <li
@@ -315,8 +302,27 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
         </p>
       )}
 
-      <RecruitList state={state} full={staffCount >= state.config.maxStaff} />
+      <RecruitList state={state} full={staffCount >= limits.total} />
     </div>
+  );
+}
+
+/** Đội tăng theo nâng cấp tiệm: chỉ ra nâng cấp kế tiếp mở thêm chỗ, để người chơi biết đường tự động hoá. */
+function StaffCapacityHint({ state, full }: { state: DeepReadonly<SimState>; full: boolean }) {
+  const setTab = useUi((s) => s.setTab);
+  const nextId = nextStaffUpgrade(state);
+  const next = nextId ? UPGRADES[nextId] : undefined;
+  if (!next) return <p className="small muted staff-capacity">Đội đã đạt quy mô tối đa của tiệm.</p>;
+  const perShift = next.effects.some((e) => e.type === 'staff' && e.perShift > 0);
+  const label = next.id === 'counter-2' ? next.name : `${next.name} cấp ${next.id.split('-')[1]}`;
+  return (
+    <p className={`small staff-capacity ${full ? 'full' : 'muted'}`}>
+      {full ? 'Đội đã đủ chỗ. ' : ''}
+      {label} thêm {perShift ? '1 chỗ mỗi ca' : '1 người dự phòng'}.{' '}
+      <button type="button" className="link-btn" onClick={() => setTab('expansion')}>
+        Mở rộng
+      </button>
+    </p>
   );
 }
 
@@ -425,6 +431,7 @@ function StationPicker({ state, worker }: { state: DeepReadonly<SimState>; worke
 
 /** Mỗi ca có bao nhiêu nhân viên; ca trống thì bạn phải tự đứng quầy (và tiệm đóng cửa khi bạn vắng mặt). */
 function ShiftCoverage({ state }: { state: DeepReadonly<SimState> }) {
+  const { perShift } = staffLimits(state);
   return (
     <div className="shift-coverage" aria-label="Số nhân viên mỗi ca">
       {SHIFT_IDS.map((shift) => {
@@ -435,7 +442,7 @@ function ShiftCoverage({ state }: { state: DeepReadonly<SimState> }) {
           <span key={shift} className={`coverage-chip ${working === 0 ? 'empty' : ''}`}>
             {SHIFT_LABEL[shift]}:{' '}
             <b>
-              {count}/{state.config.maxPerShift}
+              {count}/{perShift}
             </b>
             {resting > 0 && ` · ${resting} nghỉ hôm nay`}
             {working === 0 && ' · thiếu người'}
@@ -450,6 +457,7 @@ function ShiftCoverage({ state }: { state: DeepReadonly<SimState> }) {
 function ShiftToggle({ state, worker }: { state: DeepReadonly<SimState>; worker: DeepReadonly<Worker> }) {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
+  const { perShift } = staffLimits(state);
   const toggle = (shift: ShiftId) => {
     const has = worker.shifts.includes(shift);
     const next = has ? worker.shifts.filter((s) => s !== shift) : [...worker.shifts, shift];
@@ -464,7 +472,7 @@ function ShiftToggle({ state, worker }: { state: DeepReadonly<SimState>; worker:
       <span className="small muted">Lịch ca:</span>
       {SHIFT_IDS.map((shift) => {
         const has = worker.shifts.includes(shift);
-        const full = !has && shiftHeadcount(state, shift) >= state.config.maxPerShift;
+        const full = !has && shiftHeadcount(state, shift) >= perShift;
         return (
           <button key={shift} aria-pressed={has} disabled={(has && worker.shifts.length === 1) || full} onClick={() => toggle(shift)}>
             {SHIFT_LABEL[shift]}

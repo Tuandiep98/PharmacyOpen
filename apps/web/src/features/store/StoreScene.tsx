@@ -34,6 +34,8 @@ const COUNTER_SPOT = { x: 160, y: 392 };
 const QUEUE_SPOTS = [112, 68, 24].map((x) => ({ x, y: 394 }));
 const EXIT_SPOT = { x: 160, y: 470 };
 export const REGISTER_SPOT = { x: 318, y: 246 };
+/** Vùng chạm mặt quầy (dưới người đứng quầy, cạnh khách ở quầy) để mở bộ chọn người đứng quầy. */
+const COUNTER_HIT = { x: 196, y: 288, w: 162, h: 86 };
 
 // Vị trí nhân viên: đứng quầy, đứng chờ sau quầy, và ở kệ (đang bổ sung hàng). Không có đi bộ,
 // chỉ trượt nhẹ giữa các vị trí khi đổi việc.
@@ -189,6 +191,19 @@ export function StoreScene({ state }: { state: State }) {
       {state.counters.length > 1 && <g transform={`translate(${SECOND_OFFSET} 0)`}><Counter /><CounterScanner level={ownedLevel('scanner')} /><Register active={(() => { const customer = counterCustomer('counter-2'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} /></g>}
       {state.counters.length > 1 && state.counters.map((counter, index) => <rect key={counter.id} x={194 + index * SECOND_OFFSET} y={285} width={166} height={91} rx={10} fill="none" stroke={counter.id === activeCounterId ? ART.honey : ART.leafLight} strokeWidth={counter.id === activeCounterId ? 4 : 2} strokeDasharray={counter.id === activeCounterId ? undefined : '5 4'} pointerEvents="none" />)}
       {state.counters.length > 1 && state.counters.map((c, i) => <text key={c.id} x={272 + i * SECOND_OFFSET} y={287} fontSize={11} fontWeight={900} fill={INK} textAnchor="middle">QUẦY {i + 1}{!c.operatorId ? ' · CHƯA MỞ' : ''}</text>) }
+      {state.counters.map((counter, index) => (
+        <CounterHitArea
+          key={counter.id}
+          x={COUNTER_HIT.x + index * SECOND_OFFSET}
+          label={`Quầy ${index + 1}`}
+          unstaffed={!counter.operatorId}
+          selected={selection?.kind === 'counter' && selection.id === counter.id}
+          onSelect={() => {
+            setActiveCounterId(counter.id);
+            select({ kind: 'counter', id: counter.id });
+          }}
+        />
+      ))}
       {workerSpots.map(({ worker, spot }) => (
         <WorkerBubble
           key={worker.id}
@@ -253,6 +268,32 @@ export function StoreScene({ state }: { state: State }) {
       })}
       <Floaters />
     </svg>
+  );
+}
+
+function CounterHitArea({ x, label, unstaffed, selected, onSelect }: { x: number; label: string; unstaffed: boolean; selected: boolean; onSelect: () => void }) {
+  return (
+    <g
+      className="tappable counter-hit"
+      role="button"
+      tabIndex={0}
+      aria-label={`${label}${unstaffed ? ', chưa có người đứng' : ''}. Chạm để chọn người đứng quầy.`}
+      onClick={onSelect}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect();
+        }
+      }}
+    >
+      <rect x={x} y={COUNTER_HIT.y} width={COUNTER_HIT.w} height={COUNTER_HIT.h} rx={8} fill="transparent" stroke={selected ? ART.honey : 'none'} strokeWidth={3} />
+      {unstaffed && (
+        <g transform={`translate(${x + COUNTER_HIT.w / 2} ${COUNTER_HIT.y + 40})`} pointerEvents="none">
+          <rect x={-46} y={-11} width={92} height={22} rx={11} fill={ART.paper} stroke={INK} strokeWidth={1.4} />
+          <text y={4} textAnchor="middle" fontSize={10} fontWeight={900} fill={ART.leaf}>+ GIAO NGƯỜI</text>
+        </g>
+      )}
+    </g>
   );
 }
 
@@ -436,8 +477,22 @@ function WorkerBubble(props: {
       </Bubble>
     );
   }
-  if (!order && task?.kind === 'restock') {
-    // Đang bổ sung kệ: hộp hàng + món cần bổ sung + thanh tiến độ.
+  if (!order && task?.kind === 'label') {
+    // Ghi phiếu gửi đơn ship: tờ phiếu + thanh tiến độ.
+    const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
+    return (
+      <Bubble x={x} y={y} w={40} h={40}>
+        <rect x={12} y={4} width={16} height={21} rx={2} fill={ART.paper} stroke={INK} strokeWidth={1.4} />
+        <path d="M15,10 H25 M15,14 H25 M15,18 H21" stroke={ART.leaf} strokeWidth={1.3} strokeLinecap="round" />
+        <g transform="translate(6 31)">
+          <rect x={0} y={0} width={28} height={5} rx={2.5} fill={ART.mint} />
+          <rect className="bar-fill" x={0} y={0} width={28 * progress} height={5} rx={2.5} fill={ART.leaf} />
+        </g>
+      </Bubble>
+    );
+  }
+  if (!order && (task?.kind === 'restock' || task?.kind === 'pack')) {
+    // Đang bổ sung kệ (thanh vàng) hoặc gói món vào đơn ship (thanh xanh): hộp hàng + món + thanh tiến độ.
     const progress = task.timerTotalMs > 0 ? 1 - task.timerMs / task.timerTotalMs : 1;
     return (
       <Bubble x={x} y={y} w={52} h={40}>
@@ -448,7 +503,7 @@ function WorkerBubble(props: {
         <ProductArt id={task.productId} x={25} y={3} scale={0.46} />
         <g transform="translate(6 31)">
           <rect x={0} y={0} width={40} height={5} rx={2.5} fill={ART.mint} />
-          <rect className="bar-fill" x={0} y={0} width={40 * progress} height={5} rx={2.5} fill={ART.honey} />
+          <rect className="bar-fill" x={0} y={0} width={40 * progress} height={5} rx={2.5} fill={task.kind === 'pack' ? ART.leaf : ART.honey} />
         </g>
       </Bubble>
     );
@@ -463,7 +518,7 @@ function WorkerBubble(props: {
       </Bubble>
     );
   }
-  const timed = order.state === 'retrieving' || order.state === 'checkingOut' || order.state === 'referring';
+  const timed = order.state === 'retrieving' || order.state === 'checkingOut' || order.state === 'referring' || order.state === 'deferring';
   const progress = timed && order.timerTotalMs > 0 ? 1 - order.timerMs / order.timerTotalMs : 1;
   let icon: React.ReactNode = null;
   if (order.state === 'deciding') {
@@ -477,6 +532,13 @@ function WorkerBubble(props: {
       <g transform="translate(14 5)">
         <path d="M2,20 V9 L12,3 L22,9 V20 Z" fill="#DDEBFF" stroke={INK} strokeWidth={1.5} strokeLinejoin="round" />
         <path d="M9,20 V14 H15 V20" fill="none" stroke={INK} strokeWidth={1.5} />
+      </g>
+    );
+  } else if (order.state === 'deferring') {
+    icon = (
+      <g transform="translate(16 4)">
+        <path d="M1,6 L10,2 L19,6 V16 L10,20 L1,16 Z" fill="#F2C48D" stroke={INK} strokeWidth={1.4} strokeLinejoin="round" />
+        <path d="M1,6 L10,10 L19,6 M10,10 V20" fill="none" stroke={INK} strokeWidth={1.2} />
       </g>
     );
   } else if (order.state === 'checkingOut') {

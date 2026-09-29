@@ -13,6 +13,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     strictness: 0.05,
     waitWeight: 1.5,
     likesDetail: false,
+    backorderChance: 0.25,
     requestWeights: {
       'named-mask': 3, 'named-bandage': 3, 'named-sunscreen': 2, 'named-sanitizer': 3, 'named-lipbalm': 2,
       'named-soap': 2, 'named-tissues': 3, 'named-wipes': 2, 'named-toothbrush': 1,
@@ -32,6 +33,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     strictness: 0,
     waitWeight: 0.8,
     likesDetail: true,
+    backorderChance: 0.7,
     requestWeights: {
       'named-sunscreen': 1, 'named-lipbalm': 1,
       'need-beach': 3, 'need-dust': 2, 'need-scrape': 3, 'need-picnic': 2, 'need-dry-lips': 3,
@@ -51,6 +53,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     strictness: 0.3,
     waitWeight: 1.2,
     likesDetail: false,
+    backorderChance: 0.35,
     requestWeights: {
       'named-sunscreen': 3, 'named-sanitizer': 2, 'named-mask': 1, 'named-lipbalm': 1,
       'named-cottonpads': 2, 'named-floss': 1, 'named-moisturizer': 2, 'named-cleanser': 2,
@@ -70,6 +73,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     strictness: 0.08,
     waitWeight: 0.9,
     likesDetail: true,
+    backorderChance: 0.6,
     requestWeights: {
       'named-gauze': 2, 'named-tape': 2, 'named-elasticbandage': 2,
       'named-cottonswab': 2, 'named-soap': 1, 'named-wipes': 1,
@@ -89,6 +93,7 @@ export const ARCHETYPES: Record<ArchetypeId, ArchetypeDef> = {
     strictness: 0.08,
     waitWeight: 0.9,
     likesDetail: false,
+    backorderChance: 0.55,
     requestWeights: {
       'named-tissues': 2, 'named-cottonpads': 2, 'named-toothbrush': 2,
       'named-toothpaste': 2, 'named-floss': 2, 'named-comb': 2,

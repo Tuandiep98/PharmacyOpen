@@ -48,14 +48,17 @@ export type DayGoalId = 'profit' | 'service' | 'rating';
 /** Ngưỡng mục tiêu ngày; mỗi mục đạt được là một sao xếp hạng ngày. */
 export const DAY_GOALS = { serviceRate: 0.85, rating: 4 } as const;
 
-/** Tỉ lệ khách được phục vụ đúng (bán đúng món hoặc khuyên đi khám đúng), null nếu chưa có khách. */
-export function serviceRate(report: Pick<DayReport, 'customers' | 'sales' | 'referrals'>): number | null {
-  return report.customers > 0 ? Math.min(1, (report.sales + report.referrals) / report.customers) : null;
+/**
+ * Tỉ lệ khách được phục vụ đúng (bán đúng món, khuyên đi khám đúng, hoặc hết hàng mà khách đồng ý
+ * chờ đơn ship), null nếu chưa có khách.
+ */
+export function serviceRate(report: Pick<DayReport, 'customers' | 'sales' | 'referrals' | 'backorders'>): number | null {
+  return report.customers > 0 ? Math.min(1, (report.sales + report.referrals + report.backorders) / report.customers) : null;
 }
 
 /** Ba mục tiêu ngày: có lãi theo hoạt động, phục vụ tốt, khách hài lòng. */
 export function dayGoals(
-  report: Pick<DayReport, 'netProfit' | 'customers' | 'sales' | 'referrals' | 'avgStars' | 'storeRating'>,
+  report: Pick<DayReport, 'netProfit' | 'customers' | 'sales' | 'referrals' | 'backorders' | 'avgStars' | 'storeRating'>,
 ): { id: DayGoalId; met: boolean }[] {
   const rate = serviceRate(report);
   return [
@@ -109,6 +112,11 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     grade: 0,
     tips: diff('tips'),
     pilfered: diff('pilfered'),
+    deliveries: diff('deliveries'),
+    lateDeliveries: diff('lateDeliveries'),
+    cancelledDeliveries: diff('cancelledDeliveries'),
+    backorders: diff('backorders'),
+    wentElsewhere: diff('wentElsewhere'),
   };
   report.grade = dayGoals(report).filter((g) => g.met).length;
   return report;

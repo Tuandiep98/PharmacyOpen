@@ -13,7 +13,8 @@ import { nextFloat, nextInt } from './rng';
 import { STATIONS, type StationId } from './content/stations';
 import { checkIn, currentShift, handOverCounters, isOnDuty, isPresent, markPrepDone, openStore, stationHeadcount } from './shift';
 import { addStock, takeStock } from './stock';
-import { facilityLevel, isProductUnlocked, playerLevel, stockUnitCost } from './progression';
+import { cancelDelivery, nextPackItem } from './delivery';
+import { facilityLevel, isProductUnlocked, playerLevel, staffLimits, stockUnitCost } from './progression';
 import { PREP_TASK_IDS, SHIFT_IDS, type DeepReadonly, type Order, type PrepTaskId, type ShiftId, type SimState } from './types';
 
 /**
@@ -24,6 +25,10 @@ export type Command =
   | { type: 'startService'; workerId: string; customerId: string }
   | { type: 'pickProduct'; workerId: string; orderId: string; productId: ProductId }
   | { type: 'refer'; workerId: string; orderId: string }
+  | { type: 'deferOrder'; workerId: string; orderId: string }
+  | { type: 'packDelivery'; deliveryId: string; workerId?: string; productId?: ProductId }
+  | { type: 'sendDelivery'; deliveryId: string; workerId?: string }
+  | { type: 'cancelDelivery'; deliveryId: string }
   | { type: 'checkout'; workerId: string; orderId: string }
   | { type: 'restock'; productId: ProductId; workerId?: string; quantity?: number }
   | { type: 'hire'; candidateId: string }
@@ -85,7 +90,11 @@ export type RejectReason =
   | 'not-resigning'
   | 'nothing-hidden'
   | 'unknown-station'
-  | 'station-full';
+  | 'station-full'
+  | 'unknown-delivery'
+  | 'delivery-not-packing'
+  | 'delivery-not-packed'
+  | 'delivery-already-sent';
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
 
@@ -100,6 +109,14 @@ export function applyCommand(state: SimState, command: Command, emit: Emit): Com
       return pickProduct(state, command.workerId, command.orderId, command.productId, emit);
     case 'refer':
       return refer(state, command.workerId, command.orderId);
+    case 'deferOrder':
+      return deferOrder(state, command.workerId, command.orderId, emit);
+    case 'packDelivery':
+      return packDelivery(state, command.deliveryId, command.workerId ?? null, command.productId, emit);
+    case 'sendDelivery':
+      return sendDelivery(state, command.deliveryId, command.workerId ?? null, emit);
+    case 'cancelDelivery':
+      return cancelDeliveryCommand(state, command.deliveryId, emit);
     case 'checkout':
       return checkout(state, command.workerId, command.orderId);
     case 'restock':
@@ -195,20 +212,7 @@ function pickProduct(state: SimState, workerId: string, orderId: string, product
   const product = PRODUCTS[productId];
   if (!product) return reject('unknown-product');
 
-  // Quy tắc an toàn: khách mô tả triệu chứng thì không được bán, dù là người chơi hay NPC.
-  // Lệnh bị từ chối nhưng vẫn được ghi lại để tính hiệu suất và giải thích cho người chơi.
-  const request = REQUESTS[order.requestId];
-  if (request?.kind === 'refer') {
-    order.facts.push('safety-warning');
-    state.stats.safetyWarnings += 1;
-    const worker = state.workers[order.workerId];
-    if (worker) {
-      worker.expression = 'worried';
-      worker.emoteUntilMs = state.timeMs + state.config.emoteMs;
-    }
-    emit({ type: 'safetyWarning', orderId, productId, customerId: order.customerId, workerId: order.workerId });
-    return reject('safety-referral-required');
-  }
+  if (REQUESTS[order.requestId]?.kind === 'refer') return safetyBlock(state, order, productId, emit);
 
   if (!isProductUnlocked(state, productId)) return reject('product-locked');
 
@@ -222,6 +226,80 @@ function pickProduct(state: SimState, workerId: string, orderId: string, product
   order.state = 'retrieving';
   order.timerTotalMs = order.timerMs = Math.round(state.config.retrieveMs / workerSpeed(state, order.workerId));
   emit({ type: 'productPicked', orderId, productId });
+  return OK;
+}
+
+/**
+ * Quy tắc an toàn: khách mô tả triệu chứng thì không được bán (hay báo hết hàng để hẹn bán sau), dù là
+ * người chơi hay NPC. Lệnh bị từ chối nhưng vẫn được ghi lại để tính hiệu suất và giải thích cho người chơi.
+ */
+function safetyBlock(state: SimState, order: Order, productId: ProductId | null, emit: Emit): CommandResult {
+  order.facts.push('safety-warning');
+  state.stats.safetyWarnings += 1;
+  const worker = state.workers[order.workerId];
+  if (worker) {
+    worker.expression = 'worried';
+    worker.emoteUntilMs = state.timeMs + state.config.emoteMs;
+  }
+  emit({ type: 'safetyWarning', orderId: order.id, productId, customerId: order.customerId, workerId: order.workerId });
+  return reject('safety-referral-required');
+}
+
+/**
+ * Báo khách món cần đang tạm hết hàng. Sau lúc giải thích, khách chọn chờ đơn ship hoặc đi mua chỗ khác
+ * (delivery.ts). Báo hết hàng khi kệ vẫn còn món phù hợp thì khách thấy bị từ chối vô lý.
+ */
+function deferOrder(state: SimState, workerId: string, orderId: string, emit: Emit): CommandResult {
+  const order = ownedOrder(state, workerId, orderId);
+  if (typeof order === 'string') return reject(order);
+  if (order.state !== 'deciding') return reject('invalid-order-state');
+  if (REQUESTS[order.requestId]?.kind === 'refer') return safetyBlock(state, order, null, emit);
+  order.state = 'deferring';
+  order.timerTotalMs = order.timerMs = state.config.referMs;
+  return OK;
+}
+
+/** Gói một món vào đơn ship: lấy khỏi kệ (lô gần hết hạn trước). Đủ món thì đơn chờ ghi phiếu và gửi. */
+function packDelivery(state: SimState, deliveryId: string, workerId: string | null, productId: ProductId | undefined, emit: Emit): CommandResult {
+  const delivery = state.deliveries.find((d) => d.id === deliveryId);
+  if (!delivery) return reject('unknown-delivery');
+  if (delivery.status !== 'packing') return reject('delivery-not-packing');
+  if (workerId && !state.workers[workerId]) return reject('unknown-worker');
+  const item = delivery.items.find((i) => i.packed.length < i.qty && (!productId || i.productId === productId));
+  if (!item) return reject('invalid-quantity');
+  if (!isProductUnlocked(state, item.productId)) return reject('product-locked');
+  const expiresAtMs = takeStock(state.stock[item.productId]);
+  if (expiresAtMs === null) return reject('out-of-stock');
+  item.packed.push(expiresAtMs);
+  const by = workerId ?? PLAYER_WORKER_ID;
+  if (!delivery.handledBy.includes(by)) delivery.handledBy.push(by);
+  emit({ type: 'deliveryItemPacked', deliveryId, productId: item.productId, workerId });
+  if (!nextPackItem(delivery)) {
+    delivery.status = 'packed';
+    emit({ type: 'deliveryPacked', deliveryId });
+  }
+  return OK;
+}
+
+/** Ghi phiếu và gửi: chốt tiền thu theo giá bán hiện tại, gọi shipper tới lấy. */
+function sendDelivery(state: SimState, deliveryId: string, workerId: string | null, emit: Emit): CommandResult {
+  const delivery = state.deliveries.find((d) => d.id === deliveryId);
+  if (!delivery) return reject('unknown-delivery');
+  if (delivery.status !== 'packed') return reject(delivery.status === 'packing' ? 'delivery-not-packed' : 'delivery-already-sent');
+  delivery.price = delivery.items.reduce((sum, item) => sum + state.prices[item.productId] * item.qty, 0);
+  delivery.status = 'awaiting-pickup';
+  delivery.pickupAtMs = state.timeMs + state.config.shipperPickupMs;
+  const by = workerId ?? PLAYER_WORKER_ID;
+  if (!delivery.handledBy.includes(by)) delivery.handledBy.push(by);
+  emit({ type: 'deliverySent', deliveryId, workerId });
+  return OK;
+}
+
+function cancelDeliveryCommand(state: SimState, deliveryId: string, emit: Emit): CommandResult {
+  const delivery = state.deliveries.find((d) => d.id === deliveryId);
+  if (!delivery) return reject('unknown-delivery');
+  if (delivery.status !== 'packing' && delivery.status !== 'packed') return reject('delivery-already-sent');
+  cancelDelivery(state, delivery, 'shop', emit);
   return OK;
 }
 
@@ -269,6 +347,7 @@ function restock(state: SimState, productId: ProductId, workerId: string | null,
 /**
  * Tuyển từ danh sách ứng viên hôm nay (hoặc hồ sơ cố định dùng cho test/balance). Người mới làm một ca:
  * ưu tiên ca đang diễn ra nếu còn chỗ (vào làm ngay, được tính lương ca này), không thì ca còn lại.
+ * Số chỗ tăng theo nâng cấp tiệm (`staffLimits`); đội đông hơn giới hạn từ save cũ vẫn giữ nguyên.
  */
 function hire(state: SimState, candidateId: string, emit: Emit): CommandResult {
   const slot = state.recruits.findIndex((r) => r?.id === candidateId);
@@ -276,10 +355,11 @@ function hire(state: SimState, candidateId: string, emit: Emit): CommandResult {
   if (!candidate) return reject('unknown-candidate');
   const worker = workerFromCandidate(candidate);
   if (state.workers[worker.id]) return reject('already-hired');
+  const limits = staffLimits(state);
   const staffCount = Object.values(state.workers).filter((w) => w.controller === 'ai').length;
-  if (staffCount >= state.config.maxStaff) return reject('staff-full');
+  if (staffCount >= limits.total) return reject('staff-full');
   const now = currentShift(state);
-  const shift = [now, ...SHIFT_IDS.filter((id) => id !== now)].find((id) => shiftHeadcount(state, id) < state.config.maxPerShift);
+  const shift = [now, ...SHIFT_IDS.filter((id) => id !== now)].find((id) => shiftHeadcount(state, id) < limits.perShift);
   if (!shift) return reject('shift-full');
   if (state.money < candidate.hireCost) return reject('insufficient-funds');
   state.money -= candidate.hireCost;
@@ -504,7 +584,8 @@ function setShifts(state: SimState, workerId: string, shifts: ShiftId[], emit: E
   if (worker.controller === 'player') return reject('cannot-schedule-player');
   const next = SHIFT_IDS.filter((id) => shifts.includes(id));
   if (next.length === 0 || next.length !== new Set(shifts).size) return reject('invalid-shifts');
-  if (next.some((id) => !worker.shifts.includes(id) && shiftHeadcount(state, id, workerId) >= state.config.maxPerShift)) {
+  const { perShift } = staffLimits(state);
+  if (next.some((id) => !worker.shifts.includes(id) && shiftHeadcount(state, id, workerId) >= perShift)) {
     return reject('shift-full');
   }
   worker.shifts = next;
@@ -526,7 +607,8 @@ function applyEffect(state: SimState, effect: UpgradeEffect): void {
       state.counters.push({ id: 'counter-2', customerId: null, operatorId: null });
       break;
     case 'catalog':
-      // Quyền nhập/trưng bày được tính từ danh sách nâng cấp trong progression.ts.
+    case 'staff':
+      // Quyền nhập/trưng bày và số chỗ nhân viên được tính từ danh sách nâng cấp trong progression.ts.
       break;
     case 'scale':
       config[effect.key] = Math.round(config[effect.key] * effect.factor);

@@ -60,6 +60,7 @@ describe('ngày và lương', () => {
     expect(s.money).toBe(0);
     // Không có khách, kệ đầy: không phát sinh thu/chi nào ngoài lương.
     s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     runFor(sim, s.config.dayMs);
     expect(s.workers['w-binh']!.wageOwed).toBe(12);
     expect(s.money).toBe(0);

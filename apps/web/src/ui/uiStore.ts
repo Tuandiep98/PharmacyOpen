@@ -3,7 +3,13 @@ import { create } from 'zustand';
 import type { CatalogCategory } from './catalog';
 
 export type Selection =
-  { kind: 'customer'; id: string } | { kind: 'product'; id: ProductId } | { kind: 'worker'; id: string } | { kind: 'ledger' } | null;
+  | { kind: 'customer'; id: string }
+  | { kind: 'product'; id: ProductId }
+  | { kind: 'worker'; id: string }
+  | { kind: 'counter'; id: string }
+  | { kind: 'deliveries' }
+  | { kind: 'ledger' }
+  | null;
 
 export type Tab = 'store' | 'staff' | 'inventory' | 'reviews' | 'expansion';
 export type ToastTone = 'good' | 'bad' | 'warn' | 'info';

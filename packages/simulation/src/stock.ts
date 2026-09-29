@@ -40,6 +40,22 @@ export function expireStock(state: SimState, emit: Emit): void {
   }
 }
 
+/**
+ * Trả món đã lấy khỏi kệ về lại kệ (khách từ chối, bỏ đi, đơn ship bị huỷ). Món đã hết hạn
+ * hoặc kệ đã đầy thì tính là hàng huỷ.
+ */
+export function returnUnits(state: SimState, productId: ProductId, expiries: readonly number[]): void {
+  const entry = state.stock[productId];
+  for (const expiresAtMs of expiries) {
+    if (expiresAtMs > state.timeMs && entry.shelf < entry.capacity) {
+      addStock(entry, 1, expiresAtMs);
+    } else {
+      state.stats.expiredStock += 1;
+      state.stats.expiredCost += PRODUCTS[productId].cost;
+    }
+  }
+}
+
 export function nextExpiry(state: DeepReadonly<SimState>, id: ProductId): number | null {
   return state.stock[id].batches[0]?.expiresAtMs ?? null;
 }

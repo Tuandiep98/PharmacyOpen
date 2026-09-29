@@ -22,6 +22,7 @@ function startOfDay2(seed: number, setup?: (sim: Simulation) => void): Simulatio
   state.money = 500;
   state.dayStart.money = 500;
   state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+  state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
   const sim = new Simulation(state);
   setup?.(sim);
   runFor(sim, state.config.dayMs);
@@ -110,6 +111,7 @@ describe('ca làm và chấm công', () => {
 
     const s = mutable(sim);
     s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     const events: SimEvent[] = [];
     runFor(sim, s.config.dayMs / 2 - (s.timeMs - s.dayStartedAtMs) + 100, () => events.push(...sim.drainEvents()));
     expect(currentShift(s)).toBe('afternoon');

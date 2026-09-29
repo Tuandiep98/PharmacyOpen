@@ -74,6 +74,7 @@ describe('ba thước đo tách biệt', () => {
     const state = createInitialState(9);
     state.money = 10_000;
     state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     const sim = new Simulation(state);
     for (let i = 0; i < 30; i++) {
       placeCustomer(state, `x${i}`, 'demanding', 'named-sunscreen');
@@ -182,6 +183,7 @@ describe('khiếu nại', () => {
     const state = createInitialState(9);
     state.money = 10_000;
     state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     const sim = new Simulation(state);
     for (let i = 0; i < 40 && !state.complaints.length; i++) {
       placeCustomer(state, `x${i}`, 'demanding', 'named-sunscreen');

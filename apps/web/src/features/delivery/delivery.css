@@ -1,0 +1,149 @@
+/* Đơn ship: nút nổi trên cảnh và thẻ đơn (gói món, gửi, theo dõi shipper). Dùng token trong ui/theme.css. */
+
+.delivery-chip {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 4px 12px 4px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.delivery-chip b {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+.delivery-chip.urgent {
+  border-color: var(--sun);
+  background: var(--warn-soft);
+}
+.delivery-chip.late {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.delivery-list {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.delivery-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+.delivery-card.urgent {
+  border-color: var(--sun);
+}
+.delivery-card.late {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+}
+.delivery-card.sent {
+  background: var(--surface-soft);
+}
+.delivery-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.delivery-who {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.delivery-due {
+  white-space: nowrap;
+}
+.tag.delivery-due.urgent {
+  background: var(--warn-soft);
+  color: #785013;
+}
+.tag.delivery-due.late {
+  background: var(--danger);
+  color: #fff;
+}
+
+.delivery-items {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.delivery-items li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 4px 6px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.delivery-items li.done {
+  background: var(--good-soft);
+}
+.delivery-item-name {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+}
+.delivery-item-name small {
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 700;
+}
+.delivery-items .btn.small {
+  min-height: 44px;
+  white-space: nowrap;
+}
+
+.delivery-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.delivery-foot .progress-track {
+  display: block;
+  flex: 1;
+  min-width: 80px;
+  height: 6px;
+}
+.delivery-foot .progress-fill {
+  display: block;
+}
+.shipper-track .progress-fill {
+  background: var(--sun);
+}
+.delivery-people {
+  display: inline-flex;
+}
+.delivery-people svg + svg {
+  margin-left: -8px;
+}
+.delivery-cancel {
+  margin-left: auto;
+}
+
+@media (max-width: 380px) {
+  .delivery-head {
+    flex-wrap: wrap;
+  }
+}

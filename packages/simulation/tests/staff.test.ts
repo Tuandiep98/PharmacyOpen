@@ -107,10 +107,13 @@ describe('đặc điểm', () => {
 
   it('"Hay đi trễ" chưa tới thì chưa phục vụ được', () => {
     const { sim, s } = withTraits(5, ['late']);
+    // Không có đơn ship để người đi trễ không bận gói đơn từ ca trước.
+    s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     runFor(sim, s.config.dayMs / 2 - (s.timeMs - s.dayStartedAtMs) + 100);
     const worker = s.workers['w-dung']!;
     expect(worker.arrivesAtMs).toBeGreaterThan(s.timeMs);
     s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     s.customers.cx = {
       id: 'cx',
       archetypeId: 'curious',
@@ -178,17 +181,20 @@ describe('tay nghề và mệt mỏi', () => {
     const state = createInitialState(8);
     state.money = 2000;
     state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     const sim = new Simulation(state);
     sim.dispatch({ type: 'hire', candidateId: 'binh' });
     sim.dispatch({ type: 'setShifts', workerId: 'w-binh', shifts: ['morning', 'afternoon'] });
     const s = mutable(sim);
     s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
     const events: SimEvent[] = [];
     const run = (days: number) => {
       for (let d = 0; d < days; d++) {
         runFor(sim, s.config.dayMs);
         events.push(...sim.drainEvents());
         s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+        s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
       }
     };
     run(3);
@@ -231,6 +237,7 @@ describe('ngày nghỉ, phỏng vấn và giữ quầy', () => {
     const run = (days: number) => {
       for (let d = 0; d < days; d++) {
         s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+        s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
         runFor(sim, s.config.dayMs);
       }
     };

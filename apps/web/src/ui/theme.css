@@ -504,3 +504,13 @@ button:disabled { cursor: not-allowed; }
 .unstaffed-counter .auto-counter-info { grid-column: 1 / -1; }
 .unstaffed-counter .btn { grid-column: auto; }
 @media (max-width: 560px) { .unstaffed-counter { display: flex; flex-wrap: wrap; } .unstaffed-counter .counter-tabs, .unstaffed-counter .auto-counter-info { flex-basis: 100%; } }
+
+/* Khay: hai hành động thay cho bán hàng — khuyên đi khám và báo tạm hết hàng (hẹn đơn ship). */
+.tray-status { flex-wrap: wrap; }
+.tray-actions { display: flex; gap: 6px; margin-left: auto; }
+.btn.defer { flex: none; min-height: 44px; padding: 6px 12px; font-size: 14px; background: var(--warn-soft); border-color: #e4bf6a; color: #785013; }
+.btn.defer:hover:not(:disabled) { background: #ffe6b0; }
+@media (max-width: 420px) {
+  .tray-actions { width: 100%; }
+  .tray-actions .btn { flex: 1; padding-inline: 6px; font-size: 13px; }
+}

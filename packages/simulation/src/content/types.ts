@@ -74,7 +74,10 @@ export type ReasonCode =
   | 'unneeded-referral'
   | 'too-chatty'
   | 'rude-staff'
-  | 'strict-customer';
+  | 'strict-customer'
+  | 'out-of-stock'
+  | 'late-delivery'
+  | 'on-time-delivery';
 
 /**
  * named: khách gọi đúng tên sản phẩm.
@@ -132,7 +135,9 @@ export type UpgradeEffect =
   | { type: 'shelfCapacity'; add: number }
   | { type: 'queue'; addMax: number; patienceFactor: number }
   | { type: 'spawnInterval'; factor: number }
-  | { type: 'counter' };
+  | { type: 'counter' }
+  /** Thêm chỗ nhân viên: mỗi ca (`perShift`) và người dự phòng để luân phiên nghỉ (`reserve`). Tính trong progression.ts. */
+  | { type: 'staff'; perShift: number; reserve: number };
 
 export interface UpgradeDef {
   id: string;
@@ -162,4 +167,6 @@ export interface ArchetypeDef {
   waitWeight: number;
   /** Thích được giải thích kỹ (nhân viên hoạt ngôn là điểm cộng) hay muốn nhanh gọn (là điểm trừ). */
   likesDetail: boolean;
+  /** Khả năng đồng ý chờ đơn ship khi món cần tạm hết hàng (không thì đi mua chỗ khác), [0, 1]. */
+  backorderChance: number;
 }

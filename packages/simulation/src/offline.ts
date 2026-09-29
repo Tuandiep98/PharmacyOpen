@@ -31,6 +31,10 @@ export interface OfflineSummary {
   moneyDelta: number;
   expiredStock: number;
   returningCustomers: number;
+  /** Đơn ship giao xong (trong đó trễ hẹn) và bị huỷ khi vắng mặt. */
+  deliveries: number;
+  lateDeliveries: number;
+  cancelledDeliveries: number;
 }
 
 /** Số tick tối đa chạy trước khi dọn hàng đợi sự kiện, tránh giữ hàng chục nghìn sự kiện trong bộ nhớ. */
@@ -77,5 +81,8 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
     moneyDelta: after.money - before.money,
     expiredStock: after.stats.expiredStock - before.stats.expiredStock,
     returningCustomers: after.stats.returningCustomers - before.stats.returningCustomers,
+    deliveries: after.stats.deliveries - before.stats.deliveries,
+    lateDeliveries: after.stats.lateDeliveries - before.stats.lateDeliveries,
+    cancelledDeliveries: after.stats.cancelledDeliveries - before.stats.cancelledDeliveries,
   };
 }

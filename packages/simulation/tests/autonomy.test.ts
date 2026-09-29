@@ -27,6 +27,7 @@ function withNpc(seed = 3, candidateId = 'chi', money = 1000) {
 /** Đặt sẵn một khách ở quầy với yêu cầu cho trước, tắt spawn ngẫu nhiên. */
 function placeCustomer(state: SimState, requestId: string, patienceMs = 60000) {
   state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+  state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
   state.customers.c1 = {
     id: 'c1',
     archetypeId: 'curious',
@@ -174,14 +175,20 @@ describe('tuyển người, nâng cấp, giới hạn hàng chờ', () => {
     expect(sim.dispatch({ type: 'hire', candidateId: 'nobody' })).toEqual({ ok: false, reason: 'unknown-candidate' });
     expect(sim.dispatch({ type: 'hire', candidateId: 'binh' }).ok).toBe(true);
     expect(sim.dispatch({ type: 'hire', candidateId: 'binh' })).toEqual({ ok: false, reason: 'already-hired' });
+    // Tiệm mới: 1 người mỗi ca, người thứ hai sang ca chiều, người thứ ba hết chỗ.
     expect(sim.dispatch({ type: 'hire', candidateId: 'chi' }).ok).toBe(true);
-    // Ca sáng đã đủ 2 người: người thứ ba được xếp sang ca chiều.
-    expect(sim.dispatch({ type: 'hire', candidateId: 'dung' }).ok).toBe(true);
-    expect(state.workers['w-dung']!.shifts).toEqual(['afternoon']);
-    expect(sim.dispatch({ type: 'setShifts', workerId: 'w-dung', shifts: ['morning', 'afternoon'] })).toEqual({
+    expect(state.workers['w-chi']!.shifts).toEqual(['afternoon']);
+    expect(sim.dispatch({ type: 'setShifts', workerId: 'w-chi', shifts: ['morning', 'afternoon'] })).toEqual({
       ok: false,
       reason: 'shift-full',
     });
+    expect(sim.dispatch({ type: 'hire', candidateId: 'dung' })).toEqual({ ok: false, reason: 'staff-full' });
+    // Cửa hàng cấp 2: thêm 1 chỗ mỗi ca.
+    state.stats.sales = 8;
+    state.day = 2;
+    expect(sim.dispatch({ type: 'buyUpgrade', upgradeId: 'storefront-2' }).ok).toBe(true);
+    expect(sim.dispatch({ type: 'hire', candidateId: 'dung' }).ok).toBe(true);
+    expect(state.workers['w-dung']!.shifts).toEqual(['morning']);
     const recruit = state.recruits[0]!;
     expect(sim.dispatch({ type: 'hire', candidateId: recruit.id }).ok).toBe(true);
     expect(state.recruits[0]).toBeNull();

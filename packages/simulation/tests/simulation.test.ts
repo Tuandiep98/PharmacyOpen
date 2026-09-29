@@ -15,6 +15,7 @@ import { autoPlay, runFor } from './helpers';
 function withCustomerAtCounter(requestId: string, patienceMs = 30000) {
   const state = createInitialState(1);
   state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+  state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
   state.customers.c1 = {
     id: 'c1',
     archetypeId: 'curious',

@@ -13,7 +13,7 @@ import type {
 } from './content/types';
 import type { RngState } from './rng';
 
-export const SAVE_VERSION = 9;
+export const SAVE_VERSION = 11;
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = 'morning' | 'afternoon';
@@ -50,9 +50,6 @@ export interface SimConfig {
   startingMoney: number;
   firstSpawnMs: number;
   spawnIntervalMs: [number, number];
-  /** Số nhân viên NPC tối đa (không tính người chơi) và tối đa mỗi ca. */
-  maxStaff: number;
-  maxPerShift: number;
   /** Số ứng viên mỗi ngày và giá làm mới danh sách (một lần mỗi ngày). */
   recruitSlots: number;
   recruitRerollCost: number;
@@ -102,6 +99,19 @@ export interface SimConfig {
   /** Phần kiên nhẫn tối đa bị trừ khi đưa nhầm hàng. */
   wrongItemPenalty: number;
   emoteMs: number;
+  /** Khoảng giữa hai đơn online (chia cho hệ số đông khách, xem delivery.ts) và lúc đơn đầu tiên trong ngày tới sau khi mở cửa. */
+  deliveryIntervalMs: [number, number];
+  firstDeliveryMs: number;
+  /** Số đơn online chờ gói tối đa khi chưa có nhân viên; mỗi nhân viên thêm 1 (trần `maxOpenDeliveries`). */
+  maxOpenDeliveries: number;
+  /** Thời gian NPC gói một món vào đơn và ghi phiếu gửi (chia cho speed). */
+  deliveryPackMs: number;
+  deliveryLabelMs: number;
+  /** Shipper tới lấy sau khi gửi, rồi mất chừng này để giao tới khách. */
+  shipperPickupMs: number;
+  deliveryTransitMs: number;
+  /** Quá hạn giao chừng này mà chưa gửi thì khách huỷ đơn. */
+  deliveryGraceMs: number;
 }
 
 export type CustomerExpression =
@@ -116,7 +126,8 @@ export type CustomerExpression =
 
 export type CustomerPhase = 'queue' | 'counter' | 'leaving';
 
-export type CustomerOutcome = 'bought' | 'referred' | 'left-angry' | 'left-unserved';
+/** backordered: hết hàng, khách đồng ý chờ đơn ship; went-elsewhere: hết hàng, khách đi mua chỗ khác. */
+export type CustomerOutcome = 'bought' | 'referred' | 'left-angry' | 'left-unserved' | 'backordered' | 'went-elsewhere';
 
 export interface CustomerLook {
   skin: number;
@@ -151,6 +162,8 @@ export type OrderState =
   | 'ready'
   | 'checkingOut'
   | 'referring'
+  /** Đang báo khách tạm hết hàng và hỏi có muốn chờ giao sau không. */
+  | 'deferring'
   | 'done'
   | 'cancelled';
 
@@ -179,9 +192,11 @@ export interface Order {
 
 export type WorkerExpression = 'neutral' | 'focused' | 'happy' | 'worried';
 
-/** Việc không gắn với đơn hàng, có thời lượng (hiện chỉ có đi bổ sung kệ). */
+/** Việc không gắn với khách ở quầy, có thời lượng: bổ sung kệ, gói một món vào đơn ship, ghi phiếu gửi đơn. */
 export type WorkerTask =
   | { kind: 'restock'; productId: ProductId; timerMs: number; timerTotalMs: number }
+  | { kind: 'pack'; deliveryId: string; productId: ProductId; timerMs: number; timerTotalMs: number }
+  | { kind: 'label'; deliveryId: string; timerMs: number; timerTotalMs: number }
   /** Nhân viên "Siêu lười" lướt điện thoại vài giây trước khi làm việc. */
   | { kind: 'slack'; timerMs: number; timerTotalMs: number };
 
@@ -301,6 +316,37 @@ export interface Counter {
   operatorId: string | null;
 }
 
+/** online: đơn đặt qua mạng; backorder: khách ở quầy gặp lúc hết hàng và đồng ý chờ giao. */
+export type DeliverySource = 'online' | 'backorder';
+
+/** Gói hàng → ghi phiếu & gửi → chờ shipper tới lấy → đang giao. Giao xong hoặc huỷ thì đơn rời danh sách. */
+export type DeliveryStatus = 'packing' | 'packed' | 'awaiting-pickup' | 'shipping';
+
+export interface DeliveryItem {
+  productId: ProductId;
+  qty: number;
+  /** Hạn dùng của từng món đã gói (đã lấy khỏi kệ); đủ `qty` phần tử là gói xong món này. */
+  packed: number[];
+}
+
+export interface Delivery {
+  id: string;
+  source: DeliverySource;
+  archetypeId: ArchetypeId;
+  items: DeliveryItem[];
+  createdAtMs: number;
+  /** Ngày hẹn giao và mốc hạn (giờ đóng cửa của ngày đó); giao sau mốc này là trễ. */
+  dueDay: number;
+  dueAtMs: number;
+  status: DeliveryStatus;
+  /** Tiền thu khi giao (chốt theo giá bán lúc gửi). */
+  price: number | null;
+  pickupAtMs: number | null;
+  deliverAtMs: number | null;
+  /** Những người đã gói hoặc gửi đơn này. */
+  handledBy: string[];
+}
+
 export interface StockEntry {
   shelf: number;
   capacity: number;
@@ -348,6 +394,12 @@ export interface SimStats {
   /** Tiền khách boa (đã nằm trong doanh thu) và tiền két bị cầm nhầm. */
   tips: number;
   pilfered: number;
+  /** Đơn ship: giao xong, trong đó giao trễ, và bị huỷ; khách ở quầy đồng ý chờ giao / đi mua chỗ khác. */
+  deliveries: number;
+  lateDeliveries: number;
+  cancelledDeliveries: number;
+  backorders: number;
+  wentElsewhere: number;
 }
 
 /** Tổng kết một ca: chênh lệch sổ sách giữa lúc vào ca và lúc giao ca. */
@@ -415,6 +467,12 @@ export interface DayReport {
   /** Tiền boa trong ngày (đã tính vào doanh thu) và số xu két thiếu khi đối soát. */
   tips: number;
   pilfered: number;
+  /** Đơn ship giao xong / trễ / bị huỷ, và khách ở quầy hẹn giao sau / đi chỗ khác vì hết hàng. */
+  deliveries: number;
+  lateDeliveries: number;
+  cancelledDeliveries: number;
+  backorders: number;
+  wentElsewhere: number;
 }
 
 /** Mốc sổ sách lúc bắt đầu ngày, để tính tổng kết. */
@@ -433,13 +491,16 @@ export interface SimState {
   nextId: number;
   money: number;
   config: SimConfig;
-  rng: { spawn: RngState; customer: RngState; ai: RngState; review: RngState; staff: RngState };
+  rng: { spawn: RngState; customer: RngState; ai: RngState; review: RngState; staff: RngState; delivery: RngState };
   nextSpawnAtMs: number;
   customers: Record<string, Customer>;
   queue: string[];
   counters: Counter[];
   workers: Record<string, Worker>;
   orders: Record<string, Order>;
+  /** Đơn ship đang xử lý (chưa giao xong); lúc đơn online tiếp theo có thể rớt về. */
+  deliveries: Delivery[];
+  nextDeliveryAtMs: number;
   stock: Record<ProductId, StockEntry>;
   loyalty: LoyaltyProfile[];
   /** Giá bán đang áp dụng; người chơi chỉnh bằng lệnh setPrice. */

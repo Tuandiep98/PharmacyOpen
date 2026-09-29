@@ -1,6 +1,7 @@
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
 import type { ProductId } from './content/types';
-import type { DeepReadonly, SimState } from './types';
+import { UPGRADES } from './content/upgrades';
+import { SHIFT_IDS, type DeepReadonly, type SimState } from './types';
 
 export const MILESTONES = [
   { level: 1, sales: 0, day: 1, slots: 4 },
@@ -49,4 +50,34 @@ export function stockUnitCost(state: DeepReadonly<SimState>, id: ProductId): num
 
 export function suggestedPrice(state: DeepReadonly<SimState>, id: ProductId): number {
   return isTrending(state, id) ? Math.ceil(PRODUCTS[id].referencePrice * 1.2) : PRODUCTS[id].referencePrice;
+}
+
+/** Chỗ nhân viên mỗi ca khi mới mở tiệm (không tính người chơi). */
+export const BASE_STAFF_PER_SHIFT = 1;
+
+export interface StaffLimits {
+  /** Số NPC tối đa có lịch ở mỗi ca. */
+  perShift: number;
+  /** Số NPC tối đa trong đội: đủ người cho mọi ca cộng người dự phòng để luân phiên nghỉ. */
+  total: number;
+}
+
+/** Tính từ các nâng cấp đã mua (hiệu ứng 'staff'), nên save cũ và nâng cấp mới luôn khớp mà không cần lưu thêm. */
+export function staffLimits(state: DeepReadonly<SimState>): StaffLimits {
+  let perShift = BASE_STAFF_PER_SHIFT;
+  let reserve = 0;
+  for (const id of state.upgrades) {
+    for (const effect of UPGRADES[id]?.effects ?? []) {
+      if (effect.type !== 'staff') continue;
+      perShift += effect.perShift;
+      reserve += effect.reserve;
+    }
+  }
+  return { perShift, total: perShift * SHIFT_IDS.length + reserve };
+}
+
+/** Nâng cấp kế tiếp (chưa mua) mở thêm chỗ nhân viên, để giao diện gợi ý đường mở rộng đội. */
+export function nextStaffUpgrade(state: DeepReadonly<SimState>): string | null {
+  const order = ['storefront-2', 'storefront-3', 'counter-2', 'storefront-4', 'storefront-5'];
+  return order.find((id) => !state.upgrades.includes(id)) ?? null;
 }

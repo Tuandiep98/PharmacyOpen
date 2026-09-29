@@ -47,6 +47,14 @@ export function useServiceActions() {
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
   };
 
+  /** Báo khách món cần đang tạm hết hàng; khách chọn chờ đơn ship hoặc đi mua chỗ khác. */
+  const defer = (counterId?: string) => {
+    const orderId = ensureOrder(counterId);
+    if (!orderId) return;
+    const r = bridge.dispatch({ type: 'deferOrder', workerId: PLAYER_WORKER_ID, orderId });
+    if (!r.ok && r.reason !== 'safety-referral-required') pushToast('bad', REJECT_TEXT[r.reason]);
+  };
+
   const restock = (productId: ProductId) => {
     const r = bridge.dispatch({ type: 'restock', productId });
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
@@ -58,5 +66,5 @@ export function useServiceActions() {
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
   };
 
-  return { give, refer, restock, assignCounter };
+  return { give, refer, defer, restock, assignCounter };
 }

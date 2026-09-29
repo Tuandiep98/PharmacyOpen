@@ -6,7 +6,8 @@ import type { ArchetypeDef, ReasonCode, TraitId } from './content/types';
 import type { Emit } from './events';
 import { loseExperience } from './recruit';
 import { nextFloat, nextInt } from './rng';
-import type { Complaint, Customer, CustomerOutcome, DeepReadonly, InteractionFact, Order, Review, SimState } from './types';
+import type { ArchetypeId } from './content/types';
+import type { Complaint, Customer, CustomerOutcome, DeepReadonly, Delivery, InteractionFact, Order, Review, SimState } from './types';
 
 /*
  * Chuỗi xử lý một lượt khách (spec §5):
@@ -55,16 +56,18 @@ export interface SatisfactionInput {
 }
 
 const NEGATIVE_PRIORITY: ReasonCode[] = [
+  'late-delivery',
   'wrong-item',
   'rude-staff',
   'unneeded-referral',
   'slow-service',
   'long-queue',
+  'out-of-stock',
   'price-high',
   'too-chatty',
   'strict-customer',
 ];
-const PRAISE_PRIORITY: ReasonCode[] = ['helpful-advice', 'friendly-staff', 'fair-price', 'fast-service', 'correct-item'];
+const PRAISE_PRIORITY: ReasonCode[] = ['on-time-delivery', 'helpful-advice', 'friendly-staff', 'fair-price', 'fast-service', 'correct-item'];
 
 export function evaluateSatisfaction(input: SatisfactionInput): { satisfaction: number; reasons: ReasonCode[] } {
   const { archetype, outcome } = input;
@@ -88,6 +91,15 @@ export function evaluateSatisfaction(input: SatisfactionInput): { satisfaction: 
       sat = 0.05;
       // Chưa ai phục vụ → lỗi năng lực cửa hàng (hàng chờ); đang được phục vụ mà bỏ về → phục vụ chậm.
       reasons.add(input.served ? 'slow-service' : 'long-queue');
+      break;
+    // Hết hàng là lỗi nhập hàng của cửa hàng, không phải của người báo cho khách.
+    case 'backordered':
+      sat = 0.6;
+      reasons.add('out-of-stock');
+      break;
+    case 'went-elsewhere':
+      sat = 0.3;
+      reasons.add('out-of-stock');
       break;
   }
 
@@ -279,50 +291,82 @@ export function recordInteraction(
   };
 
   // Không phải khách nào cũng viết đánh giá (xác suất luôn < 1, có seed để tái hiện).
-  const rng = state.rng.review;
-  if (nextFloat(rng) < reviewProbability(archetype, satisfaction, config.reviewMaxProbability)) {
-    const stars = starsFrom(satisfaction);
-    const templates = REVIEW_COMMENTS[primaryReason(stars, reasons)];
-    const review: Review = {
-      id: `r${state.nextId++}`,
-      interactionId: interaction.id,
-      archetypeId: customer.archetypeId,
-      workerId: interaction.workerId,
-      stars,
-      originalStars: stars,
-      comment: templates[nextInt(rng, 0, templates.length - 1)] ?? '',
-      reasons,
-      countsForStaff: countsForStaff(interaction.workerId, stars, reasons),
-      atMs: state.timeMs,
-      response: null,
-    };
-    interaction.reviewId = review.id;
-    addStars(state, review, 1);
-    state.reviews.push(review);
-    trim(state.reviews, config.keepReviews);
-    emit({ type: 'reviewPosted', reviewId: review.id, stars, workerId: review.workerId });
-
-    // Bị chê do chính lỗi của mình: thỉnh thoảng mất chút kinh nghiệm (không tụt cấp).
-    const reviewed = review.workerId ? state.workers[review.workerId] : undefined;
-    if (reviewed && review.countsForStaff && stars <= 2) loseExperience(state, reviewed, emit);
-
-    if (stars <= 2) {
-      const complaint: Complaint = {
-        id: `k${state.nextId++}`,
-        reviewId: review.id,
-        status: 'open',
-        response: null,
-        improved: false,
-        atMs: state.timeMs,
-      };
-      state.complaints.push(complaint);
-      trim(state.complaints, config.keepComplaints);
-      emit({ type: 'complaintOpened', complaintId: complaint.id, reviewId: review.id });
-    }
+  // Khách hẹn giao sau đánh giá khi nhận hàng (recordDelivery), không đánh giá lúc rời quầy.
+  if (outcome !== 'backordered' && nextFloat(state.rng.review) < reviewProbability(archetype, satisfaction, config.reviewMaxProbability)) {
+    interaction.reviewId = postReview(state, interaction.id, customer.archetypeId, interaction.workerId, satisfaction, reasons, emit);
   }
 
   state.interactions.push(interaction);
   trim(state.interactions, config.keepInteractions);
+}
+
+/** Đăng một đánh giá từ mức hài lòng: cập nhật sao cửa hàng/cá nhân và mở khiếu nại nếu thấp. Trả về id đánh giá. */
+function postReview(
+  state: SimState,
+  interactionId: string,
+  archetypeId: ArchetypeId,
+  workerId: string | null,
+  satisfaction: number,
+  reasons: ReasonCode[],
+  emit: Emit,
+): string {
+  const config = state.config.reputation;
+  const rng = state.rng.review;
+  const stars = starsFrom(satisfaction);
+  const templates = REVIEW_COMMENTS[primaryReason(stars, reasons)];
+  const review: Review = {
+    id: `r${state.nextId++}`,
+    interactionId,
+    archetypeId,
+    workerId,
+    stars,
+    originalStars: stars,
+    comment: templates[nextInt(rng, 0, templates.length - 1)] ?? '',
+    reasons,
+    countsForStaff: countsForStaff(workerId, stars, reasons),
+    atMs: state.timeMs,
+    response: null,
+  };
+  addStars(state, review, 1);
+  state.reviews.push(review);
+  trim(state.reviews, config.keepReviews);
+  emit({ type: 'reviewPosted', reviewId: review.id, stars, workerId: review.workerId });
+
+  // Bị chê do chính lỗi của mình: thỉnh thoảng mất chút kinh nghiệm (không tụt cấp).
+  const reviewed = review.workerId ? state.workers[review.workerId] : undefined;
+  if (reviewed && review.countsForStaff && stars <= 2) loseExperience(state, reviewed, emit);
+
+  if (stars <= 2) {
+    const complaint: Complaint = {
+      id: `k${state.nextId++}`,
+      reviewId: review.id,
+      status: 'open',
+      response: null,
+      improved: false,
+      atMs: state.timeMs,
+    };
+    state.complaints.push(complaint);
+    trim(state.complaints, config.keepComplaints);
+    emit({ type: 'complaintOpened', complaintId: complaint.id, reviewId: review.id });
+  }
+  return review.id;
+}
+
+export type DeliveryResult = 'on-time' | 'late' | 'cancelled';
+
+/**
+ * Khách nhận đơn ship (hoặc bị huỷ đơn). Giao đúng hẹn thì vui; trễ hay huỷ gần như chắc chắn bị chê
+ * và kéo điểm tiệm xuống. Lỗi thuộc về cửa hàng (không tính cho nhân viên đã gói).
+ */
+export function recordDelivery(state: SimState, delivery: Delivery, result: DeliveryResult, emit: Emit): void {
+  const archetype = ARCHETYPES[delivery.archetypeId];
+  const lateMs = result === 'late' && delivery.deliverAtMs !== null ? delivery.deliverAtMs - delivery.dueAtMs : 0;
+  const base = result === 'on-time' ? 0.85 : result === 'late' ? 0.35 - Math.min(0.25, lateMs / state.config.dayMs) : 0;
+  const satisfaction = clamp(base - archetype.strictness, 0, 1);
+  const reasons: ReasonCode[] = [result === 'on-time' ? 'on-time-delivery' : 'late-delivery'];
+  const max = state.config.reputation.reviewMaxProbability;
+  const chance = result === 'on-time' ? reviewProbability(archetype, satisfaction, max) : max;
+  if (nextFloat(state.rng.review) < chance) postReview(state, delivery.id, delivery.archetypeId, null, satisfaction, reasons, emit);
 }
 
 // ---------------------------------------------------------------- Phản hồi khiếu nại

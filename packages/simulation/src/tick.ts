@@ -12,6 +12,7 @@ import { dismissCustomer, newId, returnReservedStock } from './state';
 import { PRODUCTS } from './content/products';
 import { dayPhase, prepComplete, shiftTick, tidyOnDuty } from './shift';
 import { expireStock } from './stock';
+import { deliveryTick, resolveDeferral } from './delivery';
 import { isProductUnlocked, isTrending } from './progression';
 import type { Customer, Order, SimState } from './types';
 
@@ -28,6 +29,7 @@ export function tick(state: SimState, emit: Emit): void {
   fillCounters(state, emit);
   shiftTick(state, emit);
   aiTick(state, emit);
+  deliveryTick(state, emit);
   // Chỉ đón khách khi tiệm đang mở; lúc chuẩn bị/đóng cửa, khách đầu tiên tới sau khi mở cửa.
   if (dayPhase(state) === 'open') maybeSpawn(state, emit);
   else state.nextSpawnAtMs = Math.max(state.nextSpawnAtMs, state.timeMs + state.config.firstSpawnMs);
@@ -51,9 +53,13 @@ function advanceOrder(state: SimState, order: Order, dt: number, emit: Emit): vo
     emit({ type: 'stockExpired', productId, qty: 1 });
     return;
   }
-  if (order.state !== 'retrieving' && order.state !== 'checkingOut' && order.state !== 'referring') return;
+  if (order.state !== 'retrieving' && order.state !== 'checkingOut' && order.state !== 'referring' && order.state !== 'deferring') return;
   order.timerMs = Math.max(0, order.timerMs - dt);
   if (order.timerMs > 0) return;
+  if (order.state === 'deferring') {
+    resolveDeferral(state, order, emit);
+    return;
+  }
 
   const customer = state.customers[order.customerId];
   if (!customer) return;
@@ -109,7 +115,7 @@ function advanceCustomer(state: SimState, customer: Customer, dt: number, emit: 
   const baseRate =
     customer.phase === 'queue'
       ? patienceRate.queue
-      : order && (order.state === 'retrieving' || order.state === 'checkingOut' || order.state === 'referring')
+      : order && (order.state === 'retrieving' || order.state === 'checkingOut' || order.state === 'referring' || order.state === 'deferring')
         ? patienceRate.working
         : patienceRate.deciding;
   // Nhân viên giao tiếp tốt giúp khách đang được phục vụ bớt sốt ruột (0.75×–1.25×).

@@ -107,6 +107,16 @@ export const BoxIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Thùng hàng dán băng keo, có nhãn gửi: đơn ship. */
+export const ParcelIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3.5,8 L12,4 L20.5,8 V17 L12,21 L3.5,17 Z" fill="#F2C48D" />
+    <path d="M3.5,8 L12,12 L20.5,8 M12,12 V21" />
+    <path d="M7.5,6 L16,10 V13" stroke={ART.wood} strokeWidth={2.2} />
+    <rect x={13.5} y={14} width={5} height={3.5} rx={0.8} fill={ART.paper} strokeWidth={1.4} transform="rotate(-24 16 15.7)" />
+  </Svg>
+);
+
 export const StarIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M12,3 L14.7,8.7 L21,9.4 L16.3,13.7 L17.6,20 L12,16.8 L6.4,20 L7.7,13.7 L3,9.4 L9.3,8.7 Z" fill={ART.honey} />

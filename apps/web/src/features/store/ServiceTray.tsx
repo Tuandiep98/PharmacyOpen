@@ -10,7 +10,7 @@ import {
   type SimState,
 } from '@pharmacy/simulation';
 import { BRAND } from '../../brand';
-import { ClinicIcon } from '../../art/Icons';
+import { ClinicIcon, ParcelIcon } from '../../art/Icons';
 import { ProductIcon } from '../../art/Products';
 import { WorkerPortrait } from '../../art/WorkerFigure';
 import { beginProductGesture } from '../../ui/drag';
@@ -19,6 +19,7 @@ import { GameButton } from '../../ui/primitives';
 import { Portrait } from './CustomerInfo';
 import { PLAYER_WORKER_ID, useServiceActions } from './useServiceActions';
 import { workerProgress, workerStatus } from '../staff/workerStatus';
+import { CounterStaffPicker } from '../staff/CounterAssign';
 import { CatalogControls } from '../../ui/CatalogControls';
 import { catalogPageProducts } from '../../ui/catalog';
 
@@ -26,6 +27,7 @@ const WORKING_LABEL: Record<string, string> = {
   retrieving: 'đang lấy',
   checkingOut: 'Đang thanh toán…',
   referring: 'Đang giải thích cho khách…',
+  deferring: 'Đang báo tạm hết hàng…',
 };
 
 /**
@@ -34,7 +36,7 @@ const WORKING_LABEL: Record<string, string> = {
  * Kéo sản phẩm vào khách (hoặc chạm) là đưa hàng; không cần bước "bắt đầu phục vụ" riêng.
  */
 export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
-  const { give, refer, restock, assignCounter } = useServiceActions();
+  const { give, refer, defer, restock, assignCounter } = useServiceActions();
   const dragging = useUi((s) => s.drag?.productId ?? null);
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
@@ -50,8 +52,8 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const player = state.workers[PLAYER_WORKER_ID]!;
   const operator = counter.operatorId ? state.workers[counter.operatorId] : undefined;
   const playerOperates = operator?.id === PLAYER_WORKER_ID;
-  const staff = Object.values(state.workers).filter((w) => w.controller === 'ai' && isOnDuty(state, w));
-  const freeStaff = staff.filter((w) => !state.counters.some((c) => c.operatorId === w.id));
+  const staffOnDuty = Object.values(state.workers).some((w) => w.controller === 'ai' && isOnDuty(state, w));
+  const counterLabel = state.counters.length > 1 ? ` ${state.counters.findIndex((c) => c.id === counter.id) + 1}` : '';
   const customerId = counter.customerId;
   const customer = customerId ? state.customers[customerId] : undefined;
   const order = customer?.orderId ? state.orders[customer.orderId] : undefined;
@@ -68,11 +70,10 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
       <section className="auto-counter unstaffed-counter" aria-label="Quầy chưa có người">
         {counterTabs}
         <div className="auto-counter-info">
-          <strong>Quầy chưa có người đứng</strong>
-          <span>Giao nhân viên hoặc tự đứng quầy để nhận khách.</span>
+          <strong>Quầy{counterLabel} chưa có người đứng</strong>
+          <span>Chạm một người để giao quầy và bắt đầu nhận khách.</span>
         </div>
-        <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>
-        {freeStaff.map((w) => <GameButton key={w.id} size="small" onClick={() => assignCounter(w.id, counter.id)}>Giao cho {w.name}</GameButton>)}
+        <CounterStaffPicker state={state} counterId={counter.id} />
       </section>
     );
   }
@@ -93,6 +94,12 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
           )}
         </div>
         <GameButton size="small" onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}>Tự đứng quầy</GameButton>
+        {staffOnDuty && (
+          <details className="tray-assign counter-swap">
+            <summary>Đổi người đứng quầy{counterLabel}</summary>
+            <CounterStaffPicker state={state} counterId={counter.id} includePlayer={false} />
+          </details>
+        )}
       </section>
     );
   }
@@ -127,16 +134,17 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   return (
     <section className="tray" aria-label="Quầy phục vụ">
       {counterTabs}
-      {freeStaff.length > 0 && (
-        <div className="tray-operator">
-          <WorkerPortrait worker={operator} size={28} />
-          <span>
-            Quầy: <b>{operator.name} (bạn)</b>
-          </span>
-          <details className="tray-assign"><summary>Giao quầy {state.counters.length > 1 ? state.counters.findIndex((c) => c.id === counter.id) + 1 : ''}</summary>
-            {freeStaff.map((w) => <GameButton key={w.id} size="small" onClick={() => assignCounter(w.id, counter.id)}>Giao cho {w.name}</GameButton>)}
-          </details>
-        </div>
+      {staffOnDuty && (
+        <details className="tray-assign tray-operator">
+          <summary>
+            <WorkerPortrait worker={operator} size={28} />
+            <span>
+              Quầy{counterLabel}: <b>{operator.name} (bạn)</b>
+            </span>
+            <span className="tray-assign-cta">Giao quầy</span>
+          </summary>
+          <CounterStaffPicker state={state} counterId={counter.id} includePlayer={false} />
+        </details>
       )}
       <div className="tray-customer">
         {customer ? (
@@ -164,10 +172,21 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
 
       <div className="tray-status">
         {status}
-        <GameButton className="refer" disabled={!canServe} onClick={() => refer(counter.id)} title="Khuyên khách đi khám">
-          <ClinicIcon size={20} />
-          <span>Khuyên đi khám</span>
-        </GameButton>
+        <div className="tray-actions">
+          <GameButton className="refer" disabled={!canServe} onClick={() => refer(counter.id)} title="Khuyên khách đi khám">
+            <ClinicIcon size={20} />
+            <span>Khuyên đi khám</span>
+          </GameButton>
+          <GameButton
+            className="defer"
+            disabled={!canServe}
+            onClick={() => defer(counter.id)}
+            title="Món khách cần đang hết: hẹn giao sau bằng đơn ship, hoặc khách đi mua chỗ khác"
+          >
+            <ParcelIcon size={20} />
+            <span>Báo hết hàng</span>
+          </GameButton>
+        </div>
       </div>
 
       <CatalogControls pages state={state} />

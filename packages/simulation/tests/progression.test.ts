@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createInitialState, createSave, isProductUnlocked, isTrending, loadSave, playerLevel, productLevel, REQUESTS, SAVE_FORMAT, Simulation, stockUnitCost, unlockedProducts } from '../src';
+import { createInitialState, createSave, isProductUnlocked, isTrending, loadSave, playerLevel, productLevel, REQUESTS, SAVE_FORMAT, Simulation, staffLimits, stockUnitCost, unlockedProducts } from '../src';
 import { hireAllDay, runFor } from './helpers';
 
 describe('tiến trình mặt hàng và nâng cấp', () => {
@@ -77,5 +77,48 @@ describe('tiến trình mặt hàng và nâng cấp', () => {
     }
     expect(unlockedProducts(state).length).toBe(20);
     expect(state.money).toBeGreaterThanOrEqual(0);
+  });
+
+  it('chỗ nhân viên tăng theo nâng cấp Cửa hàng và Quầy 2, tới đủ người tự chạy hai quầy', () => {
+    const state = createInitialState(5);
+    state.money = 5000;
+    state.stats.sales = 80;
+    state.day = 7;
+    const sim = new Simulation(state);
+    const steps: [string, number, number][] = [
+      ['storefront-2', 2, 4],
+      ['storefront-3', 2, 5],
+      ['counter-2', 3, 7],
+      ['storefront-4', 4, 9],
+      ['storefront-5', 4, 10],
+    ];
+    expect(staffLimits(state)).toEqual({ perShift: 1, total: 2 });
+    for (const [upgradeId, perShift, total] of steps) {
+      expect(sim.dispatch({ type: 'buyUpgrade', upgradeId }).ok).toBe(true);
+      expect(staffLimits(state)).toEqual({ perShift, total });
+    }
+    // Cuối lộ trình mỗi ca đủ hai quầy, một người kho và một người hỗ trợ.
+    expect(staffLimits(state).perShift).toBeGreaterThanOrEqual(state.counters.length + 2);
+  });
+
+  it('save cũ bỏ giới hạn nhân sự trong config và giữ nguyên đội đông hơn giới hạn mới', () => {
+    const state = createInitialState(6);
+    state.money = 5000;
+    state.upgrades.push('storefront-2');
+    const sim = new Simulation(state);
+    for (const id of ['binh', 'chi', 'dung']) expect(sim.dispatch({ type: 'hire', candidateId: id }).ok).toBe(true);
+    const save = createSave(state, 1);
+    save.state.upgrades = [];
+    Object.assign(save.state.config, { maxStaff: 4, maxPerShift: 2 });
+    (save as { version: number }).version = 9;
+    const loaded = loadSave(save);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect('maxStaff' in loaded.state.config).toBe(false);
+    expect(Object.keys(loaded.state.workers)).toHaveLength(4);
+    expect(new Simulation(loaded.state).dispatch({ type: 'hire', candidateId: loaded.state.recruits[0]!.id })).toEqual({
+      ok: false,
+      reason: 'staff-full',
+    });
   });
 });

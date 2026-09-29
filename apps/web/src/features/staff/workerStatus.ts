@@ -2,6 +2,8 @@ import { isOnDuty, isPresent, PRODUCTS, type DeepReadonly, type SimState, type W
 
 export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): string {
   if (worker.task?.kind === 'slack') return 'Đang lướt điện thoại…';
+  if (worker.task?.kind === 'pack') return `Đang gói ${PRODUCTS[worker.task.productId].name.toLowerCase()} vào đơn ship`;
+  if (worker.task?.kind === 'label') return 'Đang ghi phiếu gửi đơn ship';
   if (worker.task) return `Đang bổ sung ${PRODUCTS[worker.task.productId].name.toLowerCase()}`;
   const order = worker.orderId ? state.orders[worker.orderId] : undefined;
   if (order) {
@@ -11,6 +13,7 @@ export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly
       case 'ready': return 'Chuẩn bị thanh toán';
       case 'checkingOut': return 'Đang thanh toán';
       case 'referring': return 'Đang khuyên khách đi khám';
+      case 'deferring': return 'Đang báo khách tạm hết hàng';
     }
   }
   if (worker.restDay === state.day) return 'Nghỉ hôm nay';
@@ -24,7 +27,7 @@ export function workerStatus(state: DeepReadonly<SimState>, worker: DeepReadonly
 export function workerProgress(state: DeepReadonly<SimState>, worker: DeepReadonly<Worker>): number | null {
   if (worker.task?.timerTotalMs) return Math.max(0, Math.min(1, 1 - worker.task.timerMs / worker.task.timerTotalMs));
   const order = worker.orderId ? state.orders[worker.orderId] : undefined;
-  if (order?.timerTotalMs && ['retrieving', 'checkingOut', 'referring'].includes(order.state)) {
+  if (order?.timerTotalMs && ['retrieving', 'checkingOut', 'referring', 'deferring'].includes(order.state)) {
     return Math.max(0, Math.min(1, 1 - order.timerMs / order.timerTotalMs));
   }
   return null;

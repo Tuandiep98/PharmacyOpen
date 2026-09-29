@@ -31,6 +31,7 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 - Danh mục dùng `CatalogControls`: cùng nhóm hàng và trang điều khiển cả kệ trong cảnh lẫn khay. Chỉ hiện món đã mở; mỗi trang có 4/6/8/10 ô theo cấp kệ, cộng 2 ô khi sắp kệ theo nhóm. Tab Kho liệt kê món đã mở trong nhóm và xem trước nhóm sắp mở. Không thu nhỏ hình để nhét cả 20 món vào một hàng.
 - Vật dụng nâng cấp theo cấp: trong mục Mở rộng chỉ hiện cấp kế tiếp, kèm giá, lợi ích, điều kiện cấp tiệm và mức hiện tại. Cấp vật dụng phải có thay đổi nhìn thấy trong diorama; riêng Kho và Cửa hàng mở thêm quyền nhập/trưng bày. Nhãn Bán chạy luôn đi kèm chữ, không chỉ có màu vàng.
 - Hướng dẫn chơi nằm trong `OnboardingDialog`, có thể mở lại từ menu HUD, cho phép bỏ qua và có lối vào bản lưu trực tiếp. Các bước hướng dẫn dùng hình sản phẩm và icon cùng hệ art của game.
+- Đơn ship: nút thùng hàng nổi ở góc phải cảnh hiện số đơn cần gói/gửi kèm chữ trạng thái (Cần gói / Sắp trễ / Trễ hẹn / Đang giao) và đổi màu vàng/đỏ; chạm mở bảng Đơn ship (`features/delivery/DeliveryPanel.tsx`). Mỗi đơn là một thẻ: nguồn đơn, hạn giao theo giờ trong game, từng món với nút “Gói 1” (hết kệ thì “Hết · Nhập”), chân dung người đang gói, nút chính “Ghi phiếu & gửi”, rồi tiến độ shipper. Khay phục vụ đặt “Báo hết hàng” cạnh “Khuyên đi khám”.
 - Tab Nhân sự ưu tiên trạng thái quầy và việc đang làm. Trên thẻ nhân viên chỉ hiện các số liệu ngắn; kỹ năng và lương mở theo nhu cầu.
 - Chuyển động chỉ báo thao tác hoặc trạng thái; tôn trọng `prefers-reduced-motion`.
 
@@ -39,6 +40,7 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 - Mọi màn hình chơi và dialog/overlay phải nằm trong **một viewport hiện tại** (`100dvh`), tính cả nút hành động chính và safe area. Trên màn hình thấp, cuộn **vùng nội dung bên trong**; giữ hành động chính nhìn thấy và chạm được, không để nút nằm dưới mép màn hình. Kiểm tra ít nhất 320 × 568, 375 × 667, 390 × 844 và tablet ngang; kiểm tra cả bàn phím hiện khi sửa tên.
 - Tổng kết ngày và lời chào quay lại ưu tiên ba số: kết quả xu/lãi, khách đã phục vụ, khách bỏ về. Chữ số chính lớn, đậm, dạng số có độ rộng ổn định; tăng/tốt dùng xanh, giảm/xấu dùng đỏ và luôn có nhãn chữ. Sổ sách, từng ca và số liệu phụ nằm sau thao tác “Xem chi tiết”. Không dùng màu đơn lẻ để truyền đạt ý nghĩa.
 - Với hai quầy, cả hai quầy phải nhận biết được trong cảnh ở điện thoại; bộ chọn quầy phải có vùng chạm ≥ 44 px, trạng thái khách/người đứng và chỉ rõ quầy đang chọn. Giao người đứng quầy phải cho chọn số quầy cụ thể.
+- Giao quầy dùng một bộ chọn chung `CounterStaffPicker` (`features/staff/CounterAssign.tsx`): ô vuông ≥ 44 px gồm chân dung, cấp, tên ngắn và việc đang làm; người đang đứng quầy đó hiện “✓ Đang đứng”, người bận có thanh tiến độ. Chạm mặt quầy trong cảnh mở thẻ quầy (`CounterCard`) có bộ chọn này; khay phục vụ và tab Nhân sự dùng lại đúng component, không thêm nút “Giao cho …” riêng.
 - Trên thẻ nhân viên, lịch ca và vị trí chỉ hiện tóm tắt; chạm mới mở lựa chọn. Thanh cấp độ/mệt có nền và phần tô đúng tỉ lệ giá trị, kèm số đọc được.
 
 ## Nhân vật và icon

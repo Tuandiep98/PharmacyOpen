@@ -50,4 +50,5 @@ export { effectiveKnowledge, hasTrait, LEVEL_XP, levelFor, MAX_LEVEL, QUIT_FATIG
 export { createSave, loadSave, SAVE_FORMAT, type LoadError, type LoadResult, type SaveFile } from './save';
 export { runOffline, type OfflineSummary } from './offline';
 export { nextExpiry } from './stock';
+export { deliveryCap, deliveryTimeLeft, dueAtFor, isOpenDelivery, nextPackItem } from './delivery';
 export * from './progression';

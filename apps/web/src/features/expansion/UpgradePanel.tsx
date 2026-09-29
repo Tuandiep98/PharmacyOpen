@@ -1,4 +1,4 @@
-import { MILESTONES, UPGRADES, facilityLevel, playerLevel, type DeepReadonly, type SimState } from '@pharmacy/simulation';
+import { MILESTONES, UPGRADES, facilityLevel, playerLevel, staffLimits, type DeepReadonly, type SimState } from '@pharmacy/simulation';
 import { UpgradeArt } from '../../art/Upgrades';
 import { BRAND } from '../../brand';
 import { useBridge } from '../../game/useGame';
@@ -56,6 +56,7 @@ function FacilityCard({ state, id, label }: { state: DeepReadonly<SimState>; id:
     <UpgradeArt id={id} level={current} />
     <div className="tier-copy"><strong>{label} · cấp {current}/5</strong>
       <span className="small">{current * 4} loại hàng {id === 'warehouse' ? 'có thể nhập' : 'có thể trưng bày'}</span>
+      {id === 'storefront' && <StaffCapacityLine state={state} />}
       {u && <><span className="small muted">Cấp {nextLevel}: {u.benefit}</span>{locked && <span className="small tier-lock">Mở ở cấp tiệm {nextLevel}</span>}</>}
       {!u && <span className="small good-text">Đã đạt cấp tối đa</span>}
     </div>
@@ -79,4 +80,10 @@ function FurnitureCard({ state, id }: { state: DeepReadonly<SimState>; id: typeo
     </div>
     {u && <BuyButton state={state} id={u.id} locked={locked} />}
   </article>;
+}
+
+/** Quy mô đội hiện tại: Cửa hàng và Quầy 2 mở thêm chỗ nhân viên. */
+function StaffCapacityLine({ state }: { state: DeepReadonly<SimState> }) {
+  const { perShift, total } = staffLimits(state);
+  return <span className="small">Đội tối đa {total} nhân viên · {perShift} người mỗi ca</span>;
 }

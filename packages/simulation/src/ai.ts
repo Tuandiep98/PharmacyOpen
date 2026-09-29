@@ -10,6 +10,7 @@ import type { StationId } from './content/stations';
 import { dayElapsed, isPresent, stationOf } from './shift';
 import { PREP_TASK_IDS, type Order, type SimState, type Worker } from './types';
 import { isProductUnlocked, stockUnitCost, unlockedProducts } from './progression';
+import { isOpenDelivery } from './delivery';
 
 /**
  * "Bộ não" của nhân viên NPC. Không có đường tắt nào: mọi hành động đều gửi đúng các Command
@@ -17,7 +18,8 @@ import { isProductUnlocked, stockUnitCost, unlockedProducts } from './progressio
  *
  * FSM một lượt phục vụ: Idle → (startService) Deciding[suy nghĩ] → pickProduct/refer
  *   → Retrieving → Ready → (checkout) → Complete; đưa nhầm → quay lại Deciding.
- * Khi rảnh, chọn việc có điểm cao nhất (utility): phục vụ khách ở quầy được giao > bổ sung kệ.
+ * Khi rảnh, chọn việc có điểm cao nhất (utility): phục vụ khách ở quầy được giao > gửi đơn ship đã gói
+ * > bổ sung kệ / gói đơn ship (đơn càng sát hạn càng gấp).
  */
 export function aiTick(state: SimState, emit: Emit): void {
   for (const worker of Object.values(state.workers)) {
@@ -53,6 +55,8 @@ function progressTask(state: SimState, worker: Worker, emit: Emit): void {
   if (task.timerMs > 0) return;
   worker.task = null;
   if (task.kind === 'restock') applyCommand(state, { type: 'restock', productId: task.productId, workerId: worker.id }, emit);
+  else if (task.kind === 'pack') applyCommand(state, { type: 'packDelivery', deliveryId: task.deliveryId, workerId: worker.id, productId: task.productId }, emit);
+  else if (task.kind === 'label') applyCommand(state, { type: 'sendDelivery', deliveryId: task.deliveryId, workerId: worker.id }, emit);
 }
 
 /** Người cẩn thận hoặc chậm hiểu nghĩ lâu hơn. */
@@ -108,10 +112,11 @@ function decide(state: SimState, worker: Worker, order: Order, emit: Emit): void
   if (!choice) return;
 
   if (state.stock[choice].shelf <= 0) {
-    // Hết hàng trên kệ: gọi nhập ngay (vẫn qua lệnh restock); không đủ xu thì đợi rồi thử lại.
+    // Hết hàng trên kệ: gọi nhập ngay (vẫn qua lệnh restock); không đủ xu thì báo khách tạm hết hàng,
+    // khách chọn chờ đơn ship hoặc đi chỗ khác thay vì đứng đợi tới lúc bỏ về.
     applyCommand(state, { type: 'restock', productId: choice, workerId: worker.id }, emit);
     if (state.stock[choice].shelf <= 0) {
-      worker.thinkUntilMs = state.timeMs + thinkMs(state, worker);
+      applyCommand(state, { type: 'deferOrder', workerId: worker.id, orderId: order.id }, emit);
       return;
     }
   }
@@ -126,11 +131,15 @@ type Behavior = (state: SimState, worker: Worker, emit: Emit) => Candidate[];
  * Thêm vị trí mới (content/stations.ts): thêm một hàm ở đây, mọi hành động vẫn đi qua Command.
  */
 const STATION_BEHAVIOR: Record<StationId, Behavior> = {
-  // Đứng quầy: phục vụ khách là ưu tiên, rảnh thì bổ sung kệ gần hết như người hỗ trợ.
-  counter: (state, worker, emit) => [...serveOptions(state, worker, emit), ...restockOptions(state, worker, emit, 'shared')],
-  support: (state, worker, emit) => restockOptions(state, worker, emit, 'shared'),
-  // Kho: bổ sung kệ sớm và nhanh hơn, không phải chờ người khác nhập xong.
-  stock: (state, worker, emit) => restockOptions(state, worker, emit, 'dedicated'),
+  // Đứng quầy: phục vụ khách là ưu tiên, rảnh thì bổ sung kệ gần hết và gói đơn ship như người hỗ trợ.
+  counter: (state, worker, emit) => [
+    ...serveOptions(state, worker, emit),
+    ...restockOptions(state, worker, emit, 'shared'),
+    ...deliveryOptions(state, worker),
+  ],
+  support: (state, worker, emit) => [...restockOptions(state, worker, emit, 'shared'), ...deliveryOptions(state, worker)],
+  // Kho: bổ sung kệ sớm và nhanh hơn, không phải chờ người khác nhập xong; rảnh tay thì gói đơn.
+  stock: (state, worker, emit) => [...restockOptions(state, worker, emit, 'dedicated'), ...deliveryOptions(state, worker)],
 };
 
 function chooseTask(state: SimState, worker: Worker, emit: Emit): void {
@@ -190,6 +199,47 @@ function restockOptions(state: SimState, worker: Worker, emit: Emit, mode: 'shar
         emit({ type: 'restockStarted', productId: id, workerId: worker.id });
       },
     });
+  }
+  return options;
+}
+
+/**
+ * Đơn ship: gói từng món (mỗi món một người, không gói trùng món người khác đang lấy), đủ món thì
+ * ghi phiếu và gửi. Đơn càng sát hạn càng được ưu tiên; kệ hết món cần gói thì để việc nhập hàng lo.
+ */
+function deliveryOptions(state: SimState, worker: Worker): Candidate[] {
+  const tasks = Object.values(state.workers).map((w) => w.task);
+  const packing = (deliveryId: string | null, productId: ProductId) =>
+    tasks.filter((t) => t?.kind === 'pack' && t.productId === productId && (deliveryId === null || t.deliveryId === deliveryId)).length;
+  const options: Candidate[] = [];
+  const time = (ms: number) => Math.round(ms / effectiveSpeed(worker, state.config.owedWageSpeedFactor));
+  for (const delivery of state.deliveries) {
+    if (!isOpenDelivery(delivery)) continue;
+    const urgency = Math.max(0, Math.min(1, 1 - (delivery.dueAtMs - state.timeMs) / state.config.dayMs));
+    if (delivery.status === 'packed') {
+      if (tasks.some((t) => t?.kind === 'label' && t.deliveryId === delivery.id)) continue;
+      options.push({
+        score: 0.7 + urgency * 0.2,
+        run: () => {
+          const total = time(state.config.deliveryLabelMs);
+          worker.task = { kind: 'label', deliveryId: delivery.id, timerMs: total, timerTotalMs: total };
+        },
+      });
+      continue;
+    }
+    for (const item of delivery.items) {
+      const missing = item.qty - item.packed.length - packing(delivery.id, item.productId);
+      if (missing <= 0 || state.stock[item.productId].shelf - packing(null, item.productId) <= 0) continue;
+      options.push({
+        score: 0.35 + urgency * 0.5,
+        run: () => {
+          const hardworking = hasTrait(worker, 'hardworking') ? 0.8 : 1;
+          const total = time(state.config.deliveryPackMs * hardworking);
+          worker.task = { kind: 'pack', deliveryId: delivery.id, productId: item.productId, timerMs: total, timerTotalMs: total };
+        },
+      });
+      break;
+    }
   }
   return options;
 }

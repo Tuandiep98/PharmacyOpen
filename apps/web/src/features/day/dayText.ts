@@ -21,6 +21,15 @@ export function clockLabel(state: DeepReadonly<SimState>): string {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
+/** Đổi thời gian mô phỏng ra thời lượng theo đồng hồ trong game (vd. "1 giờ 20 phút"). */
+export function gameDuration(state: DeepReadonly<SimState>, ms: number): string {
+  const minutes = Math.max(0, Math.round((ms / state.config.dayMs) * (CLOSE_HOUR - OPEN_HOUR) * 60));
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  if (hours === 0) return `${rest} phút`;
+  return rest === 0 ? `${hours} giờ` : `${hours} giờ ${rest} phút`;
+}
+
 export const SHIFT_LABEL: Record<ShiftId, string> = { morning: 'Ca sáng', afternoon: 'Ca chiều' };
 
 export function phaseLabel(state: DeepReadonly<SimState>): string {

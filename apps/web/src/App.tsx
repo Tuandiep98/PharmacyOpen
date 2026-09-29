@@ -33,6 +33,8 @@ import { PLAYER_WORKER_ID } from './features/store/useServiceActions';
 import { ProductIcon } from './art/Products';
 import { REGISTER_SPOT, SECOND_OFFSET, StoreScene } from './features/store/StoreScene';
 import { WorkerSheet } from './features/staff/WorkerSheet';
+import { CounterCard } from './features/staff/CounterAssign';
+import { DeliveryChip, DeliveryPanel } from './features/delivery/DeliveryPanel';
 import { StaffPanel } from './features/staff/StaffPanel';
 import { UpgradePanel } from './features/expansion/UpgradePanel';
 import { ReviewsPanel } from './features/reviews/ReviewsPanel';
@@ -106,6 +108,7 @@ export function App() {
         <div className="scene-wrap">
           <StoreScene state={state} />
           <OpeningPanel state={state} />
+          <DeliveryChip state={state} />
           <Toasts />
         </div>
         <div className="side">
@@ -303,6 +306,33 @@ function useEventFeedback() {
           case 'restocked':
             playSfx('restock');
             break;
+          case 'backorderDecided':
+            if (e.needless) pushToast('bad', 'Kệ vẫn còn món khách cần — khách thấy bị từ chối vô lý và bỏ đi.');
+            else if (e.accepted) {
+              playSfx('refer');
+              pushToast('good', `Khách đồng ý chờ: đã tạo đơn ship giao ${e.dueDay === bridge.state.day ? 'trong hôm nay' : 'ngày mai'}.`);
+            } else {
+              playSfx('leave');
+              pushToast('info', 'Khách đi mua chỗ khác vì tạm hết hàng.');
+            }
+            break;
+          case 'deliveryCreated':
+            if (e.source === 'online') {
+              playSfx('arrive');
+              pushToast('info', `Có đơn ship online, giao ${e.dueDay === bridge.state.day ? 'trong hôm nay' : 'ngày mai'}. Chạm nút thùng hàng để gói.`);
+            }
+            break;
+          case 'deliverySent':
+            if (e.workerId === null) pushToast('info', 'Đã ghi phiếu, shipper đang tới lấy hàng.');
+            break;
+          case 'deliveryCompleted':
+            playSfx(e.late ? 'wrong' : 'sale');
+            pushToast(e.late ? 'warn' : 'good', e.late ? `Đơn ship giao trễ hẹn (+${e.amount} ${BRAND.currency}) — khách không vui.` : `Đơn ship đã giao đúng hẹn: +${e.amount} ${BRAND.currency}.`);
+            break;
+          case 'deliveryCancelled':
+            playSfx('warn');
+            pushToast('bad', e.reason === 'overdue' ? 'Một đơn ship quá hạn lâu chưa gửi nên khách đã huỷ.' : 'Đã huỷ đơn ship; món đã gói được trả về kệ.');
+            break;
           case 'dayEnded': {
             const r = e.report;
             playSfx('milestone');
@@ -477,6 +507,8 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
   else if (selection?.kind === 'customer') content = <CustomerInfo state={state} customerId={selection.id} />;
   else if (selection?.kind === 'product') content = <ProductSheet state={state} productId={selection.id} />;
   else if (selection?.kind === 'worker') content = <WorkerSheet state={state} workerId={selection.id} />;
+  else if (selection?.kind === 'counter') content = <CounterCard state={state} counterId={selection.id} />;
+  else if (selection?.kind === 'deliveries') content = <DeliveryPanel state={state} />;
   else if (selection?.kind === 'ledger') content = <LedgerSheet state={state} />;
 
   const close = () => (tab === 'store' ? select(null) : setTab('store'));
@@ -498,7 +530,7 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
           <div className="sheet-body">{content}</div>
         </div>
       ) : (
-        <p className="muted inspector-hint">Chạm vào kệ hàng, khách đang xếp hàng hoặc nhân viên để xem chi tiết.</p>
+        <p className="muted inspector-hint">Chạm vào kệ hàng, quầy, khách đang xếp hàng hoặc nhân viên để xem chi tiết.</p>
       )}
     </aside>
   );

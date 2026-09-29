@@ -199,3 +199,174 @@
   justify-content: space-between;
   gap: 6px;
 }
+
+/* Bộ chọn người đứng quầy: ô vuông chân dung + cấp + tên ngắn + việc đang làm. */
+.staff-picker {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.pick-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 2px;
+  list-style: none;
+}
+.tray .pick-grid,
+.auto-counter .pick-grid {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.pick-tile {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 2px;
+  width: 76px;
+  min-height: 96px;
+  padding: 6px 4px 9px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+.pick-tile:hover {
+  border-color: #a7c4aa;
+  background: var(--surface-tint);
+}
+.pick-tile.rarity-good-edge {
+  box-shadow: inset 0 3px 0 #4eaa72;
+}
+.pick-tile.rarity-rare-edge {
+  box-shadow: inset 0 3px 0 #4a86d0;
+}
+.pick-tile.rarity-legendary-edge {
+  box-shadow: inset 0 3px 0 #e0a82e;
+}
+.pick-tile.pick-current {
+  border: 2px solid var(--primary);
+  background: var(--primary-soft);
+  cursor: default;
+}
+.pick-tile.pick-away {
+  border-style: dashed;
+}
+.pick-portrait {
+  position: relative;
+  display: block;
+  line-height: 0;
+}
+.pick-level {
+  position: absolute;
+  left: 50%;
+  bottom: -5px;
+  transform: translateX(-50%);
+  padding: 0 5px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--sun);
+  color: var(--ink);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 14px;
+  white-space: nowrap;
+}
+.pick-name {
+  max-width: 100%;
+  margin-top: 4px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pick-status {
+  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.15;
+  text-align: center;
+}
+.pick-current .pick-status {
+  color: var(--primary);
+  font-weight: 900;
+}
+.pick-busy .pick-status {
+  color: #785013;
+}
+.pick-progress {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 4px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--warn-soft);
+}
+.pick-progress > span {
+  display: block;
+  height: 100%;
+  background: var(--sun);
+}
+.pick-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.staff-capacity {
+  margin: -4px 0 8px;
+}
+.staff-capacity.full {
+  color: #785013;
+  font-weight: 800;
+}
+
+/* Khay: bộ chọn trải hết chiều ngang dưới dải trạng thái quầy. */
+.auto-counter .staff-picker,
+.auto-counter .counter-swap {
+  grid-column: 1 / -1;
+  flex-basis: 100%;
+}
+.tray-assign.tray-operator {
+  display: block;
+}
+.tray-assign.tray-operator[open] {
+  display: grid;
+}
+.tray-operator summary {
+  gap: 8px;
+  list-style: none;
+}
+.tray-operator summary::-webkit-details-marker {
+  display: none;
+}
+.tray-operator summary > span:not(.tray-assign-cta) {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-soft);
+  font-weight: 700;
+}
+.tray-assign-cta {
+  margin-left: auto;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* Mặt quầy trong cảnh là vùng chạm mở bộ chọn người. */
+.counter-hit {
+  cursor: pointer;
+  outline: none;
+}
+.counter-hit:hover > rect:first-child {
+  stroke: #a7c4aa;
+}
+.counter-hit:focus-visible > rect:first-child {
+  stroke: var(--focus);
+}

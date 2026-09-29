@@ -16,7 +16,7 @@ export function DaySummaryDialog({ report, onClose }: { report: DeepReadonly<Day
         <div className="day-summary-body">
           <div className="day-highlights">
             <div className="day-highlight"><span>Lãi ròng</span><strong className={report.netProfit >= 0 ? 'pos' : 'neg'}>{signedNumber(report.netProfit)}<small>{BRAND.currency}</small></strong></div>
-            <div className="day-highlight"><span>Đã phục vụ</span><strong>{report.sales + report.referrals}<small>/{report.customers} khách</small></strong></div>
+            <div className="day-highlight"><span>Đã phục vụ</span><strong>{report.sales + report.referrals + report.backorders}<small>/{report.customers} khách</small></strong></div>
             <div className="day-highlight"><span>Khách bỏ về</span><strong className={report.leftAngry + report.turnedAway > 0 ? 'neg' : 'pos'}>{report.leftAngry + report.turnedAway}</strong></div>
           </div>
           <DayGoalList report={report} />
@@ -88,6 +88,15 @@ function DayMetrics({ report }: { report: DeepReadonly<DayReport> }) {
     ['Khách ghé', `${report.customers}${report.returningCustomers > 0 ? ` · ${report.returningCustomers} khách quen` : ''}`],
     ['Tỉ lệ phục vụ', rate === null ? '—' : `${percent(rate)} (${report.sales} bán · ${report.referrals} khuyên đi khám)`],
     ['Khách bỏ về', report.customers > 0 ? `${lost} (${percent(lost / report.customers)})` : String(lost)],
+    [
+      'Đơn ship',
+      report.deliveries + report.cancelledDeliveries === 0
+        ? 'chưa có'
+        : `${report.deliveries} đã giao${report.lateDeliveries > 0 ? ` · ${report.lateDeliveries} trễ hẹn` : ''}${report.cancelledDeliveries > 0 ? ` · ${report.cancelledDeliveries} bị huỷ` : ''}`,
+    ],
+    ...(report.backorders + report.wentElsewhere > 0
+      ? [['Hết hàng ở quầy', `${report.backorders} khách hẹn giao sau · ${report.wentElsewhere} đi chỗ khác`] as [string, string]]
+      : []),
     ['Giá trị trung bình đơn', report.sales > 0 ? `${Math.round(report.revenue / report.sales)} ${BRAND.currency}` : '—'],
     ['Chờ trung bình', report.avgWaitMs === null ? '—' : `${Math.round(report.avgWaitMs / 1000)} giây`],
     [

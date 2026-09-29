@@ -50,7 +50,8 @@ export function OnboardingDialog({ seed, showSave, onClose }: { seed: number; sh
         <div className="onboarding-art"><ClinicIcon size={42} /><BoxIcon size={42} /><StaffIcon size={42} /></div>
         <h1 id="onboarding-title">Giữ tiệm vận hành</h1>
         <p>Khách mô tả triệu chứng: bấm “Khuyên đi khám”. Không chọn sản phẩm cho lượt này.</p>
-        <p>Vào Nhân sự để tuyển người và giao quầy. Nhân viên sẽ phục vụ khi bạn vắng mặt; kho, đánh giá và sổ sách giúp bạn theo dõi tiệm.</p>
+        <p>Món khách cần đang hết: bấm “Báo hết hàng”, khách có thể chờ đơn ship giao sau. Đơn ship (nút thùng hàng trên cảnh) cần gói đủ món rồi gửi trước giờ hẹn.</p>
+        <p>Vào Nhân sự để tuyển người và giao quầy. Nhân viên sẽ phục vụ và gói đơn khi bạn vắng mặt; kho, đánh giá và sổ sách giúp bạn theo dõi tiệm.</p>
         {showSave && <SaveSection />}
       </>}
       <p className="muted small">Bản thử nghiệm · seed {seed} · Font Nunito (SIL OFL 1.1) · canvas-confetti (ISC)</p>

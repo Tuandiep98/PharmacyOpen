@@ -1,6 +1,6 @@
 import type { StationId } from './content/stations';
 import type { ProductId, TraitId } from './content/types';
-import type { DayReport, PrepTaskId, ShiftId, ShiftSummary } from './types';
+import type { DayReport, DeliverySource, PrepTaskId, ShiftId, ShiftSummary } from './types';
 
 export type SimEvent = { at: number } & (
   | { type: 'customerArrived'; customerId: string }
@@ -8,7 +8,8 @@ export type SimEvent = { at: number } & (
   | { type: 'serviceStarted'; orderId: string; workerId: string; customerId: string }
   | { type: 'productPicked'; orderId: string; productId: ProductId }
   | { type: 'wrongProduct'; orderId: string; productId: ProductId; customerId: string }
-  | { type: 'safetyWarning'; orderId: string; productId: ProductId; customerId: string; workerId: string }
+  /** productId = null khi định báo hết hàng thay vì khuyên đi khám. */
+  | { type: 'safetyWarning'; orderId: string; productId: ProductId | null; customerId: string; workerId: string }
   | { type: 'productReady'; orderId: string; productId: ProductId }
   | { type: 'saleCompleted'; orderId: string; productId: ProductId; amount: number; tip: number; customerId: string; workerId: string; counterId: string }
   | { type: 'referralCompleted'; orderId: string; customerId: string; appropriate: boolean }
@@ -41,6 +42,15 @@ export type SimEvent = { at: number } & (
   | { type: 'recruitInterviewed'; slot: number; traits: TraitId[] }
   | { type: 'restScheduled'; workerId: string; day: number | null }
   | { type: 'stationAssigned'; workerId: string; station: StationId }
+  /** Báo hết hàng xong: khách đồng ý chờ giao (có deliveryId) hoặc đi chỗ khác; needless = thật ra vẫn còn hàng. */
+  | { type: 'backorderDecided'; customerId: string; accepted: boolean; deliveryId: string | null; dueDay: number | null; needless: boolean }
+  | { type: 'deliveryCreated'; deliveryId: string; source: DeliverySource; dueDay: number }
+  | { type: 'deliveryItemPacked'; deliveryId: string; productId: ProductId; workerId: string | null }
+  | { type: 'deliveryPacked'; deliveryId: string }
+  | { type: 'deliverySent'; deliveryId: string; workerId: string | null }
+  | { type: 'deliveryPickedUp'; deliveryId: string }
+  | { type: 'deliveryCompleted'; deliveryId: string; amount: number; late: boolean }
+  | { type: 'deliveryCancelled'; deliveryId: string; reason: 'shop' | 'overdue' }
 );
 
 export type SimEventType = SimEvent['type'];

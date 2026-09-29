@@ -1,5 +1,6 @@
 import { cloneConfig, DEFAULT_CONFIG } from './config';
 import { PRODUCT_IDS, PRODUCTS } from './content/products';
+import { returnUnits } from './stock';
 import type { ProductId, StaffCandidateDef } from './content/types';
 import type { Emit } from './events';
 import { recordInteraction } from './reputation';
@@ -90,6 +91,11 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     servedCount: 0,
     tips: 0,
     pilfered: 0,
+    deliveries: 0,
+    lateDeliveries: 0,
+    cancelledDeliveries: 0,
+    backorders: 0,
+    wentElsewhere: 0,
   };
 
   const ownConfig = cloneConfig(config);
@@ -107,6 +113,7 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
       ai: createStream(seed, 'ai'),
       review: createStream(seed, 'review'),
       staff: createStream(seed, 'staff'),
+      delivery: createStream(seed, 'delivery'),
     },
     nextSpawnAtMs: ownConfig.firstSpawnMs,
     customers: {},
@@ -114,6 +121,8 @@ export function createInitialState(seed: number, config: SimConfig = DEFAULT_CON
     counters: [{ id: 'counter-1', customerId: null, operatorId: PLAYER_WORKER_ID }],
     workers: { [PLAYER_WORKER_ID]: player },
     orders: {},
+    deliveries: [],
+    nextDeliveryAtMs: ownConfig.firstDeliveryMs,
     stock,
     loyalty: [],
     prices,
@@ -187,17 +196,7 @@ export function newId(state: SimState, prefix: string): string {
 export function returnReservedStock(state: SimState, orderId: string): void {
   const order = state.orders[orderId];
   if (!order?.productId) return;
-  if (order.productExpiresAtMs !== null && order.productExpiresAtMs > state.timeMs && state.stock[order.productId].shelf < state.stock[order.productId].capacity) {
-    const entry = state.stock[order.productId];
-    entry.shelf += 1;
-    const existing = entry.batches.find((batch) => batch.expiresAtMs === order.productExpiresAtMs);
-    if (existing) existing.qty += 1;
-    else entry.batches.push({ qty: 1, expiresAtMs: order.productExpiresAtMs });
-    entry.batches.sort((a, b) => a.expiresAtMs - b.expiresAtMs);
-  } else {
-    state.stats.expiredStock += 1;
-    state.stats.expiredCost += PRODUCTS[order.productId].cost;
-  }
+  returnUnits(state, order.productId, [order.productExpiresAtMs ?? state.timeMs]);
   order.productId = null;
   order.productExpiresAtMs = null;
 }

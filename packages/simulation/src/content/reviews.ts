@@ -23,6 +23,9 @@ export const REASONS: Record<ReasonCode, { label: string; scope: ReasonScope }> 
   'too-chatty': { label: 'Nói nhiều khi khách vội', scope: 'staff' },
   'rude-staff': { label: 'Thái độ chưa tốt', scope: 'staff' },
   'strict-customer': { label: 'Khách kỳ vọng cao', scope: 'customer' },
+  'out-of-stock': { label: 'Hết hàng', scope: 'store' },
+  'late-delivery': { label: 'Giao hàng trễ', scope: 'store' },
+  'on-time-delivery': { label: 'Giao đúng hẹn', scope: 'praise' },
 };
 
 /**
@@ -46,6 +49,9 @@ export const REVIEW_COMMENTS: Record<ReasonCode, string[]> = {
   'too-chatty': ['Đang vội mà nhân viên nói hơi nhiều.', 'Chỉ cần lấy món thôi, không cần giải thích dài.'],
   'rude-staff': ['Nhân viên cáu gắt, mua xong không vui chút nào.', 'Hỏi thêm một câu là bị gắt, lần sau chắc thôi.'],
   'strict-customer': ['Tạm được, chưa có gì đặc biệt.', 'Bình thường, không có gì để khen.'],
+  'out-of-stock': ['Tới nơi thì món mình cần lại hết hàng.', 'Tiệm hay hết hàng, phải đi chỗ khác mua.'],
+  'late-delivery': ['Hẹn giao mà đợi mãi không thấy hàng.', 'Đơn giao trễ hẹn, lần sau chắc mua chỗ khác.', 'Đặt hàng xong bị huỷ, mất cả buổi chờ.'],
+  'on-time-delivery': ['Giao đúng hẹn, gói hàng cẩn thận.', 'Đặt online mà nhận nhanh, tiện ghê.'],
 };
 
 /** Mẫu câu chủ tiệm phản hồi khiếu nại. */

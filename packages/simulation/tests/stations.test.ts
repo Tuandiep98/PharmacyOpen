@@ -8,7 +8,10 @@ const mutable = (sim: Simulation) => sim.snapshot as SimState;
 function twoStaff(seed = 1) {
   const state = createInitialState(seed);
   state.money = 2000;
+  // Cửa hàng cấp 2: 2 người mỗi ca, tối đa 4 người.
+  state.upgrades.push('storefront-2');
   state.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+  state.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
   const sim = new Simulation(state);
   sim.dispatch({ type: 'hire', candidateId: 'binh' });
   sim.dispatch({ type: 'hire', candidateId: 'chi' });

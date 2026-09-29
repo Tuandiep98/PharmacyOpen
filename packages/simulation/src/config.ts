@@ -6,8 +6,6 @@ export const DEFAULT_CONFIG: SimConfig = {
   startingMoney: 50,
   firstSpawnMs: 1500,
   spawnIntervalMs: [6000, 11000],
-  maxStaff: 4,
-  maxPerShift: 2,
   recruitSlots: 3,
   recruitRerollCost: 15,
   interviewCost: 10,
@@ -49,6 +47,15 @@ export const DEFAULT_CONFIG: SimConfig = {
   patienceRate: { queue: 1, deciding: 0.6, working: 0.3 },
   wrongItemPenalty: 0.2,
   emoteMs: 1800,
+  // Đơn ship: tiệm mới 1–2 đơn/ngày, đông dần theo số nhân viên trong ca, cấp tiệm và danh tiếng.
+  deliveryIntervalMs: [70_000, 110_000],
+  firstDeliveryMs: 40_000,
+  maxOpenDeliveries: 1,
+  deliveryPackMs: 1600,
+  deliveryLabelMs: 1400,
+  shipperPickupMs: 6000,
+  deliveryTransitMs: 14_000,
+  deliveryGraceMs: 60_000,
 };
 
 /** Bản sao sâu để mỗi ván có config riêng (nâng cấp sửa trực tiếp config của ván). */
@@ -56,6 +63,7 @@ export function cloneConfig(config: SimConfig): SimConfig {
   return {
     ...config,
     spawnIntervalMs: [config.spawnIntervalMs[0], config.spawnIntervalMs[1]],
+    deliveryIntervalMs: [config.deliveryIntervalMs[0], config.deliveryIntervalMs[1]],
     patienceRate: { ...config.patienceRate },
     reputation: { ...config.reputation },
   };

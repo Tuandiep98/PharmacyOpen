@@ -45,6 +45,16 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
                   {summary.sales} · {summary.referrals}
                 </dd>
               </div>
+              {summary.deliveries + summary.cancelledDeliveries > 0 && (
+                <div>
+                  <dt>Đơn ship đã giao</dt>
+                  <dd className={summary.lateDeliveries + summary.cancelledDeliveries > 0 ? 'neg' : ''}>
+                    {summary.deliveries}
+                    {summary.lateDeliveries > 0 && ` · ${summary.lateDeliveries} trễ`}
+                    {summary.cancelledDeliveries > 0 && ` · ${summary.cancelledDeliveries} bị huỷ`}
+                  </dd>
+                </div>
+              )}
               {summary.leftAngry + summary.turnedAway > 0 && (
                 <div>
                   <dt>Khách bỏ về</dt>

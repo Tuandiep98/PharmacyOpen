@@ -5,10 +5,10 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   'counter-2': {
     id: 'counter-2',
     name: 'Quầy bán thứ hai',
-    benefit: 'Phục vụ hai khách cùng lúc khi có hai người đứng quầy.',
+    benefit: 'Phục vụ hai khách cùng lúc; thêm 1 chỗ nhân viên mỗi ca để đứng quầy mới.',
     tradeoff: 'Cần thêm một nhân viên; quầy trống không nhận khách.',
     cost: 260,
-    effects: [{ type: 'counter' }],
+    effects: [{ type: 'counter' }, { type: 'staff', perShift: 1, reserve: 0 }],
   },
   scanner: {
     id: 'scanner',
@@ -54,18 +54,32 @@ export const UPGRADES: Record<string, UpgradeDef> = {
 
 // Giá tăng nhanh hơn lợi ích tuyến tính để các mốc cao là lựa chọn quản lý, không phải mua ngay khi đủ xu.
 const facilityCosts = [0, 0, 65, 145, 270, 430];
+/**
+ * Cửa hàng rộng hơn thì có chỗ cho nhiều nhân viên hơn. Lộ trình (cùng Quầy 2) dẫn tới tự động hoá:
+ * đầu game 1 người/ca → cấp 2 thêm người kho → Quầy 2 thêm người quầy → cấp 4 thêm người hỗ trợ;
+ * cấp 3 và 5 thêm người dự phòng để luân phiên cho nghỉ mà ca vẫn đủ người.
+ */
+const storefrontStaff: Record<number, { perShift: number; reserve: number }> = {
+  2: { perShift: 1, reserve: 0 },
+  3: { perShift: 0, reserve: 1 },
+  4: { perShift: 1, reserve: 0 },
+  5: { perShift: 0, reserve: 1 },
+};
 for (const facility of ['warehouse', 'storefront'] as const) {
   for (let level = 2; level <= 5; level++) {
     const id = `${facility}-${level}`;
+    const staff = facility === 'storefront' ? storefrontStaff[level]! : null;
     UPGRADES[id] = {
       id,
       name: facility === 'warehouse' ? 'Kho hàng' : 'Cửa hàng',
       benefit: facility === 'warehouse'
         ? `Nhập được thêm 4 loại hàng (tổng ${level * 4}).`
-        : `Trưng bày thêm 4 loại hàng (tổng ${level * 4}).`,
+        : `Trưng bày thêm 4 loại hàng (tổng ${level * 4}); ${staff!.perShift ? 'thêm 1 chỗ nhân viên mỗi ca' : 'thêm 1 nhân viên dự phòng'}.`,
       tradeoff: 'Nhiều mặt hàng cần thêm vốn nhập và theo dõi hạn dùng.',
       cost: facilityCosts[level]!,
-      effects: [{ type: 'catalog', facility, add: 4 }],
+      effects: staff
+        ? [{ type: 'catalog', facility, add: 4 }, { type: 'staff', ...staff }]
+        : [{ type: 'catalog', facility, add: 4 }],
     };
   }
 }
