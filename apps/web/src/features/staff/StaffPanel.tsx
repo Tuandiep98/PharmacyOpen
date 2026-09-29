@@ -29,6 +29,7 @@ import {
   type SimState,
   type TraitId,
   type Worker,
+  wagesDueTonight,
 } from '@pharmacy/simulation';
 import { SHIFT_LABEL } from '../day/dayText';
 import { StaffFigure } from '../../art/Character';
@@ -37,7 +38,7 @@ import { BRAND } from '../../brand';
 import { useBridge } from '../../game/useGame';
 import { useUi } from '../../ui/uiStore';
 import { GameButton, PanelHeading, EmptyState } from '../../ui/primitives';
-import { PadlockIcon, StaffIcon, WarningIcon } from '../../art/Icons';
+import { CoinIcon, PadlockIcon, StaffIcon, WarningIcon } from '../../art/Icons';
 import { REJECT_TEXT } from '../store/rejectText';
 import { useServiceActions } from '../store/useServiceActions';
 import { DismissButton } from './DismissButton';
@@ -243,6 +244,36 @@ function ResignNotice({ worker }: { worker: DeepReadonly<Worker> }) {
   );
 }
 
+/**
+ * Tổng lương phải trả lúc đóng ngày cho cả đội (nợ cũ + các ca hôm nay theo lịch), so với tiền đang có.
+ * Thiếu thì cảnh báo trước: cuối ngày không đủ xu sẽ ghi nợ và nhân viên bị nợ làm chậm hơn.
+ */
+function WageSummary({ state }: { state: DeepReadonly<SimState> }) {
+  const { owed, today, total } = wagesDueTonight(state);
+  if (total === 0) return null;
+  const short = total - state.money;
+  return (
+    <section className={`wage-summary ${short > 0 ? 'short' : ''}`} aria-label="Lương phải trả cuối ngày">
+      <CoinIcon size={30} />
+      <div className="wage-summary-text">
+        <span className="small muted">Lương phải trả cuối ngày</span>
+        <strong>
+          {total} {BRAND.currency}
+        </strong>
+        <span className="small muted">
+          {today} {BRAND.currency} lương hôm nay{owed > 0 ? ` + ${owed} ${BRAND.currency} nợ cũ` : ''} · đang có {state.money} {BRAND.currency}
+        </span>
+      </div>
+      {short > 0 && (
+        <p className="notice warn wage-warning" role="status">
+          <WarningIcon size={18} />
+          Thiếu {short} {BRAND.currency}: bán thêm trước khi đóng cửa, không thì cuối ngày sẽ nợ lương.
+        </p>
+      )}
+    </section>
+  );
+}
+
 export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   const { assignCounter } = useServiceActions();
   const team = Object.values(state.workers);
@@ -253,6 +284,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   return (
     <div className="panel">
       <PanelHeading description="Chạm một người trong ô quầy để giao quầy. Mỗi nhân viên thường làm một ca; ca còn lại cần người khác.">Nhân sự</PanelHeading>
+      <WageSummary state={state} />
 
       {state.counters.map((counter) => <CounterCard key={counter.id} state={state} counterId={counter.id} />)}
 

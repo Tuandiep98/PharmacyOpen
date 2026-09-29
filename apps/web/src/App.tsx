@@ -1,9 +1,11 @@
 import {
+  dayPhase,
   dayProgress,
   playerLevel,
   STATIONS,
   TRAITS,
   UPGRADES,
+  wagesDueTonight,
   type DeepReadonly,
   type SimEvent,
   type SimState,
@@ -96,6 +98,7 @@ export function App() {
   useEffect(() => () => bridge.setRunning(false), [bridge]);
 
   useEventFeedback();
+  useWageWarning(state);
   const level = playerLevel(state);
   const previousLevel = useRef(level);
   useEffect(() => {
@@ -151,6 +154,21 @@ export function App() {
       {showBrand && !showInfo && <BrandDialog onClose={() => setShowBrand(false)} />}
     </div>
   );
+}
+
+/** Lúc tiệm chuyển sang đóng cửa, nhắc một lần nếu tiền hiện có chưa đủ trả lương cuối ngày. */
+function useWageWarning(state: DeepReadonly<SimState>) {
+  const phase = dayPhase(state);
+  const warnedDay = useRef(0);
+  useEffect(() => {
+    if (phase !== 'closing' || warnedDay.current === state.day) return;
+    warnedDay.current = state.day;
+    const short = wagesDueTonight(state).total - state.money;
+    if (short > 0) {
+      playSfx('warn');
+      useUi.getState().pushToast('warn', `Sắp đóng cửa mà còn thiếu ${short} ${BRAND.currency} tiền lương.`);
+    }
+  }, [phase, state]);
 }
 
 function useEventFeedback() {
@@ -358,9 +376,6 @@ function useEventFeedback() {
             // Hộp thoại tổng kết ngày (tạm dừng mô phỏng tới khi người chơi sang ngày mới).
             setDaySummary(r);
             if (r.grade === 3) celebrate();
-            if (r.wagesOwed > 0) {
-              pushToast('warn', `Thiếu xu trả lương, còn nợ ${r.wagesOwed} ${BRAND.currency}. Nhân viên bị nợ lương làm chậm hơn.`);
-            }
             break;
           }
           case 'storeOpened':

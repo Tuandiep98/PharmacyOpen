@@ -2,9 +2,9 @@ import { PRODUCTS } from './content/products';
 import type { ProductId } from './content/types';
 import type { Emit } from './events';
 import { levelSpeedFactor, traitSpeedFactor } from './recruit';
-import { closeStaffDay, shiftPay, shiftSummary, startDay } from './shift';
+import { closeStaffDay, currentShift, shiftPay, shiftSummary, startDay } from './shift';
 import { storeRating } from './reputation';
-import type { DayReport, DeepReadonly, SimState, SimStats, Worker } from './types';
+import { SHIFT_IDS, type DayReport, type DeepReadonly, type SimState, type SimStats, type Worker } from './types';
 
 /*
  * Kinh tế idle (spec §3d): ngày trong game, lương theo ca, giá bán do người chơi đặt, tổng kết ngày.
@@ -35,6 +35,25 @@ export function wagesDueToday(state: DeepReadonly<SimState>): number {
   let total = 0;
   for (const worker of Object.values(state.workers)) total += shiftPay(worker.wage, worker.shiftsToday.length);
   return total;
+}
+
+/**
+ * Lương sẽ phải trả lúc đóng ngày nếu mọi người làm đúng lịch: nợ cũ + lương các ca đã vào làm + các ca
+ * còn lại hôm nay theo lịch (bỏ qua người nghỉ hôm nay). Cùng thứ tự trả như endDayIfDue.
+ */
+export function wagesDueTonight(state: DeepReadonly<SimState>): { owed: number; today: number; total: number } {
+  const from = SHIFT_IDS.indexOf(currentShift(state));
+  let owed = 0;
+  let today = 0;
+  for (const worker of Object.values(state.workers)) {
+    owed += worker.wageOwed;
+    const shifts = new Set(worker.shiftsToday);
+    if (worker.restDay !== state.day) {
+      for (const shift of worker.shifts) if (SHIFT_IDS.indexOf(shift) >= from) shifts.add(shift);
+    }
+    today += shiftPay(worker.wage, shifts.size);
+  }
+  return { owed, today, total: owed + today };
 }
 
 export function totalWagesOwed(state: DeepReadonly<SimState>): number {

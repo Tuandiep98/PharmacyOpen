@@ -33,6 +33,7 @@ export {
   serviceRate,
   totalWagesOwed,
   wagesDueToday,
+  wagesDueTonight,
   type DayGoalId,
 } from './economy';
 export {

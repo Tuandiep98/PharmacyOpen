@@ -1,5 +1,5 @@
 import { dayGoals, PREP_TASK_IDS, serviceRate, type DayReport, type DeepReadonly } from '@pharmacy/simulation';
-import { CheckIcon, CrossMarkIcon, StarIcon } from '../../art/Icons';
+import { CheckIcon, CrossMarkIcon, StarIcon, WarningIcon } from '../../art/Icons';
 import { BRAND } from '../../brand';
 import { formatRating } from '../../ui/Stars';
 import { GameButton } from '../../ui/primitives';
@@ -13,6 +13,12 @@ export function DaySummaryDialog({ report, onClose }: { report: DeepReadonly<Day
       <div className="modal day-summary" role="dialog" aria-modal="true" aria-labelledby="day-summary-title">
         <h1 id="day-summary-title">Kết thúc ngày {report.day}</h1>
         <DayGrade report={report} />
+        {report.wagesOwed > 0 && (
+          <p className="notice bad day-wage-warning" role="alert">
+            <WarningIcon size={18} />
+            Không đủ xu trả lương: còn nợ nhân viên {report.wagesOwed} {BRAND.currency}.
+          </p>
+        )}
         <div className="day-summary-body">
           <div className="day-highlights">
             <div className="day-highlight"><span>Lãi ròng</span><strong className={report.netProfit >= 0 ? 'pos' : 'neg'}>{signedNumber(report.netProfit)}<small>{BRAND.currency}</small></strong></div>

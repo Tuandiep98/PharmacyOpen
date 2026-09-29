@@ -607,3 +607,11 @@ button:disabled { cursor: not-allowed; }
     .side { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
   }
 }
+
+/* Tổng lương cuối ngày ở đầu tab Nhân sự; viền cam khi tiền hiện có chưa đủ. */
+.wage-summary { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 4px 10px; margin: 10px 0 4px; padding: 10px 12px; border: 1.5px solid var(--line); border-radius: 13px; background: var(--surface-soft); }
+.wage-summary.short { border-color: #e4bf6a; background: #fffaf0; }
+.wage-summary-text { display: grid; gap: 1px; min-width: 0; }
+.wage-summary-text strong { font-size: 20px; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.wage-warning { grid-column: 1 / -1; margin: 4px 0 0; }
+.day-wage-warning { margin: 0; }
