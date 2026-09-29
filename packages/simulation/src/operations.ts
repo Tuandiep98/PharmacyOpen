@@ -183,7 +183,10 @@ export function chooseOperations(
   if (!choice) return "no-case";
   if (state.money < choice.cost) return "insufficient-funds";
   state.money -= choice.cost;
-  state.stats.spentOnOperations += choice.cost;
+  state.stats.spentOnOperations =
+    (Number.isFinite(state.stats.spentOnOperations)
+      ? state.stats.spentOnOperations
+      : 0) + choice.cost;
   state.operations.choice = id;
   state.operations.demandFactor = choice.demandFactor;
   state.operations.score = Math.max(

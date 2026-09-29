@@ -7,11 +7,14 @@ import { STAFF_CANDIDATES, TRAITS } from "./content/staff";
 import { BACK_STATION_IDS, type BackStationId } from "./content/stations";
 import { levelFor, refreshRecruits } from "./recruit";
 import { createStream } from "./rng";
+import { dayGoals } from "./economy";
+import { OPERATIONS_CASES } from "./operations";
 import { PLAYER_WORKER_ID } from "./state";
 import {
   PREP_TASK_IDS,
   SAVE_VERSION,
   SHIFT_IDS,
+  type DayReport,
   type DeepReadonly,
   type PrepTaskId,
   type ShiftId,
@@ -448,6 +451,61 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
         report.operationsCost = 0;
       }
   },
+  14: (state) => {
+    // Một số bản v14 được lưu khi bộ đếm chi phí sự cố chưa có mặt. JSON biến
+    // phép tính NaN thành null; khôi phục bộ đếm và các báo cáo đã bị ảnh hưởng.
+    const costOf = (incident: unknown, choice: unknown): number =>
+      OPERATIONS_CASES.find((item) => item.id === incident)?.choices.find(
+        (item) => item.id === choice,
+      )?.cost ?? 0;
+    const operations = isObject(state.operations) ? state.operations : {};
+    const incidentIndex =
+      isNum(state.seed) && isNum(state.day) && state.day >= 2
+        ? (((state.seed + state.day - 2) % OPERATIONS_CASES.length) +
+            OPERATIONS_CASES.length) %
+          OPERATIONS_CASES.length
+        : -1;
+    const todayCost = costOf(
+      OPERATIONS_CASES[incidentIndex]?.id,
+      operations.choice,
+    );
+    const stats = isObject(state.stats) ? state.stats : null;
+    const start =
+      isObject(state.dayStart) && isObject(state.dayStart.stats)
+        ? state.dayStart.stats
+        : null;
+    if (stats && start) {
+      if (!isNum(start.spentOnOperations))
+        start.spentOnOperations = isNum(stats.spentOnOperations)
+          ? Math.max(0, stats.spentOnOperations - todayCost)
+          : 0;
+      if (!isNum(stats.spentOnOperations))
+        stats.spentOnOperations =
+          (start.spentOnOperations as number) + todayCost;
+    }
+    if (Array.isArray(state.dayReports))
+      for (const report of state.dayReports) {
+        if (!isObject(report)) continue;
+        if (!isNum(report.operationsCost))
+          report.operationsCost = costOf(
+            report.incident,
+            report.incidentChoice,
+          );
+        if (!isNum(report.netProfit)) {
+          report.netProfit =
+            (isNum(report.revenue) ? report.revenue : 0) -
+            (isNum(report.costOfSales) ? report.costOfSales : 0) -
+            (isNum(report.wages) ? report.wages : 0) -
+            (isNum(report.vouchers) ? report.vouchers : 0) -
+            (report.operationsCost as number) -
+            (isNum(report.expiredCost) ? report.expiredCost : 0) -
+            (isNum(report.pilfered) ? report.pilfered : 0);
+          report.grade = dayGoals(report as unknown as DayReport).filter(
+            (goal) => goal.met,
+          ).length;
+        }
+      }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -714,6 +772,12 @@ function isValidState(state: Loose): state is SimState & Loose {
   )
     return false;
   if (!isObject(s.reputation) || !isObject(s.stats) || !isObject(s.dayStart))
+    return false;
+  if (
+    !isNum(s.stats.spentOnOperations) ||
+    !isObject(s.dayStart.stats) ||
+    !isNum(s.dayStart.stats.spentOnOperations)
+  )
     return false;
   if (!isObject(s.operations)) return false;
   const operations = s.operations;

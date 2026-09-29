@@ -14,7 +14,7 @@ import type {
 } from "./content/types";
 import type { RngState } from "./rng";
 
-export const SAVE_VERSION = 14;
+export const SAVE_VERSION = 15;
 
 export type OperationsCaseId = "storage" | "supplier" | "staff" | "rumour";
 export type OperationsChoiceId = "careful" | "practical" | "shortcut";

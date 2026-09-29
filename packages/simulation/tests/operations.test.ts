@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createInitialState,
   createSave,
+  dayReport,
   dailyOperationsCase,
   loadSave,
   Simulation,
@@ -61,5 +62,34 @@ describe("sự cố vận hành và điều chuyển", () => {
     const loaded = loadSave(old);
     expect(loaded.ok).toBe(true);
     if (loaded.ok) expect(loaded.state.operations.score).toBe(65);
+  });
+
+  it("khôi phục save v14 thiếu bộ đếm chi phí, sửa báo cáo NaN", () => {
+    const state = createInitialState(3);
+    state.day = 2;
+    const sim = new Simulation(state);
+    expect(
+      sim.dispatch({ type: "chooseOperations", choice: "careful" }).ok,
+    ).toBe(true);
+    const correctReport = dayReport(sim.snapshot);
+    const old = createSave(sim.snapshot, 0);
+    old.version = 14;
+    delete (old.state.stats as unknown as Record<string, unknown>)
+      .spentOnOperations;
+    delete (old.state.dayStart.stats as unknown as Record<string, unknown>)
+      .spentOnOperations;
+    old.state.dayReports.push({
+      ...correctReport,
+      operationsCost: NaN,
+      netProfit: NaN,
+    });
+    const loaded = loadSave(old);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(dayReport(loaded.state).netProfit).toBe(correctReport.netProfit);
+    expect(loaded.state.dayReports[0]!.netProfit).toBe(correctReport.netProfit);
+    expect(loaded.state.dayReports[0]!.operationsCost).toBe(
+      correctReport.operationsCost,
+    );
   });
 });

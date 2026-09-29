@@ -151,6 +151,13 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
   const vouchers = diff("spentOnVouchers");
   const costOfSales = diff("costOfSales");
   const expiredCost = diff("expiredCost");
+  // Một số save v14 đã được tạo trước khi bộ đếm này có mặt. Tránh NaN cả khi
+  // phiên game cũ vẫn đang chạy trong tab và chưa được nạp lại qua migration.
+  const operationsCost =
+    (Number.isFinite(now.spentOnOperations) ? now.spentOnOperations : 0) -
+    (Number.isFinite(start.stats.spentOnOperations)
+      ? start.stats.spentOnOperations
+      : 0);
   const served = diff("servedCount");
   const report: DayReport = {
     day: state.day,
@@ -173,14 +180,14 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     costOfSales,
     expiredCost,
     vouchers,
-    operationsCost: diff("spentOnOperations"),
+    operationsCost,
     // Nhập hàng là chuyển tiền thành hàng tồn, không phải lỗ; chỉ giá vốn của hàng đã bán/đã huỷ mới là chi phí.
     netProfit:
       revenue -
       costOfSales -
       wages -
       vouchers -
-      diff("spentOnOperations") -
+      operationsCost -
       expiredCost -
       diff("pilfered"),
     avgWaitMs: served > 0 ? diff("waitMsSum") / served : null,
