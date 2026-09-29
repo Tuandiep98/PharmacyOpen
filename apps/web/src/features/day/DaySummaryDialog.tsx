@@ -41,6 +41,12 @@ export function DaySummaryDialog({
       >
         <h1 id="day-summary-title">Kết thúc ngày {report.day}</h1>
         <DayGrade report={report} />
+        <p className={report.operationsScore <= 25 ? "notice bad" : "notice"}>
+          Đánh giá vận hành: <b>{report.operationsScore}/100</b> (
+          {signedNumber(report.operationsChange)} điểm hôm nay).
+          {report.operationsScore <= 15 &&
+            " Quản lý vùng đã ra quyết định điều chuyển."}
+        </p>
         {report.wagesOwed > 0 && (
           <p className="notice bad day-wage-warning" role="alert">
             <WarningIcon size={18} />
@@ -152,6 +158,9 @@ export function ProfitTable({ report }: { report: DeepReadonly<DayReport> }) {
       )}
       {report.vouchers > 0 && (
         <Row label="Phiếu giảm giá" value={-report.vouchers} />
+      )}
+      {report.operationsCost > 0 && (
+        <Row label="Xử lý sự cố vận hành" value={-report.operationsCost} />
       )}
       {report.expiredCost > 0 && (
         <Row

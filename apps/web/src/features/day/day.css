@@ -26,6 +26,46 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow);
 }
+
+.operations-dialog {
+  display: grid;
+  gap: 12px;
+  text-align: left;
+  max-height: min(90vh, 700px);
+  overflow-y: auto;
+}
+.operations-dialog h1,
+.operations-dialog p {
+  margin: 0;
+}
+.operations-choices {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+.operations-choice {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 12px;
+  text-align: left;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  cursor: pointer;
+}
+.operations-choice:hover:not(:disabled) {
+  background: var(--surface-tint);
+}
+.operations-choice:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.operations-choice span {
+  font-size: 13px;
+  color: var(--ink-soft);
+}
 .opening-panel header {
   display: flex;
   justify-content: space-between;

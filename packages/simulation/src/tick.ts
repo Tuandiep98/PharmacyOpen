@@ -18,6 +18,7 @@ import type { Customer, Order, SimState } from "./types";
 
 /** Tiến mô phỏng đúng một bước cố định `config.tickMs`. */
 export function tick(state: SimState, emit: Emit): void {
+  if (state.operations.pendingTransfer) return;
   const dt = state.config.tickMs;
   state.tick += 1;
   state.timeMs += dt;
@@ -233,7 +234,10 @@ function maybeSpawn(state: SimState, emit: Emit): void {
   // Danh tiếng tác động lên lượng khách ghé (có trần/sàn), không lên giá trị mỗi đơn.
   state.nextSpawnAtMs =
     state.timeMs +
-    Math.round(nextInt(state.rng.spawn, min, max) / demandMultiplier(state));
+    Math.round(
+      nextInt(state.rng.spawn, min, max) /
+        (demandMultiplier(state) * state.operations.demandFactor),
+    );
   // Hàng đầy thì khách bỏ đi từ ngoài cửa: mất một lượt khách, UI cảnh báo để người chơi mở rộng.
   if (state.queue.length >= state.config.maxQueue) {
     state.stats.turnedAway += 1;

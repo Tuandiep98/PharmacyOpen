@@ -425,6 +425,29 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       if (!isNum(review.visits)) review.visits = 0;
     }
   },
+  13: (state) => {
+    // v14: điểm quản lý vùng và sự cố vận hành; save cũ tiếp tục từ điểm trung lập.
+    state.operations = {
+      score: 65,
+      scoreAtDayStart: 65,
+      choice: null,
+      demandFactor: 1,
+      transfers: 0,
+      pendingTransfer: false,
+    };
+    if (isObject(state.stats)) state.stats.spentOnOperations = 0;
+    if (isObject(state.dayStart) && isObject(state.dayStart.stats))
+      state.dayStart.stats.spentOnOperations = 0;
+    if (Array.isArray(state.dayReports))
+      for (const report of state.dayReports) {
+        if (!isObject(report)) continue;
+        report.operationsScore = 65;
+        report.operationsChange = 0;
+        report.incident = null;
+        report.incidentChoice = null;
+        report.operationsCost = 0;
+      }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -691,6 +714,33 @@ function isValidState(state: Loose): state is SimState & Loose {
   )
     return false;
   if (!isObject(s.reputation) || !isObject(s.stats) || !isObject(s.dayStart))
+    return false;
+  if (!isObject(s.operations)) return false;
+  const operations = s.operations;
+  if (
+    ![
+      operations.score,
+      operations.scoreAtDayStart,
+      operations.demandFactor,
+      operations.transfers,
+    ].every(isNum) ||
+    !isNum(operations.score) ||
+    operations.score < 0 ||
+    operations.score > 100 ||
+    !isNum(operations.scoreAtDayStart) ||
+    operations.scoreAtDayStart < 0 ||
+    operations.scoreAtDayStart > 100 ||
+    !isNum(operations.demandFactor) ||
+    operations.demandFactor <= 0 ||
+    !isNum(operations.transfers) ||
+    !Number.isInteger(operations.transfers) ||
+    operations.transfers < 0 ||
+    !(
+      operations.choice === null ||
+      ["careful", "practical", "shortcut"].includes(operations.choice as string)
+    ) ||
+    typeof operations.pendingTransfer !== "boolean"
+  )
     return false;
   return true;
 }

@@ -1,6 +1,10 @@
 import type { RejectReason } from "@pharmacy/simulation";
 
 export const REJECT_TEXT: Record<RejectReason, string> = {
+  "operations-already-chosen": "Hôm nay đã chốt cách xử lý sự cố.",
+  "operations-no-case": "Hôm nay không có sự cố này.",
+  "transfer-not-pending": "Chưa có quyết định điều chuyển.",
+  "transfer-pending": "Hãy nhận quyết định điều chuyển trước.",
   "unknown-worker": "Không tìm thấy nhân viên.",
   "worker-busy": "Dược sĩ đang bận, đợi xong việc hiện tại nhé.",
   "unknown-customer": "Khách đã rời đi.",

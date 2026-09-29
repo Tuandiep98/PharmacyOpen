@@ -95,6 +95,7 @@ export function createInitialState(
     spentOnUpgrades: 0,
     spentOnVouchers: 0,
     spentOnWages: 0,
+    spentOnOperations: 0,
     turnedAway: 0,
     expiredStock: 0,
     returningCustomers: 0,
@@ -146,6 +147,14 @@ export function createInitialState(
     dayReports: [],
     // Ngày khai trương: tiệm đã chuẩn bị sẵn và mở cửa ngay; từ ngày 2 mới có pha chuẩn bị.
     prep: { required: false, openedAtMs: 0, done: [] },
+    operations: {
+      score: 65,
+      scoreAtDayStart: 65,
+      choice: null,
+      demandFactor: 1,
+      transfers: 0,
+      pendingTransfer: false,
+    },
     shiftMark: { shift: "morning", stats: { ...stats } },
     shiftSummaries: [],
     ratingMilestones: [],

@@ -2,6 +2,8 @@ import type { StationId } from "./content/stations";
 import type { ProductId, TraitId } from "./content/types";
 import type {
   DayReport,
+  OperationsCaseId,
+  OperationsChoiceId,
   DeliverySource,
   PrepTaskId,
   ShiftId,
@@ -9,6 +11,14 @@ import type {
 } from "./types";
 
 export type SimEvent = { at: number } & (
+  | {
+      type: "operationsChosen";
+      incident: OperationsCaseId;
+      choice: OperationsChoiceId;
+      score: number;
+    }
+  | { type: "transferOrdered"; score: number; wagesOwed: number }
+  | { type: "transferAccepted"; transfers: number }
   | { type: "customerArrived"; customerId: string }
   | { type: "customerAtCounter"; customerId: string; counterId: string }
   | {

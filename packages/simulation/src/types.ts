@@ -14,7 +14,22 @@ import type {
 } from "./content/types";
 import type { RngState } from "./rng";
 
-export const SAVE_VERSION = 13;
+export const SAVE_VERSION = 14;
+
+export type OperationsCaseId = "storage" | "supplier" | "staff" | "rumour";
+export type OperationsChoiceId = "careful" | "practical" | "shortcut";
+
+export interface OperationsState {
+  /** Điểm đánh giá của quản lý vùng, 0–100. */
+  score: number;
+  scoreAtDayStart: number;
+  /** Lựa chọn cho sự cố trong ngày; null nếu chưa xử lý. */
+  choice: OperationsChoiceId | null;
+  /** Hệ số khách tới trong ngày do cách xử lý sự cố. */
+  demandFactor: number;
+  transfers: number;
+  pendingTransfer: boolean;
+}
 
 /** Hai ca trong ngày; ca chiều bắt đầu ở giữa ngày. */
 export type ShiftId = "morning" | "afternoon";
@@ -417,6 +432,7 @@ export interface SimStats {
   spentOnUpgrades: number;
   spentOnVouchers: number;
   spentOnWages: number;
+  spentOnOperations: number;
   /** Khách tới nhưng hàng chờ đầy nên bỏ đi ngay. */
   turnedAway: number;
   expiredStock: number;
@@ -490,6 +506,7 @@ export interface DayReport {
   costOfSales: number;
   expiredCost: number;
   vouchers: number;
+  operationsCost: number;
   netProfit: number;
   /** Thời gian chờ trung bình tới lúc được phục vụ (null nếu chưa phục vụ ai). */
   avgWaitMs: number | null;
@@ -509,6 +526,11 @@ export interface DayReport {
   cancelledDeliveries: number;
   backorders: number;
   wentElsewhere: number;
+  /** Điểm vận hành sau đánh giá cuối ngày. */
+  operationsScore: number;
+  operationsChange: number;
+  incident: OperationsCaseId | null;
+  incidentChoice: OperationsChoiceId | null;
 }
 
 /** Mốc sổ sách lúc bắt đầu ngày, để tính tổng kết. */
@@ -554,6 +576,7 @@ export interface SimState {
   dayStart: DayStart;
   dayReports: DayReport[];
   prep: PrepState;
+  operations: OperationsState;
   shiftMark: ShiftMark;
   /** Các ca đã chốt trong ngày hiện tại. */
   shiftSummaries: ShiftSummary[];

@@ -1,5 +1,6 @@
 import {
   dayPhase,
+  dailyOperationsCase,
   dayProgress,
   playerLevel,
   STATIONS,
@@ -49,6 +50,10 @@ import { OfflineDialog } from "./features/ledger/OfflineDialog";
 import { OnboardingDialog } from "./features/onboarding/OnboardingDialog";
 import { DaySummaryDialog } from "./features/day/DaySummaryDialog";
 import { OpeningPanel } from "./features/day/OpeningPanel";
+import {
+  OperationsDialog,
+  TransferDialog,
+} from "./features/day/OperationsDialog";
 import { clockLabel, phaseLabel, SHIFT_LABEL } from "./features/day/dayText";
 import { formatRating, starText } from "./ui/Stars";
 import { useBridge, useGameEvents, useGameState } from "./game/useGame";
@@ -119,6 +124,8 @@ export function App() {
   const setOffline = useUi((s) => s.setOffline);
   const daySummary = useUi((s) => s.daySummary);
   const setDaySummary = useUi((s) => s.setDaySummary);
+  const incidentPending =
+    dailyOperationsCase(state) !== null && state.operations.choice === null;
   // Người chơi tự bấm tạm dừng từ menu tuỳ chọn.
   const [userPaused, setUserPaused] = useState(false);
   // Hộp thoại che màn hình thì tạm dừng mô phỏng.
@@ -127,7 +134,9 @@ export function App() {
     showInfo ||
     showBrand ||
     offline !== null ||
-    daySummary !== null;
+    daySummary !== null ||
+    incidentPending ||
+    state.operations.pendingTransfer;
 
   useEffect(() => {
     bridge.setRunning(!paused);
@@ -193,6 +202,17 @@ export function App() {
           onClose={() => setDaySummary(null)}
         />
       )}
+      {!daySummary &&
+        !offline &&
+        !showInfo &&
+        !showBrand &&
+        state.operations.pendingTransfer && <TransferDialog state={state} />}
+      {!daySummary &&
+        !offline &&
+        !showInfo &&
+        !showBrand &&
+        !state.operations.pendingTransfer &&
+        incidentPending && <OperationsDialog state={state} />}
       {showInfo && (
         <OnboardingDialog
           seed={state.seed}
@@ -241,6 +261,18 @@ function useEventFeedback() {
     (events: SimEvent[]) => {
       for (const e of events) {
         switch (e.type) {
+          case "operationsChosen":
+            pushToast(
+              e.choice === "shortcut" ? "warn" : "info",
+              `Đã chốt cách xử lý sự cố. Điểm quản lý vùng: ${e.score}/100.`,
+            );
+            break;
+          case "transferAccepted":
+            pushToast(
+              "info",
+              `Bắt đầu ở chi nhánh mới · lần điều chuyển ${e.transfers}.`,
+            );
+            break;
           case "customerArrived":
             playSfx(
               bridge.state.customers[e.customerId]?.loyaltyId

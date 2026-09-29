@@ -46,6 +46,7 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
   const capMs = before.config.offlineCapMs;
   const targetMs = storeOpen ? Math.min(Math.max(0, awayMs), capMs) : 0;
   const ticks = Math.floor(targetMs / before.config.tickMs);
+  let completedTicks = 0;
 
   let complaints = 0;
   const countEvents = () => {
@@ -54,7 +55,9 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
   };
   countEvents();
   for (let i = 0; i < ticks; i++) {
+    if (sim.snapshot.operations.pendingTransfer) break;
     sim.step();
+    completedTicks++;
     if (i % DRAIN_EVERY === DRAIN_EVERY - 1) countEvents();
   }
   countEvents();
@@ -63,7 +66,7 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
   const reviews = after.reputation.count - before.reputation.count;
   return {
     awayMs,
-    simulatedMs: ticks * before.config.tickMs,
+    simulatedMs: completedTicks * before.config.tickMs,
     capped: storeOpen && awayMs > capMs,
     storeOpen,
     customers: after.stats.customersArrived - before.stats.customersArrived,

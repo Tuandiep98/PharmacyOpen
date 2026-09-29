@@ -56,6 +56,11 @@ export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
         Còn khoảng {secondsLeft} giây tới cuối ngày. Cuối ngày tiệm trả lương
         theo số ca đã làm và chốt sổ.
       </p>
+      <p className={state.operations.score <= 25 ? "notice bad" : "notice"}>
+        Điểm quản lý vùng: <b>{state.operations.score}/100</b> · Đã điều chuyển{" "}
+        {state.operations.transfers} lần. Điểm thay đổi theo sự cố, kết quả bán
+        hàng, hạn dùng, giao hàng và nợ lương.
+      </p>
 
       <h3>Hôm nay (tạm tính)</h3>
       <ProfitTable report={today} />

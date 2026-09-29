@@ -10,6 +10,7 @@ import {
   startDay,
 } from "./shift";
 import { storeRating } from "./reputation";
+import { dailyOperationsCase, evaluateOperations } from "./operations";
 import {
   SHIFT_IDS,
   type DayReport,
@@ -172,9 +173,16 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     costOfSales,
     expiredCost,
     vouchers,
+    operationsCost: diff("spentOnOperations"),
     // Nhập hàng là chuyển tiền thành hàng tồn, không phải lỗ; chỉ giá vốn của hàng đã bán/đã huỷ mới là chi phí.
     netProfit:
-      revenue - costOfSales - wages - vouchers - expiredCost - diff("pilfered"),
+      revenue -
+      costOfSales -
+      wages -
+      vouchers -
+      diff("spentOnOperations") -
+      expiredCost -
+      diff("pilfered"),
     avgWaitMs: served > 0 ? diff("waitMsSum") / served : null,
     prepDone: state.prep.required ? state.prep.done.length : null,
     shifts: [
@@ -190,6 +198,10 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     cancelledDeliveries: diff("cancelledDeliveries"),
     backorders: diff("backorders"),
     wentElsewhere: diff("wentElsewhere"),
+    operationsScore: state.operations.score,
+    operationsChange: state.operations.score - state.operations.scoreAtDayStart,
+    incident: dailyOperationsCase(state)?.id ?? null,
+    incidentChoice: state.operations.choice,
   };
   report.grade = dayGoals(report).filter((g) => g.met).length;
   return report;
@@ -238,6 +250,7 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
   closeStaffDay(state, emit);
 
   const report = dayReport(state);
+  evaluateOperations(state, report, emit);
   state.dayReports.push(report);
   if (state.dayReports.length > state.config.keepDayReports) {
     state.dayReports.splice(
@@ -263,9 +276,12 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
  * thì tiệm "đóng cửa" khi vắng: thời gian không trôi, không trả lương, không mất khách.
  */
 export function canRunUnattended(state: DeepReadonly<SimState>): boolean {
-  return state.counters.some(
-    (c) =>
-      (c.operatorId ? state.workers[c.operatorId] : undefined)?.controller ===
-      "ai",
+  return (
+    !state.operations.pendingTransfer &&
+    state.counters.some(
+      (c) =>
+        (c.operatorId ? state.workers[c.operatorId] : undefined)?.controller ===
+        "ai",
+    )
   );
 }

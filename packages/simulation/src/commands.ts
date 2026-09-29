@@ -6,6 +6,7 @@ import { UPGRADES } from "./content/upgrades";
 import { COMPLAINT_RESPONSES, type ComplaintResponse } from "./content/reviews";
 import { effectiveSpeed, priceBounds } from "./economy";
 import { resolveComplaint } from "./reputation";
+import { acceptTransfer, chooseOperations } from "./operations";
 import type { Emit } from "./events";
 import {
   dismissCustomer,
@@ -48,6 +49,7 @@ import {
   type PrepTaskId,
   type ShiftId,
   type SimState,
+  type OperationsChoiceId,
 } from "./types";
 
 /**
@@ -55,6 +57,8 @@ import {
  * và đi qua cùng một bộ kiểm tra, nên đổi người điều khiển không nhân đôi logic nghiệp vụ.
  */
 export type Command =
+  | { type: "chooseOperations"; choice: OperationsChoiceId }
+  | { type: "acceptTransfer" }
   | { type: "startService"; workerId: string; customerId: string }
   | {
       type: "pickProduct";
@@ -101,6 +105,10 @@ export type Command =
   | { type: "assignStation"; workerId: string; station: StationId };
 
 export type RejectReason =
+  | "operations-already-chosen"
+  | "operations-no-case"
+  | "transfer-not-pending"
+  | "transfer-pending"
   | "unknown-worker"
   | "worker-busy"
   | "unknown-customer"
@@ -159,6 +167,17 @@ export function applyCommand(
   emit: Emit,
 ): CommandResult {
   switch (command.type) {
+    case "chooseOperations": {
+      const result = chooseOperations(state, command.choice, emit);
+      if (result === "ok") return OK;
+      if (result === "insufficient-funds") return reject("insufficient-funds");
+      if (result === "already-chosen")
+        return reject("operations-already-chosen");
+      if (result === "transfer-pending") return reject("transfer-pending");
+      return reject("operations-no-case");
+    }
+    case "acceptTransfer":
+      return acceptTransfer(state, emit) ? OK : reject("transfer-not-pending");
     case "startService":
       return startService(state, command.workerId, command.customerId, emit);
     case "pickProduct":

@@ -83,3 +83,9 @@ export {
   nextPackItem,
 } from "./delivery";
 export * from "./progression";
+export {
+  OPERATIONS_CASES,
+  dailyOperationsCase,
+  type OperationsCase,
+  type OperationsChoice,
+} from "./operations";

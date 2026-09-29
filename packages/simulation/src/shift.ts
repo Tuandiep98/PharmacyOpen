@@ -249,6 +249,9 @@ function changeShift(state: SimState, shift: ShiftId, emit: Emit): void {
 
 /** Bắt đầu ngày mới (gọi sau khi chốt sổ): quay về pha chuẩn bị, chấm công ca sáng. */
 export function startDay(state: SimState, emit: Emit): void {
+  state.operations.choice = null;
+  state.operations.demandFactor = 1;
+  state.operations.scoreAtDayStart = state.operations.score;
   state.prep = { required: true, openedAtMs: null, done: [] };
   state.shiftSummaries = [];
   state.shiftMark = { shift: "morning", stats: { ...state.stats } };
