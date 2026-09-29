@@ -8,8 +8,8 @@ import {
   StatBars,
   TraitTags,
   WageLine,
-  workerStatus,
 } from "./StaffPanel";
+import { ActivityBadge } from "./ActivityBadge";
 import { GameButton } from "../../ui/primitives";
 
 export function WorkerSheet({
@@ -36,7 +36,9 @@ export function WorkerSheet({
           {worker.controller === "player" ? "Bạn điều khiển" : "Tự làm việc"}
         </span>
         <h1>{worker.name}</h1>
-        <span className="detail-status">{workerStatus(state, worker)}</span>
+        <span className="detail-status">
+          <ActivityBadge state={state} worker={worker} />
+        </span>
       </header>
       <div className="detail-scroll">
         <section className="detail-overview" aria-label="Thành tích nhân viên">
@@ -90,25 +92,24 @@ export function WorkerSheet({
           </section>
         )}
       </div>
-      <footer className="detail-footer">
-        {!operates &&
-          state.counters.map((counter, index) => (
-            <GameButton
-              key={counter.id}
-              tone="primary"
-              onClick={() => assignCounter(worker.id, counter.id)}
-            >
-              {worker.controller === "player"
-                ? "Tự đứng"
-                : `Giao ${worker.name}`}{" "}
-              quầy {state.counters.length > 1 ? index + 1 : ""}
-            </GameButton>
-          ))}
-        <DismissButton worker={worker} onDone={onClose} />
-        <GameButton tone="secondary" onClick={onClose} autoFocus>
-          Đóng
-        </GameButton>
-      </footer>
+      {(!operates || worker.controller === "ai") && (
+        <footer className="detail-footer">
+          {!operates &&
+            state.counters.map((counter, index) => (
+              <GameButton
+                key={counter.id}
+                tone="primary"
+                onClick={() => assignCounter(worker.id, counter.id)}
+              >
+                {worker.controller === "player"
+                  ? "Tự đứng"
+                  : `Giao ${worker.name}`}{" "}
+                quầy {state.counters.length > 1 ? index + 1 : ""}
+              </GameButton>
+            ))}
+          <DismissButton worker={worker} onDone={onClose} />
+        </footer>
+      )}
     </article>
   );
 }

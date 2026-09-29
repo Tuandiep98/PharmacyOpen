@@ -27,6 +27,7 @@ import {
   CoinIcon,
   DaypartGlyph,
   type Daypart,
+  CloseIcon,
   CrossMarkIcon,
   InfoIcon,
   MapIcon,
@@ -849,11 +850,7 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
           fallback={<p className="small muted detail-loading">Đang tải…</p>}
         >
           {selection.kind === "product" ? (
-            <ProductSheet
-              state={state}
-              productId={selection.id}
-              onClose={onClose}
-            />
+            <ProductSheet state={state} productId={selection.id} />
           ) : (
             <WorkerSheet
               state={state}
@@ -892,6 +889,27 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
       )}
       {content ? (
         <div className="sheet">
+          {tab !== "store" && (
+            <div className="sheet-topbar">
+              <strong>
+                {tab === "staff"
+                  ? "Nhân sự"
+                  : tab === "inventory"
+                    ? "Kho hàng"
+                    : tab === "reviews"
+                      ? "Đánh giá"
+                      : "Mở rộng"}
+              </strong>
+              <GameButton
+                surface="flat"
+                size="small"
+                onClick={close}
+                aria-label="Quay lại cửa hàng"
+              >
+                ← Cửa hàng
+              </GameButton>
+            </div>
+          )}
           <div className="sheet-body">
             <Suspense fallback={<p className="small muted">Đang tải…</p>}>
               {content}
@@ -937,6 +955,15 @@ function DetailDialog({
         if (event.target === event.currentTarget) onClose();
       }}
     >
+      <IconButton
+        className="detail-close"
+        surface="flat"
+        onClick={onClose}
+        aria-label="Đóng"
+        autoFocus
+      >
+        <CloseIcon size={20} />
+      </IconButton>
       {children}
     </dialog>
   );

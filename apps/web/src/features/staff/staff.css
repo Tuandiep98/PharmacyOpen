@@ -236,7 +236,7 @@
   justify-items: center;
   align-content: start;
   gap: 2px;
-  width: 76px;
+  width: 84px;
   min-height: 96px;
   padding: 6px 4px 9px;
   border: 1.5px solid var(--line);
@@ -297,6 +297,10 @@
   white-space: nowrap;
 }
 .pick-status {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--ink-soft);
   font-size: 11px;
   font-weight: 800;
@@ -338,7 +342,8 @@
   font-weight: 800;
 }
 
-@media (prefers-color-scheme: dark) {
+/* Dark mode tạm tắt: đổi `not all` về `(prefers-color-scheme: dark)` khi bảng màu tối ổn. */
+@media not all {
   .rarity-common {
     color: #d5ddd4;
     background: #26332c;

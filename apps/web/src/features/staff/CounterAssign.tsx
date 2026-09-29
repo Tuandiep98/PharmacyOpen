@@ -12,6 +12,7 @@ import { useUi } from "../../ui/uiStore";
 import { GameButton } from "../../ui/primitives";
 import { useServiceActions } from "../store/useServiceActions";
 import { workerProgress, workerStatus } from "./workerStatus";
+import { ActivityBadge } from "./ActivityBadge";
 import "./staff.css";
 
 type State = DeepReadonly<SimState>;
@@ -30,7 +31,7 @@ function pickState(
 ): { kind: PickState; label: string } {
   const at = state.counters.findIndex((c) => c.operatorId === worker.id);
   if (at >= 0 && state.counters[at]!.id === counterId)
-    return { kind: "current", label: "Đang đứng" };
+    return { kind: "current", label: "Đang trực" };
   if (at >= 0) return { kind: "other-counter", label: `Quầy ${at + 1}` };
   if (worker.orderId) return { kind: "busy", label: "Đang bán" };
   if (worker.task?.kind === "restock")
@@ -47,7 +48,7 @@ function pickState(
 
 /**
  * Ô vuông chọn người đứng một quầy: chân dung, cấp, tên ngắn và việc đang làm. Chạm là giao quầy
- * (cùng lệnh assignCounter như mọi nơi khác); người đang đứng quầy này hiện trạng thái "Đang đứng".
+ * (cùng lệnh assignCounter như mọi nơi khác); người đang đứng quầy này hiện trạng thái "Đang trực".
  * Chỉ liệt kê người trong ca; người ngoài ca được đếm ở dòng cuối.
  */
 export function CounterStaffPicker({
@@ -221,25 +222,26 @@ export function CounterCard({
         {operator && <WorkerPortrait worker={operator} size={48} />}
         <div className="counter-summary-text">
           <strong>{operator ? operator.name : "Quầy chưa mở"}</strong>
-          <span>
-            {operator
-              ? workerStatus(state, operator)
-              : "Chọn người đứng quầy bên dưới."}
-          </span>
+          {operator ? (
+            <ActivityBadge state={state} worker={operator} />
+          ) : (
+            <span>Chọn người đứng quầy bên dưới.</span>
+          )}
         </div>
       </div>
-      {progress !== null && (
+      {operator && (
         <span
           className="progress-track"
           role="progressbar"
-          aria-label={`Tiến độ công việc của ${operator?.name}`}
+          aria-label={`Tiến độ công việc của ${operator.name}`}
           aria-valuemin={0}
           aria-valuemax={100}
-          aria-valuenow={Math.round(progress * 100)}
+          aria-valuenow={Math.round((progress ?? 0) * 100)}
+          data-idle={progress === null || undefined}
         >
           <span
             className="progress-fill"
-            style={{ width: `${progress * 100}%` }}
+            style={{ width: `${(progress ?? 0) * 100}%` }}
           />
         </span>
       )}

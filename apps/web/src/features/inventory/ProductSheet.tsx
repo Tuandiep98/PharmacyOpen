@@ -115,11 +115,9 @@ export function RestockButton({
 export function ProductSheet({
   state,
   productId,
-  onClose,
 }: {
   state: DeepReadonly<SimState>;
   productId: ProductId;
-  onClose: () => void;
 }) {
   const p = PRODUCTS[productId];
   const { shelf, capacity } = state.stock[productId];
@@ -183,9 +181,6 @@ export function ProductSheet({
       </div>
       <footer className="detail-footer">
         <RestockButton state={state} productId={productId} />
-        <GameButton tone="secondary" onClick={onClose} autoFocus>
-          Đóng
-        </GameButton>
       </footer>
     </article>
   );

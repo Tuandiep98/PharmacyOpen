@@ -927,7 +927,8 @@ function HotBadge({
           stroke={INK}
           strokeWidth={2}
           paintOrder="stroke"
-          letterSpacing={0.2}
+          textLength={width - 22}
+          lengthAdjust="spacingAndGlyphs"
         >
           BÁN CHẠY
         </text>

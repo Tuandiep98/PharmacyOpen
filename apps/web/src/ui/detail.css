@@ -201,7 +201,8 @@
     max-height: 64px;
   }
 }
-@media (prefers-color-scheme: dark) {
+/* Dark mode tạm tắt: đổi `not all` về `(prefers-color-scheme: dark)` khi bảng màu tối ổn. */
+@media not all {
   .detail-dialog {
     box-shadow: 0 18px 44px rgb(0 8 4 / 58%);
   }

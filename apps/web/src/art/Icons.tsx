@@ -190,6 +190,13 @@ export const BoxIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Dấu nhân đóng hộp thoại. */
+export const CloseIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6,6 L18,18 M18,6 L6,18" strokeWidth={2.4} />
+  </Svg>
+);
+
 /** Hai mũi tên xoay vòng: đổi người. */
 export const SwapIcon = (p: IconProps) => (
   <Svg {...p}>

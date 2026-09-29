@@ -15,6 +15,9 @@
   --danger-soft: #fae6e0;
   --warn-soft: #fff0cf;
   --good-soft: #ddf0dc;
+  --warn-ink: #785013;
+  --bad-ink: #8f332c;
+  --idle-soft: #eceee6;
   --radius: 16px;
   --shadow: 0 10px 28px rgb(49 70 50 / 13%);
   --focus: #b8751b;
@@ -469,6 +472,21 @@ button:disabled {
 }
 .sheet-body {
   padding-inline: clamp(16px, 2.5vw, 28px);
+}
+.sheet-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex: none;
+  min-height: 56px;
+  padding: 8px 16px 6px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+.sheet-topbar strong {
+  color: var(--primary);
+  font-size: 18px;
 }
 .panel-heading {
   display: grid;
@@ -1571,6 +1589,48 @@ button:disabled {
   }
 }
 
+/* Các tab quản lý là màn hình cấp ứng dụng trên điện thoại. Không để chiều cao của
+ * cảnh/khay nhân viên làm co panel khi chuyển từ Cửa hàng sang Kho, Nhân sự… */
+@media (max-width: 819px) {
+  .inspector[data-size="full"] {
+    position: fixed;
+    inset: 0;
+    z-index: 12;
+    display: flex;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--panel);
+  }
+  .inspector[data-size="full"] .sheet {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    animation: sheet-fullscreen-in 180ms var(--sheet-ease) both;
+  }
+  .inspector[data-size="full"] .sheet::before {
+    display: none;
+  }
+  .inspector[data-size="full"] .sheet-body {
+    padding-top: 14px;
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+  .inspector[data-size="full"] .sheet-topbar {
+    padding-top: calc(8px + env(safe-area-inset-top));
+  }
+}
+@keyframes sheet-fullscreen-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
 /* Tổng lương cuối ngày ở đầu tab Nhân sự; viền cam khi tiền hiện có chưa đủ. */
 .wage-summary {
   display: grid;
@@ -1875,7 +1935,8 @@ button:disabled {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+/* Dark mode tạm tắt: đổi `not all` về `(prefers-color-scheme: dark)` khi bảng màu tối ổn. */
+@media not all {
   :root {
     color-scheme: dark;
     --bg: #0b1712;
@@ -2073,5 +2134,207 @@ button:disabled {
   .fam-badge.fam-known,
   .fam-badge.fam-close {
     color: var(--bad-ink);
+  }
+}
+
+/* Huy hiệu việc đang làm: icon + chữ + nền theo nhóm (không chỉ dựa vào màu). */
+.activity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  min-width: 0;
+  padding: 2px 9px 2px 4px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--idle-soft);
+  color: var(--ink-soft);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+.activity-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+  line-height: 0;
+}
+.activity-dot {
+  width: 7px;
+  height: 7px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+.activity-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.activity-badge[data-kind="serving"] {
+  border-color: #9fcdb0;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+.activity-badge[data-kind="serving"] .activity-icon {
+  animation: activity-pulse 1.6s ease-in-out infinite;
+}
+.activity-badge[data-kind="working"] {
+  border-color: #e7c888;
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+}
+.activity-badge[data-kind="waiting"] {
+  border-color: var(--line);
+  background: var(--surface-tint);
+  color: var(--primary);
+}
+.activity-badge[data-kind="slack"] {
+  border-color: #e3a79c;
+  background: var(--danger-soft);
+  color: var(--bad-ink);
+}
+.activity-badge[data-kind="off"] {
+  border-style: dashed;
+  border-color: var(--line);
+  background: transparent;
+}
+.activity-badge[data-kind="off"] .activity-dot {
+  border-style: dotted;
+}
+@keyframes activity-pulse {
+  50% {
+    box-shadow: 0 0 0 3px rgb(35 107 84 / 18%);
+  }
+}
+
+/* Thanh tiến độ giữ chỗ cả khi rảnh để dải trạng thái không nhảy chiều cao. */
+.progress-track[data-idle] {
+  opacity: 0.45;
+}
+
+/* Dải trạng thái khi NPC đứng quầy: chân dung lớn, tên + quầy, huy hiệu việc, tiến độ, nút lấy lại quầy. */
+.auto-counter.npc-counter {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 10px;
+  padding-block: 10px 12px;
+}
+.npc-title {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  white-space: nowrap;
+}
+.auto-counter-info .npc-title strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 15px;
+  text-overflow: ellipsis;
+}
+.auto-counter-info .npc-title > span {
+  flex: none;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+.auto-counter-info .npc-activity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  color: inherit;
+}
+.queue-chip {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn-ink);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.auto-counter.npc-counter .auto-counter-info .progress-track {
+  height: 6px;
+  margin-top: 3px;
+}
+.auto-counter.npc-counter > .btn {
+  min-height: 44px;
+  font-size: 13px;
+}
+@media (max-width: 350px) {
+  .auto-counter.npc-counter {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+}
+
+/* Thẻ quầy và thẻ nhân viên dùng cùng huy hiệu. */
+.counter-summary-text .activity-badge {
+  justify-self: start;
+}
+.team-card-status .activity-badge {
+  font-size: 13px;
+}
+
+/* Tạm dừng: nút gọn giữa màn hình, không kéo giãn hết chiều ngang như nút .big thường. */
+.btn.game-button.pause-resume {
+  width: auto;
+  min-width: 188px;
+  max-width: calc(100vw - 64px);
+  min-height: 56px;
+  padding: 10px 26px;
+  border-radius: 18px;
+  font-size: 19px;
+}
+
+/* Hộp thoại chi tiết: nút đóng tròn ở góc, footer chỉ giữ hành động chính. */
+.detail-close.btn.game-button.icon-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+}
+.detail-hero .detail-status {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.detail-hero .activity-badge {
+  font-size: 13px;
+}
+
+/* Tab toàn màn hình đã có tiêu đề ở thanh trên: ẩn tiêu đề lặp (vẫn đọc được bằng trình đọc màn hình). */
+.inspector[data-size="full"]
+  .sheet-body
+  > .panel
+  > .panel-heading:first-child
+  h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-badge[data-kind="serving"] .activity-icon {
+    animation: none;
   }
 }

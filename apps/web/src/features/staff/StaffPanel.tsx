@@ -43,7 +43,7 @@ import { REJECT_TEXT } from "../store/rejectText";
 import { useServiceActions } from "../store/useServiceActions";
 import { DismissButton } from "./DismissButton";
 import { CounterCard } from "./CounterAssign";
-import { workerStatus } from "./workerStatus";
+import { ActivityBadge } from "./ActivityBadge";
 import "./staff.css";
 
 const ROLE: Record<string, string> = {
@@ -420,8 +420,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
               )}
             </div>
             <p className="team-card-status">
-              <span className="status-dot" aria-hidden />
-              {workerStatus(state, w)}
+              <ActivityBadge state={state} worker={w} />
             </p>
             {w.controller === "ai" && (
               <>

@@ -49,6 +49,28 @@ export function workerStatus(
     : "Rảnh, sẽ tự bổ sung hàng khi kệ gần hết";
 }
 
+/** Nhóm trạng thái để tô huy hiệu: màu luôn đi kèm icon và chữ của `workerStatus`. */
+export type WorkerActivity =
+  "serving" | "working" | "waiting" | "idle" | "off" | "slack";
+
+export function workerActivity(
+  state: DeepReadonly<SimState>,
+  worker: DeepReadonly<Worker>,
+): WorkerActivity {
+  if (worker.task?.kind === "slack") return "slack";
+  if (worker.task) return "working";
+  if (worker.orderId && state.orders[worker.orderId]) return "serving";
+  if (
+    worker.restDay === state.day ||
+    !isOnDuty(state, worker) ||
+    !isPresent(state, worker)
+  )
+    return "off";
+  const counter = state.counters.find((c) => c.operatorId === worker.id);
+  if (counter) return counter.customerId ? "serving" : "waiting";
+  return "idle";
+}
+
 export function workerProgress(
   state: DeepReadonly<SimState>,
   worker: DeepReadonly<Worker>,

@@ -299,7 +299,8 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+/* Dark mode tạm tắt: đổi `not all` về `(prefers-color-scheme: dark)` khi bảng màu tối ổn. */
+@media not all {
   .nametag-pharmacist {
     border-color: #273022;
     color: #0a2114;

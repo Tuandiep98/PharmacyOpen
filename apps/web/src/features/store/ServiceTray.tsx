@@ -19,8 +19,9 @@ import { useUi } from "../../ui/uiStore";
 import { GameButton } from "../../ui/primitives";
 import { Portrait } from "./CustomerInfo";
 import { PLAYER_WORKER_ID, useServiceActions } from "./useServiceActions";
-import { workerProgress, workerStatus } from "../staff/workerStatus";
+import { workerProgress } from "../staff/workerStatus";
 import { CounterStaffPicker, SwapAvatar } from "../staff/CounterAssign";
+import { ActivityBadge } from "../staff/ActivityBadge";
 import { useState } from "react";
 import { CatalogControls } from "../../ui/CatalogControls";
 import { catalogPageProducts } from "../../ui/catalog";
@@ -115,39 +116,47 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     const progress = workerProgress(state, operator);
     const waiting = state.queue.length;
     return (
-      <section className="auto-counter" aria-label="Quầy tự phục vụ">
+      <section
+        className="auto-counter npc-counter"
+        aria-label="Quầy tự phục vụ"
+      >
         {counterTabs}
         {staffOnDuty ? (
           <SwapAvatar
             worker={operator}
+            size={48}
             open={swapOpen}
             onToggle={toggleSwap}
             counterLabel={`quầy${counterLabel}`}
           />
         ) : (
-          <WorkerPortrait worker={operator} size={40} />
+          <WorkerPortrait worker={operator} size={48} />
         )}
-        <div className="auto-counter-info">
-          <strong>{operator.name} đang đứng quầy</strong>
-          <span>
-            {workerStatus(state, operator)}
-            {waiting > 0 ? ` · ${waiting} khách chờ` : ""}
+        <div className="auto-counter-info" aria-live="polite">
+          <span className="npc-title">
+            <strong>{operator.name}</strong>
+            <span>đứng quầy{counterLabel}</span>
           </span>
-          {progress !== null && (
+          <span className="npc-activity">
+            <ActivityBadge state={state} worker={operator} />
+            {waiting > 0 && (
+              <span className="queue-chip">{waiting} khách chờ</span>
+            )}
+          </span>
+          <span
+            className="progress-track"
+            role="progressbar"
+            aria-label={`Tiến độ công việc của ${operator.name}`}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round((progress ?? 0) * 100)}
+            data-idle={progress === null || undefined}
+          >
             <span
-              className="progress-track"
-              role="progressbar"
-              aria-label={`Tiến độ công việc của ${operator.name}`}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(progress * 100)}
-            >
-              <span
-                className="progress-fill"
-                style={{ width: `${progress * 100}%` }}
-              />
-            </span>
-          )}
+              className="progress-fill"
+              style={{ width: `${(progress ?? 0) * 100}%` }}
+            />
+          </span>
         </div>
         <GameButton
           size="small"
