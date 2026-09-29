@@ -31,11 +31,11 @@ export function WorkerSheet({ state, workerId }: { state: DeepReadonly<SimState>
         </div>
       </div>
       {worker.controller === 'ai' && <StatBars speed={worker.speed} knowledge={worker.knowledge} communication={worker.communication} />}
-      {!operates && (
-        <GameButton onClick={() => assignCounter(worker.id)}>
-          {worker.controller === 'player' ? 'Tự đứng quầy' : `Giao quầy cho ${worker.name}`}
+      {!operates && state.counters.map((counter, index) => (
+        <GameButton key={counter.id} onClick={() => assignCounter(worker.id, counter.id)}>
+          {worker.controller === 'player' ? 'Tự đứng' : `Giao ${worker.name}`} quầy {state.counters.length > 1 ? index + 1 : ''}
         </GameButton>
-      )}
+      ))}
       <DismissButton worker={worker} onDone={() => select(null)} />
     </div>
   );

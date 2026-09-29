@@ -60,10 +60,29 @@ button {
 
 @media (max-width: 420px) {
   /* Màn hẹp: ẩn tên tiệm để giữ chỗ cho tiền, ngày/giờ và menu. */
-  .hud-brand span {
+  .hud-brand > span:not(.brand-avatar) {
     display: none;
   }
 }
+.hud-brand-button { border: 0; background: transparent; cursor: pointer; min-height: 44px; min-width: 44px; padding: 0; text-align: left; }
+.hud-brand-button > span:not(.brand-avatar) { max-width: min(24vw, 230px); overflow: hidden; text-overflow: ellipsis; }
+.hud-brand-button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; border-radius: 8px; }
+.brand-avatar { display: inline-block; flex: none; background-image: url('/brand-avatars.png'); background-size: 200% 200%; background-repeat: no-repeat; border-radius: 50%; }
+.brand-avatar-dandelion { background-position: left top; }
+.brand-avatar-sprout { background-position: right top; }
+.brand-avatar-sun { background-position: left bottom; }
+.brand-avatar-kite { background-position: right bottom; }
+.brand-dialog { text-align: left; width: min(520px, 100%); max-height: 100%; overflow-y: auto; gap: 8px; }
+.brand-dialog h1 { justify-self: center; }
+.brand-dialog > label, .brand-dialog legend { font-weight: 800; }
+.brand-dialog input[type='text'], .brand-dialog #brand-name { width: 100%; min-height: 44px; padding: 8px 12px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; }
+.brand-dialog fieldset { width: 100%; min-width: 0; margin: 0; padding: 0; border: 0; }
+.brand-avatar-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.brand-avatar-options label { display: grid; justify-items: center; gap: 3px; min-width: 0; padding: 6px 2px; border: 2px solid var(--line); border-radius: 12px; cursor: pointer; text-align: center; font-size: 12px; font-weight: 700; }
+.brand-avatar-options label.chosen { border-color: var(--primary); background: var(--primary-soft); }
+.brand-avatar-options input { position: absolute; opacity: 0; }
+.brand-avatar-options label:focus-within { outline: 3px solid var(--sun); outline-offset: 2px; }
+.brand-avatar-options label > span:last-child { overflow-wrap: anywhere; }
 
 .hud-stats {
   display: flex;
@@ -1183,6 +1202,7 @@ button {
 }
 
 .progress-fill {
+  display: block;
   height: 100%;
   background: var(--primary);
   transition: width 120ms linear;
@@ -1317,7 +1337,7 @@ button {
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
   background: rgba(46, 42, 58, 0.45);
   z-index: 10;
 }
@@ -1325,6 +1345,7 @@ button {
 .modal {
   width: min(420px, 100%);
   max-height: 100%;
+  min-height: 0;
   overflow-y: auto;
   display: grid;
   justify-items: center;
@@ -1334,6 +1355,16 @@ button {
   background: var(--panel);
   box-shadow: var(--shadow);
   text-align: center;
+}
+
+.modal-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  width: 100%;
+  display: grid;
+  padding-top: 8px;
+  background: var(--panel);
 }
 
 .modal h1 {

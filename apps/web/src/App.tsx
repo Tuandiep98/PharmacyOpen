@@ -9,8 +9,8 @@ import {
   type SimState,
 } from '@pharmacy/simulation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BRAND } from './brand';
-import { DandelionLogo } from './art/Furniture';
+import { BRAND, useBrandIdentity } from './brand';
+import { BrandAvatarImage, BrandDialog } from './features/brand/BrandDialog';
 import {
   BoxIcon,
   CheckIcon,
@@ -75,12 +75,13 @@ export function App() {
   const state = useGameState();
   const [firstVisit] = useState(() => !readFlag(WELCOME_KEY));
   const [showInfo, setShowInfo] = useState(firstVisit);
+  const [showBrand, setShowBrand] = useState(false);
   const offline = useUi((s) => s.offline);
   const setOffline = useUi((s) => s.setOffline);
   const daySummary = useUi((s) => s.daySummary);
   const setDaySummary = useUi((s) => s.setDaySummary);
   // Hộp thoại che màn hình thì tạm dừng mô phỏng.
-  const paused = showInfo || offline !== null || daySummary !== null;
+  const paused = showInfo || showBrand || offline !== null || daySummary !== null;
 
   useEffect(() => {
     bridge.setRunning(!paused);
@@ -100,7 +101,7 @@ export function App() {
 
   return (
     <div className="app">
-      <Hud state={state} onInfo={() => setShowInfo(true)} />
+      <Hud state={state} onInfo={() => setShowInfo(true)} onBrand={() => setShowBrand(true)} />
       <main className="stage">
         <div className="scene-wrap">
           <StoreScene state={state} />
@@ -126,6 +127,7 @@ export function App() {
           }}
         />
       )}
+      {showBrand && !showInfo && <BrandDialog onClose={() => setShowBrand(false)} />}
     </div>
   );
 }
@@ -349,10 +351,13 @@ function useEventFeedback() {
 function Hud({
   state,
   onInfo,
+  onBrand,
 }: {
   state: DeepReadonly<SimState>;
   onInfo: () => void;
+  onBrand: () => void;
 }) {
+  const identity = useBrandIdentity();
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -384,12 +389,10 @@ function Hud({
   };
   return (
     <header className="hud">
-      <div className="hud-brand">
-        <svg width={30} height={30} viewBox="-15 -15 30 30" aria-hidden>
-          <DandelionLogo r={14} />
-        </svg>
-        <span>{BRAND.short}</span>
-      </div>
+      <button className="hud-brand hud-brand-button" onClick={onBrand} aria-label={`Đổi tên và hình đại diện ${identity.name}`}>
+        <BrandAvatarImage avatar={identity.avatar} size={30} />
+        <span>{identity.name}</span>
+      </button>
       <div className="hud-stats">
         <button
           className={`chip chip-btn ${owed ? "alert" : ""}`}
@@ -438,6 +441,9 @@ function Hud({
                 }}
               >
                 <InfoIcon size={22} /> Hướng dẫn chơi
+              </button>
+              <button className="hud-menu-item" onClick={() => { setMenuOpen(false); onBrand(); }}>
+                <StoreIcon size={22} /> Tên &amp; hình tiệm
               </button>
             </div>
           )}

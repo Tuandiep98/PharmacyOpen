@@ -2,7 +2,7 @@
 
 ## Hướng thiết kế
 
-Tiệm nhỏ như một trang truyện tương tác: nền giấy sáng, kệ gỗ mật ong, bảng hiệu men xanh lá. Cảnh cửa hàng là trọng tâm; HUD và các bảng thông tin giúp người chơi quyết định nhanh, không che cảnh lâu hơn cần thiết. Toàn bộ hình vẽ là SVG gốc trong repo.
+Tiệm nhỏ như một trang truyện tương tác: nền giấy sáng, kệ gỗ mật ong, bảng hiệu men xanh lá. Cảnh cửa hàng là trọng tâm; HUD và các bảng thông tin giúp người chơi quyết định nhanh, không che cảnh lâu hơn cần thiết. Art cảnh là SVG gốc trong repo; bốn hình đại diện thương hiệu là một sprite PNG được tạo riêng.
 
 ## Token
 
@@ -33,6 +33,13 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 - Hướng dẫn chơi nằm trong `OnboardingDialog`, có thể mở lại từ menu HUD, cho phép bỏ qua và có lối vào bản lưu trực tiếp. Các bước hướng dẫn dùng hình sản phẩm và icon cùng hệ art của game.
 - Tab Nhân sự ưu tiên trạng thái quầy và việc đang làm. Trên thẻ nhân viên chỉ hiện các số liệu ngắn; kỹ năng và lương mở theo nhu cầu.
 - Chuyển động chỉ báo thao tác hoặc trạng thái; tôn trọng `prefers-reduced-motion`.
+
+## Giới hạn chiều cao và ưu tiên số liệu
+
+- Mọi màn hình chơi và dialog/overlay phải nằm trong **một viewport hiện tại** (`100dvh`), tính cả nút hành động chính và safe area. Trên màn hình thấp, cuộn **vùng nội dung bên trong**; giữ hành động chính nhìn thấy và chạm được, không để nút nằm dưới mép màn hình. Kiểm tra ít nhất 320 × 568, 375 × 667, 390 × 844 và tablet ngang; kiểm tra cả bàn phím hiện khi sửa tên.
+- Tổng kết ngày và lời chào quay lại ưu tiên ba số: kết quả xu/lãi, khách đã phục vụ, khách bỏ về. Chữ số chính lớn, đậm, dạng số có độ rộng ổn định; tăng/tốt dùng xanh, giảm/xấu dùng đỏ và luôn có nhãn chữ. Sổ sách, từng ca và số liệu phụ nằm sau thao tác “Xem chi tiết”. Không dùng màu đơn lẻ để truyền đạt ý nghĩa.
+- Với hai quầy, cả hai quầy phải nhận biết được trong cảnh ở điện thoại; bộ chọn quầy phải có vùng chạm ≥ 44 px, trạng thái khách/người đứng và chỉ rõ quầy đang chọn. Giao người đứng quầy phải cho chọn số quầy cụ thể.
+- Trên thẻ nhân viên, lịch ca và vị trí chỉ hiện tóm tắt; chạm mới mở lựa chọn. Thanh cấp độ/mệt có nền và phần tô đúng tỉ lệ giá trị, kèm số đọc được.
 
 ## Nhân vật và icon
 

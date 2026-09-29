@@ -3,7 +3,7 @@ import { DandelionLogo } from '../../art/Furniture';
 import { BoxIcon, ClinicIcon, StaffIcon } from '../../art/Icons';
 import { ProductIcon } from '../../art/Products';
 import { playSfx } from '../../audio/sfx';
-import { BRAND } from '../../brand';
+import { useBrandIdentity } from '../../brand';
 import { GameButton } from '../../ui/primitives';
 import { SaveSection } from '../save/SaveSection';
 
@@ -11,6 +11,7 @@ const STEP_COUNT = 4;
 
 export function OnboardingDialog({ seed, showSave, onClose }: { seed: number; showSave: boolean; onClose: () => void }) {
   const [step, setStep] = useState(0);
+  const identity = useBrandIdentity();
   const next = () => {
     playSfx('page');
     if (step === STEP_COUNT - 1) onClose();
@@ -21,9 +22,10 @@ export function OnboardingDialog({ seed, showSave, onClose }: { seed: number; sh
       <div className="onboarding-progress" aria-label={`Hướng dẫn ${step + 1} trên ${STEP_COUNT}`}>
         {Array.from({ length: STEP_COUNT }, (_, i) => <span key={i} className={i === step ? 'current' : i < step ? 'done' : ''} />)}
       </div>
+      <div className="onboarding-body">
       {step === 0 && <>
         <div className="onboarding-art"><svg width={64} height={64} viewBox="-15 -15 30 30" aria-hidden><DandelionLogo r={14} /></svg></div>
-        <h1 id="onboarding-title">Chào mừng đến {BRAND.name}</h1>
+        <h1 id="onboarding-title">Chào mừng đến {identity.name}</h1>
         <p>Điều hành một tiệm nhỏ: nghe khách, chọn đồ phù hợp, chăm kệ và xây đội ngũ.</p>
         <ul className="disclaimer">
           <li>Đây là trò chơi mô phỏng. Cửa hàng, nhãn hiệu, sản phẩm và nhân vật đều là hư cấu.</li>
@@ -51,12 +53,13 @@ export function OnboardingDialog({ seed, showSave, onClose }: { seed: number; sh
         <p>Vào Nhân sự để tuyển người và giao quầy. Nhân viên sẽ phục vụ khi bạn vắng mặt; kho, đánh giá và sổ sách giúp bạn theo dõi tiệm.</p>
         {showSave && <SaveSection />}
       </>}
+      <p className="muted small">Bản thử nghiệm · seed {seed} · Font Nunito (SIL OFL 1.1) · canvas-confetti (ISC)</p>
+      </div>
       <div className="onboarding-actions">
         {step > 0 && <GameButton onClick={() => { playSfx('page'); setStep(step - 1); }}>Quay lại</GameButton>}
         <GameButton tone="primary" onClick={next} autoFocus>{step === STEP_COUNT - 1 ? 'Vào tiệm' : 'Tiếp theo'}</GameButton>
       </div>
       {step < STEP_COUNT - 1 && <button className="link-btn" onClick={onClose}>Bỏ qua hướng dẫn</button>}
-      <p className="muted small">Bản thử nghiệm · seed {seed} · Font Nunito (SIL OFL 1.1) · canvas-confetti (ISC)</p>
     </div>
   </div>;
 }

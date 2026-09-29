@@ -14,6 +14,7 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
           <DandelionLogo r={14} />
         </svg>
         <h1 id="offline-title">Chào mừng trở lại!</h1>
+        <div className="offline-body">
         <p className="muted">Bạn đã vắng {formatDuration(summary.awayMs)}.</p>
         {!summary.storeOpen ? (
           <p className="notice warn">
@@ -26,7 +27,12 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
               Nhân viên đã trông tiệm {formatDuration(summary.simulatedMs)}
               {summary.capped && ` (tính tối đa ${formatDuration(summary.simulatedMs)} mỗi lần vắng)`}.
             </p>
-            <dl className="ledger-rows offline-rows">
+            <div className="day-highlights">
+              <div className="day-highlight"><span>Xu thay đổi</span><strong className={summary.moneyDelta >= 0 ? 'pos' : 'neg'}>{signed(summary.moneyDelta)} <small>{BRAND.currency}</small></strong></div>
+              <div className="day-highlight"><span>Đã phục vụ</span><strong>{summary.sales + summary.referrals}<small>/{summary.customers} khách</small></strong></div>
+              <div className="day-highlight"><span>Khách bỏ về</span><strong className={summary.leftAngry + summary.turnedAway > 0 ? 'neg' : 'pos'}>{summary.leftAngry + summary.turnedAway}</strong></div>
+            </div>
+            <details className="day-details"><summary>Xem hoạt động khi vắng mặt</summary><dl className="ledger-rows offline-rows">
               <div>
                 <dt>Khách ghé</dt>
                 <dd>{summary.customers}{summary.returningCustomers > 0 ? ` · ${summary.returningCustomers} khách quen` : ''}</dd>
@@ -70,16 +76,14 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
                   </dd>
                 </div>
               )}
-            </dl>
+            </dl></details>
             {summary.openComplaints > 0 && (
               <p className="notice warn">Có {summary.openComplaints} khiếu nại cần phản hồi — xem ở tab Đánh giá.</p>
             )}
           </>
         )}
-        <GameButton tone="primary" size="large" onClick={onClose} autoFocus>
-          Vào tiệm
-        </GameButton>
-        <p className="muted small">Đơn vị: {BRAND.currency}. Kết quả được tính bằng đúng mô phỏng trong game.</p>
+        </div>
+        <div className="modal-actions"><GameButton tone="primary" size="large" onClick={onClose} autoFocus>Vào tiệm</GameButton></div>
       </div>
     </div>
   );

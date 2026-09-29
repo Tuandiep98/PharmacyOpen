@@ -97,10 +97,35 @@
 }
 
 .day-summary {
-  display: grid;
-  gap: 10px;
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 100%;
+  overflow: hidden;
+  text-align: left;
+}
+.day-summary-body { width: 100%; min-height: 0; overflow-y: auto; display: grid; gap: 8px; }
+.day-highlights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+.day-highlight { display: grid; align-content: center; gap: 2px; min-width: 0; padding: 10px 6px; border-radius: 12px; background: var(--surface-soft); text-align: center; }
+.day-highlight > span { color: var(--ink-soft); font-size: 12px; font-weight: 700; }
+.day-highlight strong { font-size: clamp(22px, 5vw, 32px); font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.day-highlight small { display: block; font-size: 11px; font-weight: 700; color: var(--ink-soft); }
+.day-details { width: 100%; text-align: left; }
+.day-details > summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; color: var(--primary); font-weight: 800; }
+.day-details > summary::before { content: '▸'; margin-right: 8px; }
+.day-details[open] > summary::before { content: '▾'; }
+.day-details .ledger-rows { margin-bottom: 10px; }
+.modal.offline { display: flex; flex-direction: column; gap: 8px; max-height: 100%; overflow: hidden; padding-block: 14px; }
+.offline-body { width: 100%; min-height: 0; overflow-y: auto; display: grid; gap: 8px; text-align: left; }
+.modal.offline .day-highlights { flex: none; }
+.modal.offline .modal-actions, .day-summary .modal-actions { flex: none; }
+@media (max-width: 380px), (max-height: 600px) {
+  .day-summary, .modal.offline { padding: 10px; gap: 5px; }
+  .day-highlight { padding: 6px 3px; }
+  .day-highlight strong { font-size: 21px; }
+  .day-grade svg { width: 23px; height: 23px; }
+  .goal-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .goal-list li { padding: 4px; font-size: 11px; line-height: 1.2; }
 }
 .day-summary h1 {
   margin: 0;

@@ -7,7 +7,7 @@
 
 - [x] Tên, logo và nhãn sản phẩm đều hư cấu ("Bồ Công Anh", "Mây Nhẹ", "Dán Xinh"…), gom ở `apps/web/src/brand.ts` và `packages/simulation/src/content/products.ts` để đổi nhanh.
 - [x] Không dùng tên, logo, màu nhận diện hay asset của chuỗi nhà thuốc thật (Pharmacity, Long Châu, An Khang, Guardian…).
-- [x] Toàn bộ art là SVG tự vẽ trong repo (`apps/web/src/art`). Không dùng asset tải từ nguồn chưa rõ license.
+- [x] Art cảnh và sản phẩm là SVG tự vẽ trong repo (`apps/web/src/art`); bốn hình đại diện thương hiệu trong `apps/web/public/brand-avatars.png` được tạo riêng cho dự án. Không dùng asset tải từ nguồn chưa rõ license.
 - [x] Font Nunito dùng giấy phép SIL Open Font License 1.1, được phép đóng gói kèm game. Đã ghi công trong hộp thoại giới thiệu và trong [`credits.md`](credits.md).
 - [ ] ⚖️ Tra cứu nhãn hiệu cho tên game và tên thương hiệu hư cấu (IP Việt Nam, WIPO Global Brand Database, và tên trùng trên App Store / Google Play) trước khi phát hành.
 - [ ] Nếu sau này dùng asset CC0 hoặc CC-BY (ví dụ Kenney), ghi nguồn vào `docs/credits.md`.

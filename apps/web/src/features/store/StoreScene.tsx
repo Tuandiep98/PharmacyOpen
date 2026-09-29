@@ -13,7 +13,7 @@ import {
   type WorkerTask,
 } from '@pharmacy/simulation';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { BRAND } from '../../brand';
+import { useBrandIdentity } from '../../brand';
 import { CustomerFigure } from '../../art/Character';
 import { WorkerFigure } from '../../art/WorkerFigure';
 import { Counter, CounterScanner, ExpandedStore, Plant, QueueLane, Register, ShelfUnit, StoreSign, WaitingBench, WallAndFloor } from '../../art/Furniture';
@@ -28,7 +28,7 @@ type State = DeepReadonly<SimState>;
 
 // Bố cục cố định của cảnh (đơn vị viewBox). Hàng chờ nằm ngang bên trái quầy để cảnh thấp, gọn.
 const SCENE_W = 360;
-export const SECOND_OFFSET = 240;
+export const SECOND_OFFSET = 170;
 const SCENE_H = 420;
 const COUNTER_SPOT = { x: 160, y: 392 };
 const QUEUE_SPOTS = [112, 68, 24].map((x) => ({ x, y: 394 }));
@@ -72,7 +72,7 @@ function shelfSlots(count: number): SlotDef[] {
 }
 
 /** Khung cao hơn tỉ lệ cảnh thì nới phần tường lên trên, để quầy và khay luôn sát nhau. */
-function useSceneViewBox(sceneWidth: number, activeCounterId: string) {
+function useSceneViewBox(sceneWidth: number) {
   const ref = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: SCENE_W, h: SCENE_H });
   useLayoutEffect(() => {
@@ -84,16 +84,15 @@ function useSceneViewBox(sceneWidth: number, activeCounterId: string) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-  const visibleWidth = sceneWidth > SCENE_W && size.w < 600 ? SCENE_W : sceneWidth;
-  const viewX = visibleWidth === SCENE_W && sceneWidth > SCENE_W && activeCounterId === 'counter-2' ? SECOND_OFFSET : 0;
-  const vh = Math.max(SCENE_H, size.w > 0 ? (visibleWidth * size.h) / size.w : SCENE_H);
-  return { ref, viewBox: `${viewX} ${SCENE_H - vh} ${visibleWidth} ${vh}` };
+  const vh = Math.max(SCENE_H, size.w > 0 ? (sceneWidth * size.h) / size.w : SCENE_H);
+  return { ref, viewBox: `0 ${SCENE_H - vh} ${sceneWidth} ${vh}` };
 }
 
 export function StoreScene({ state }: { state: State }) {
+  const brandIdentity = useBrandIdentity();
   const sceneWidth = state.counters.length > 1 ? SCENE_W + SECOND_OFFSET : SCENE_W;
+  const { ref, viewBox } = useSceneViewBox(sceneWidth);
   const activeCounterId = useUi((s) => s.activeCounterId);
-  const { ref, viewBox } = useSceneViewBox(sceneWidth, activeCounterId);
   const selection = useUi((s) => s.selection);
   const select = useUi((s) => s.select);
   const setActiveCounterId = useUi((s) => s.setActiveCounterId);
@@ -138,7 +137,7 @@ export function StoreScene({ state }: { state: State }) {
     >
       <WallAndFloor />
       <ExpandedStore warehouseLevel={facilityLevel(state, 'warehouse')} storeLevel={facilityLevel(state, 'storefront')} />
-      <StoreSign name={BRAND.name} level={ownedLevel('signboard')} />
+      <StoreSign name={brandIdentity.name} level={ownedLevel('signboard')} />
       <ShelfUnit level={facilityLevel(state, 'wide-shelf')} sorted={state.upgrades.includes('sorted-shelf')} />
       {slots.map((slot, index) => {
         const id = visibleProducts[index];
@@ -188,6 +187,7 @@ export function StoreScene({ state }: { state: State }) {
       <CounterScanner level={ownedLevel('scanner')} />
       <Register active={(() => { const customer = counterCustomer('counter-1'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} />
       {state.counters.length > 1 && <g transform={`translate(${SECOND_OFFSET} 0)`}><Counter /><CounterScanner level={ownedLevel('scanner')} /><Register active={(() => { const customer = counterCustomer('counter-2'); return customer?.orderId ? state.orders[customer.orderId]?.state === 'checkingOut' : false; })()} /></g>}
+      {state.counters.length > 1 && state.counters.map((counter, index) => <rect key={counter.id} x={194 + index * SECOND_OFFSET} y={285} width={166} height={91} rx={10} fill="none" stroke={counter.id === activeCounterId ? ART.honey : ART.leafLight} strokeWidth={counter.id === activeCounterId ? 4 : 2} strokeDasharray={counter.id === activeCounterId ? undefined : '5 4'} pointerEvents="none" />)}
       {state.counters.length > 1 && state.counters.map((c, i) => <text key={c.id} x={272 + i * SECOND_OFFSET} y={287} fontSize={11} fontWeight={900} fill={INK} textAnchor="middle">QUẦY {i + 1}{!c.operatorId ? ' · CHƯA MỞ' : ''}</text>) }
       {workerSpots.map(({ worker, spot }) => (
         <WorkerBubble

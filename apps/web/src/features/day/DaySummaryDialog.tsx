@@ -13,13 +13,22 @@ export function DaySummaryDialog({ report, onClose }: { report: DeepReadonly<Day
       <div className="modal day-summary" role="dialog" aria-modal="true" aria-labelledby="day-summary-title">
         <h1 id="day-summary-title">Kết thúc ngày {report.day}</h1>
         <DayGrade report={report} />
-        <DayGoalList report={report} />
-        <ProfitTable report={report} />
-        <DayMetrics report={report} />
-        {report.shifts.length > 0 && <ShiftTable report={report} />}
-        <GameButton tone="primary" size="large" onClick={onClose} autoFocus>
+        <div className="day-summary-body">
+          <div className="day-highlights">
+            <div className="day-highlight"><span>Lãi ròng</span><strong className={report.netProfit >= 0 ? 'pos' : 'neg'}>{signed(report.netProfit)} <small>{BRAND.currency}</small></strong></div>
+            <div className="day-highlight"><span>Đã phục vụ</span><strong>{report.sales + report.referrals}<small>/{report.customers} khách</small></strong></div>
+            <div className="day-highlight"><span>Khách bỏ về</span><strong className={report.leftAngry + report.turnedAway > 0 ? 'neg' : 'pos'}>{report.leftAngry + report.turnedAway}</strong></div>
+          </div>
+          <DayGoalList report={report} />
+          <details className="day-details"><summary>Xem sổ sách và các chỉ số</summary>
+            <ProfitTable report={report} />
+            <DayMetrics report={report} />
+            {report.shifts.length > 0 && <ShiftTable report={report} />}
+          </details>
+        </div>
+        <div className="modal-actions"><GameButton tone="primary" size="large" onClick={onClose} autoFocus>
           Sang ngày {report.day + 1}
-        </GameButton>
+        </GameButton></div>
       </div>
     </div>
   );

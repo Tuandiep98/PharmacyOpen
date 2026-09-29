@@ -133,9 +133,9 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
           <span>
             Quầy: <b>{operator.name} (bạn)</b>
           </span>
-          <GameButton size="small" onClick={() => assignCounter(freeStaff[0]!.id, counter.id)}>
-            Giao cho {freeStaff[0]!.name}
-          </GameButton>
+          <details className="tray-assign"><summary>Giao quầy {state.counters.length > 1 ? state.counters.findIndex((c) => c.id === counter.id) + 1 : ''}</summary>
+            {freeStaff.map((w) => <GameButton key={w.id} size="small" onClick={() => assignCounter(w.id, counter.id)}>Giao cho {w.name}</GameButton>)}
+          </details>
         </div>
       )}
       <div className="tray-customer">

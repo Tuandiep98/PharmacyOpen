@@ -129,7 +129,7 @@ export function WageLine({ worker }: { worker: DeepReadonly<Worker> }) {
 export function LevelBar({ worker }: { worker: DeepReadonly<Worker> }) {
   const floor = LEVEL_XP[worker.level - 1] ?? 0;
   const next = LEVEL_XP[worker.level];
-  const ratio = next === undefined ? 1 : (worker.xp - floor) / (next - floor);
+  const ratio = next === undefined ? 1 : Math.max(0, Math.min(1, (worker.xp - floor) / (next - floor)));
   return (
     <span className="meter-line">
       <b className="level-badge">Cấp {worker.level}</b>
@@ -150,7 +150,7 @@ export function LevelBar({ worker }: { worker: DeepReadonly<Worker> }) {
 
 /** Thanh mệt: xanh → vàng → đỏ; chạm đỉnh thì người đó xin thôi việc. */
 function FatigueBar({ worker }: { worker: DeepReadonly<Worker> }) {
-  const ratio = worker.fatigue / QUIT_FATIGUE;
+  const ratio = Math.max(0, Math.min(1, worker.fatigue / QUIT_FATIGUE));
   const level = ratio >= 0.7 ? 'high' : ratio >= 0.35 ? 'mid' : 'low';
   return (
     <span className="meter-line">
@@ -283,14 +283,14 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
                 <b>{w.repCount ? `${(w.repStarsSum / w.repCount).toLocaleString('vi-VN', { maximumFractionDigits: 1 })}★` : '—'}</b>
               </span>
             </div>
-            {w.controller === 'ai' && <ShiftToggle state={state} worker={w} />}
-            {w.controller === 'ai' && <StationPicker state={state} worker={w} />}
+            {w.controller === 'ai' && <details className="team-card-details"><summary>Lịch ca · {w.shifts.map((s) => SHIFT_LABEL[s]).join(', ')}</summary><ShiftToggle state={state} worker={w} /></details>}
+            {w.controller === 'ai' && <details className="team-card-details"><summary>Vị trí · {STATIONS[stationOf(state, w)].name}{counterOf(w.id) >= 0 ? ` ${counterOf(w.id) + 1}` : ''}</summary><StationPicker state={state} worker={w} /></details>}
             <div className="team-card-actions">
-              {w.controller === 'player' && counterOf(w.id) < 0 && (
-                <GameButton size="small" onClick={() => assignCounter(w.id)}>
-                  Tự đứng quầy
+              {w.controller === 'player' && counterOf(w.id) < 0 && state.counters.map((c, i) => (
+                <GameButton key={c.id} size="small" onClick={() => assignCounter(w.id, c.id)}>
+                  Tự đứng quầy {state.counters.length > 1 ? i + 1 : ''}
                 </GameButton>
-              )}
+              ))}
               {w.controller === 'ai' && (
                 <details className="team-card-details">
                   <summary>Kỹ năng &amp; lương</summary>
@@ -389,22 +389,28 @@ function StationPicker({ state, worker }: { state: DeepReadonly<SimState>; worke
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
   const current = stationOf(state, worker);
-  const assign = (station: StationId) => {
-    const r = bridge.dispatch({ type: 'assignStation', workerId: worker.id, station });
+  const assign = (station: StationId, counterId?: string) => {
+    const r = counterId
+      ? bridge.dispatch({ type: 'assignCounter', workerId: worker.id, counterId })
+      : bridge.dispatch({ type: 'assignStation', workerId: worker.id, station });
     if (!r.ok) pushToast('bad', REJECT_TEXT[r.reason]);
   };
   return (
     <div className="shift-toggle station-picker" role="group" aria-label={`Vị trí của ${worker.name}`}>
       <span className="small muted">Vị trí:</span>
       {STATION_IDS.map((id) => {
-        const cap = id === 'counter' ? null : STATIONS[id].capacity;
+        if (id === 'counter') return state.counters.map((counter, index) => (
+          <button key={counter.id} aria-pressed={counter.operatorId === worker.id} disabled={counter.operatorId !== worker.id && !isOnDuty(state, worker)} onClick={() => assign('counter', counter.id)}>
+            {state.counters.length > 1 ? `Quầy ${index + 1}` : STATIONS.counter.name}
+          </button>
+        ));
+        const cap = STATIONS[id].capacity;
         const full = current !== id && cap !== null && stationHeadcount(state, id, worker.id) >= cap;
-        const unavailable = id === 'counter' && current !== 'counter' && !isOnDuty(state, worker);
         return (
           <button
             key={id}
             aria-pressed={current === id}
-            disabled={full || unavailable}
+            disabled={full}
             title={STATIONS[id].description}
             onClick={() => assign(id)}
           >

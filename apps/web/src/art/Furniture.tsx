@@ -30,7 +30,7 @@ export function StoreSign({ name, level = 0 }: { name: string; level?: number })
       {level > 0 && <path d="M58,11 H302" stroke={level >= 2 ? '#FFD56F' : ART.honey} strokeWidth={level >= 2 ? 5 : 3} strokeLinecap="round" />}
       <rect x={58} y={15} width={244} height={30} rx={6} fill="none" stroke={ART.leafLight} strokeWidth={1.4} strokeDasharray="3 3" />
       <DandelionLogo x={80} y={30} r={13} />
-      <text x={200} y={36} textAnchor="middle" fontSize={16} fontWeight={900} fill="#FFFFFF" letterSpacing={0.3}>
+      <text x={200} y={36} textAnchor="middle" fontSize={16} fontWeight={900} fill="#FFFFFF" letterSpacing={0.3} textLength={name.length > 19 ? 180 : undefined} lengthAdjust="spacingAndGlyphs">
         {name}
       </text>
     </g>

@@ -290,6 +290,8 @@ button:disabled { cursor: not-allowed; }
 .onboarding-arrow { font-size: 26px; font-weight: 900; }
 .onboarding-target { padding: 10px; border: 2px dashed var(--primary); border-radius: 12px; font-weight: 900; }
 .onboarding-actions { width: 100%; display: flex; gap: 8px; }
+.modal.onboarding { max-height: 100%; overflow: hidden; }
+.onboarding-body { width: 100%; min-height: 0; overflow-y: auto; display: grid; justify-items: center; gap: 10px; }
 .onboarding-actions .btn { flex: 1; }
 .onboarding .link-btn { min-height: 44px; }
 .empty-state { display: grid; justify-items: center; gap: 5px; padding: 24px 16px; text-align: center; color: var(--ink-soft); background: var(--surface-soft); border: 1.5px dashed var(--line); border-radius: 14px; }
@@ -299,7 +301,7 @@ button:disabled { cursor: not-allowed; }
 
 @media (max-width: 420px) {
   .hud { padding-inline: 7px; }
-  .hud-brand > span { display: none; }
+  .hud-brand > span:not(.brand-avatar) { display: none; }
   .hud-stats { gap: 2px; }
   .chip { min-width: 0; padding-inline: 5px; }
   .tray { padding-inline: 8px; }
@@ -491,9 +493,13 @@ button:disabled { cursor: not-allowed; }
 /* Quầy thứ hai: bộ chọn luôn hiện rõ trên màn hẹp và trong khay NPC. */
 .counter-tabs { display: flex; gap: 6px; grid-column: 1 / -1; min-width: 0; overflow-x: auto; padding: 2px 0; scrollbar-width: none; }
 .counter-tabs::-webkit-scrollbar { display: none; }
-.counter-tabs button { flex: 1 0 auto; min-height: 34px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-tint); color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.counter-tabs button { flex: 1 0 auto; min-height: 44px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--surface-tint); color: var(--ink-soft); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
 .counter-tabs button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 .counter-tabs button:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
+.tray-assign { position: relative; }
+.tray-assign summary { min-height: 44px; display: flex; align-items: center; padding: 0 9px; border: 1.5px solid var(--line); border-radius: 10px; color: var(--primary); font-size: 12px; font-weight: 800; cursor: pointer; }
+.tray-assign[open] { display: grid; gap: 4px; }
+.tray-assign summary:focus-visible { outline: 3px solid var(--sun); outline-offset: 2px; }
 
 .unstaffed-counter .auto-counter-info { grid-column: 1 / -1; }
 .unstaffed-counter .btn { grid-column: auto; }
