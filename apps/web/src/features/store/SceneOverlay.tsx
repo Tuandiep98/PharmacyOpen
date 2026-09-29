@@ -9,7 +9,7 @@ import type { Line } from './dialogue';
  * Không nhận chạm (pointer-events: none) nên không cản kéo thả hay chạm vào nhân vật.
  */
 
-export type TagKind = 'player' | 'pharmacist' | 'clerk' | 'regular';
+export type TagKind = 'player' | 'pharmacist' | 'clerk' | 'regular' | 'loyal';
 
 export type BubbleSpec =
   | (Line & { speaker: 'customer' | 'staff'; compact?: boolean; need?: Line | null })
@@ -73,7 +73,10 @@ function Bubble({ spec, side, bottom, maxWidth }: { spec: BubbleSpec; side: 'lef
   const compact = spec.compact;
   const need = spec.speaker === 'customer' ? spec.need : null;
   return (
-    <div className={`speech speech-${spec.speaker} side-${side} mood-${spec.mood ?? 'normal'} ${compact ? 'compact' : ''}`} style={style}>
+    <div
+      className={`speech speech-${spec.speaker} side-${side} mood-${spec.mood ?? 'normal'} ${compact ? 'compact' : ''} ${spec.regular ? 'regular' : ''}`}
+      style={style}
+    >
       {need && (
         <span className="speech-need">
           <b>Cần</b>

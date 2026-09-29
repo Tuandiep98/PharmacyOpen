@@ -52,6 +52,16 @@
   color: #9a3a2e;
   border-color: #9a3a2e;
 }
+/* Khách thân: nền đỏ gạch đặc kèm tim để nổi hơn khách mới quen. */
+.nametag-loyal {
+  background: #9a3a2e;
+  color: #fff;
+  border-color: #6f2820;
+}
+.nametag-loyal::before {
+  content: '♥ ';
+  color: #ffc9bd;
+}
 
 /* Bong bóng thoại: khách mọc sang trái, người bán mọc sang phải để hai câu không chồng nhau. */
 .speech {
@@ -104,6 +114,30 @@
 }
 .speech-staff {
   background: #e2f4e8;
+}
+/* Lời khách quen: viền đỏ gạch cùng màu bảng tên, góc có dấu tim. */
+.speech.regular {
+  border-color: #9a3a2e;
+  background: #fff4f0;
+}
+.speech.regular::after {
+  border-color: #9a3a2e;
+}
+.speech.regular:not(.compact)::before {
+  content: '♥';
+  position: absolute;
+  top: -9px;
+  right: -7px;
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  border: 1.5px solid #9a3a2e;
+  border-radius: 50%;
+  background: #fff;
+  color: #c0473a;
+  font-size: 10px;
+  line-height: 1;
 }
 .speech-task {
   background: #fff6de;
@@ -258,5 +292,67 @@
   .speech,
   .overlay-anchor {
     transition: none;
+  }
+}
+
+/* Dải OPEN/CLOSED trên bảng hiệu: đèn chạy đuổi khi mở, nháy chậm khi sắp đóng, tắt khi chưa mở. */
+.open-banner .banner-bulb {
+  transition: fill 300ms;
+}
+.banner-open .banner-bulb {
+  animation: bulb-chase 900ms steps(1, end) infinite;
+}
+.banner-open .banner-bulb.alt {
+  animation-delay: -450ms;
+}
+.banner-open .banner-text {
+  animation: sign-glow 2.4s ease-in-out infinite;
+}
+.banner-closing .banner-bulb {
+  animation: bulb-chase 1800ms steps(1, end) infinite;
+}
+.banner-closing .banner-bulb.alt {
+  animation-delay: -900ms;
+}
+.banner-prep .banner-text {
+  animation: sign-flicker 6s linear infinite;
+}
+@keyframes bulb-chase {
+  0% {
+    opacity: 1;
+    filter: drop-shadow(0 0 1.5px #fff3a8);
+  }
+  50% {
+    opacity: 0.25;
+    filter: none;
+  }
+}
+@keyframes sign-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 transparent);
+  }
+  50% {
+    filter: drop-shadow(0 0 2.5px #fff8d6);
+  }
+}
+/* Đèn chữ hỏng chập chờn thỉnh thoảng, như bảng hiệu cũ lúc tắt điện. */
+@keyframes sign-flicker {
+  0%,
+  88%,
+  92%,
+  96%,
+  100% {
+    opacity: 1;
+  }
+  90%,
+  94% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .open-banner .banner-bulb,
+  .open-banner .banner-text {
+    animation: none;
   }
 }

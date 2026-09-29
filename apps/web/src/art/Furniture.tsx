@@ -1,3 +1,4 @@
+import type { DayPhase } from '@pharmacy/simulation';
 import { useId } from 'react';
 import type { BrandAvatar } from '../brand';
 import { ART, INK, STROKE } from './palette';
@@ -47,9 +48,24 @@ export function BrandAvatarArt({ avatar, x, y, r }: { avatar: BrandAvatar; x: nu
 }
 
 /** Bảng hiệu treo ngay trên kệ, canh giữa theo kệ; avatar và tên lấy từ nhận diện người chơi chọn. */
-export function StoreSign({ name, avatar, cx, width, level = 0 }: { name: string; avatar: BrandAvatar; cx: number; width: number; level?: number }) {
+export function StoreSign({
+  name,
+  avatar,
+  cx,
+  width,
+  level = 0,
+  phase,
+}: {
+  name: string;
+  avatar: BrandAvatar;
+  cx: number;
+  width: number;
+  level?: number;
+  /** Có thì vẽ dải chéo OPEN/CLOSED ở góc phải bảng hiệu (chừa chỗ cho tên tiệm). */
+  phase?: DayPhase;
+}) {
   const x = cx - width / 2;
-  const textWidth = width - 76;
+  const textWidth = width - 76 - (phase ? 38 : 0);
   return (
     <g>
       <path d={`M${x + width * 0.22},4 V12 M${x + width * 0.78},4 V12`} stroke={INK} strokeWidth={2} />
@@ -69,6 +85,41 @@ export function StoreSign({ name, avatar, cx, width, level = 0 }: { name: string
         lengthAdjust="spacingAndGlyphs"
       >
         {name}
+      </text>
+      {phase && <OpenBanner phase={phase} x={x + width - 22} y={30} />}
+    </g>
+  );
+}
+
+const BANNER: Record<DayPhase, { text: string; fill: string; ink: string; bulb: string }> = {
+  open: { text: 'OPEN', fill: '#FFD56F', ink: '#6A3F06', bulb: '#FFF6C4' },
+  closing: { text: 'CLOSING', fill: '#F2A65A', ink: '#5E2B0B', bulb: '#FFE1B8' },
+  prep: { text: 'CLOSED', fill: '#B95D50', ink: '#FFFFFF', bulb: '#6E3A33' },
+};
+
+/**
+ * Dải ruy băng chéo vắt qua góc bảng hiệu, viền bóng đèn kiểu bảng hiệu rạp hát. Đang mở thì đèn chạy
+ * đuổi nhau và chữ phát sáng, sắp đóng thì nháy chậm, chưa mở thì đèn tắt (hiệu ứng ở scene.css).
+ */
+function OpenBanner({ phase, x, y }: { phase: DayPhase; x: number; y: number }) {
+  const look = BANNER[phase];
+  const half = 40;
+  const bulbs = Array.from({ length: 8 }, (_, i) => -half + 12 + i * ((half * 2 - 24) / 7));
+  return (
+    <g className={`open-banner banner-${phase}`} transform={`translate(${x} ${y}) rotate(28)`} aria-label={look.text}>
+      <path
+        d={`M${-half},-11 H${half} L${half - 7},0 L${half},11 H${-half} L${-half + 7},0 Z`}
+        fill={look.fill}
+        {...S}
+      />
+      {bulbs.map((bx, i) => (
+        <g key={bx} className={`banner-bulb ${i % 2 ? 'alt' : ''}`} fill={look.bulb}>
+          <circle cx={bx} cy={-7.5} r={1.7} />
+          <circle cx={bx} cy={7.5} r={1.7} />
+        </g>
+      ))}
+      <text className="banner-text" x={0} y={3.6} textAnchor="middle" fontSize={phase === 'open' ? 11 : 9} fontWeight={900} fill={look.ink} letterSpacing={0.8}>
+        {look.text}
       </text>
     </g>
   );

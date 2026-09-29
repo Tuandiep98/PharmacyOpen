@@ -1,5 +1,6 @@
 import {
   customerName,
+  dayPhase,
   facilityLevel,
   isPresent,
   isTrending,
@@ -34,7 +35,7 @@ import { useUi } from '../../ui/uiStore';
 import { catalogPageProducts, catalogPageSize } from '../../ui/catalog';
 import { useServiceActions } from './useServiceActions';
 import { SceneOverlay, type OverlayItem } from './SceneOverlay';
-import { customerLine, customerNeed, staffLine } from './dialogue';
+import { customerLine, customerNeed, familiarity, staffLine } from './dialogue';
 import { PLAYER_WORKER_ID } from '@pharmacy/simulation';
 import './scene.css';
 
@@ -229,12 +230,14 @@ export function StoreScene({ state }: { state: State }) {
     const name = customerName(state, c);
     const index = counterOfCustomer(c.id);
     const order = c.orderId ? state.orders[c.orderId] : undefined;
-    const line = c.phase === 'queue' ? null : customerLine(state, c, order);
+    const operatorId = index >= 0 ? state.counters[index]?.operatorId : null;
+    const line = c.phase === 'queue' ? null : customerLine(state, c, order, operatorId ? state.workers[operatorId] : undefined);
     const need = c.phase === 'counter' ? customerNeed(c) : null;
     overlay.push({
       key: `c-${c.id}`,
       at: headAt(spot, spot.scale * (spot.seated ? 0.85 : 1)),
-      tag: name ? { text: name, kind: 'regular' } : undefined,
+      // Khách thân (ghé từ 3 lần) có bảng tên đậm màu hơn khách mới quen.
+      tag: name ? { text: name, kind: familiarity(state, c) === 'close' ? 'loyal' : 'regular' } : undefined,
       bubble: line || need
         ? {
             text: '',
@@ -267,6 +270,7 @@ export function StoreScene({ state }: { state: State }) {
           cx={layout.shelfCx}
           width={Math.max(256, shelfWidth(shelfLevel))}
           level={ownedLevel('signboard')}
+          phase={dayPhase(state)}
         />
         <ShelfUnit level={shelfLevel} sorted={state.upgrades.includes('sorted-shelf')} cx={layout.shelfCx} />
         {slots.map((slot, index) => {
