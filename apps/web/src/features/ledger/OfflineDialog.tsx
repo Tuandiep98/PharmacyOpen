@@ -4,6 +4,7 @@ import { BRAND } from '../../brand';
 import { formatRating } from '../../ui/Stars';
 import { GameButton } from '../../ui/primitives';
 import { formatDuration, signed } from './LedgerSheet';
+import { signedNumber } from '../day/dayText';
 
 /** "Chào mừng trở lại": tóm tắt trung thực những gì đã xảy ra khi người chơi vắng mặt. */
 export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; onClose: () => void }) {
@@ -28,7 +29,7 @@ export function OfflineDialog({ summary, onClose }: { summary: OfflineSummary; o
               {summary.capped && ` (tính tối đa ${formatDuration(summary.simulatedMs)} mỗi lần vắng)`}.
             </p>
             <div className="day-highlights">
-              <div className="day-highlight"><span>Xu thay đổi</span><strong className={summary.moneyDelta >= 0 ? 'pos' : 'neg'}>{signed(summary.moneyDelta)} <small>{BRAND.currency}</small></strong></div>
+              <div className="day-highlight"><span>Xu thay đổi</span><strong className={summary.moneyDelta >= 0 ? 'pos' : 'neg'}>{signedNumber(summary.moneyDelta)}<small>{BRAND.currency}</small></strong></div>
               <div className="day-highlight"><span>Đã phục vụ</span><strong>{summary.sales + summary.referrals}<small>/{summary.customers} khách</small></strong></div>
               <div className="day-highlight"><span>Khách bỏ về</span><strong className={summary.leftAngry + summary.turnedAway > 0 ? 'neg' : 'pos'}>{summary.leftAngry + summary.turnedAway}</strong></div>
             </div>

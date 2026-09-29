@@ -109,6 +109,22 @@ describe('kho và tiền', () => {
     expect(state.money).toBe(10);
     expect(sim.dispatch({ type: 'restock', productId: 'sunscreen' })).toEqual({ ok: false, reason: 'insufficient-funds' });
   });
+  it('nhập số lượng chọn trước, kiểm tra số nguyên, chỗ trống và số xu', () => {
+    const sim = Simulation.create(1);
+    const state = sim.snapshot as SimState;
+    state.stock.sunscreen.shelf = 0;
+    state.money = 40;
+    expect(sim.dispatch({ type: 'restock', productId: 'sunscreen', quantity: 0 })).toEqual({ ok: false, reason: 'invalid-quantity' });
+    expect(sim.dispatch({ type: 'restock', productId: 'sunscreen', quantity: 1.5 })).toEqual({ ok: false, reason: 'invalid-quantity' });
+    expect(sim.dispatch({ type: 'restock', productId: 'sunscreen', quantity: 5 })).toEqual({ ok: false, reason: 'invalid-quantity' });
+    expect(sim.dispatch({ type: 'restock', productId: 'sunscreen', quantity: 3 })).toEqual({ ok: false, reason: 'insufficient-funds' });
+    expect(state.money).toBe(40);
+    expect(state.stock.sunscreen.shelf).toBe(0);
+    expect(sim.dispatch({ type: 'restock', productId: 'sunscreen', quantity: 1 }).ok).toBe(true);
+    expect(state.money).toBe(25);
+    expect(state.stock.sunscreen.shelf).toBe(1);
+    expect(state.stats.spentOnStock).toBe(15);
+  });
 });
 
 describe('quy tắc phục vụ', () => {

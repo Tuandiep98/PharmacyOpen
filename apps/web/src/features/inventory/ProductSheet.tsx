@@ -17,25 +17,33 @@ const CATEGORY: Record<string, string> = {
 export function RestockButton({ state, productId, compact = false }: { state: DeepReadonly<SimState>; productId: ProductId; compact?: boolean }) {
   const bridge = useBridge();
   const [error, setError] = useState<string | null>(null);
+  const [requestedQuantity, setRequestedQuantity] = useState<number | null>(null);
   const missing = state.stock[productId].capacity - state.stock[productId].shelf;
   const unitCost = stockUnitCost(state, productId);
   const affordable = Math.min(missing, Math.floor(state.money / unitCost));
-  const label = missing === 0 ? 'Kệ đầy' : affordable === 0 ? 'Không đủ xu' : `Nhập +${affordable} · ${affordable * unitCost} ${BRAND.currency}`;
+  const quantity = affordable === 0 ? 0 : Math.min(affordable, Math.max(1, requestedQuantity ?? affordable));
+  const label = missing === 0 ? 'Kệ đầy' : affordable === 0 ? 'Không đủ xu' : `Nhập +${quantity} · ${quantity * unitCost} ${BRAND.currency}`;
   return (
-    <div className={compact ? '' : 'stack'}>
+    <div className={`restock-control ${compact ? 'compact' : ''}`}>
+      {affordable > 0 && <div className="restock-stepper" role="group" aria-label={`Số lượng nhập ${PRODUCTS[productId].name}`}>
+        <button type="button" aria-label="Giảm số lượng nhập" disabled={quantity <= 1} onClick={() => setRequestedQuantity(quantity - 1)}>−</button>
+        <output aria-live="polite" aria-label={`Nhập ${quantity} trên tối đa ${affordable} món`}>{quantity}</output>
+        <button type="button" aria-label="Tăng số lượng nhập" disabled={quantity >= affordable} onClick={() => setRequestedQuantity(quantity + 1)}>+</button>
+      </div>}
       <GameButton
         tone={compact ? 'secondary' : 'primary'}
         size={compact ? 'small' : 'regular'}
         disabled={affordable === 0}
         onClick={() => {
-          const r = bridge.dispatch({ type: 'restock', productId });
+          const r = bridge.dispatch({ type: 'restock', productId, quantity });
           setError(r.ok ? null : REJECT_TEXT[r.reason]);
+          if (r.ok) setRequestedQuantity(null);
         }}
       >
         <BoxIcon size={compact ? 18 : 22} />
         {label}
       </GameButton>
-      {error && !compact && (
+      {error && (
         <div className="notice bad" role="alert">
           <WarningIcon size={18} />
           {error}

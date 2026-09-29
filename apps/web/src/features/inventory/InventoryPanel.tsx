@@ -18,7 +18,7 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
     <div className="panel">
       <PanelHeading description={
         <>
-        Hàng được bán trực tiếp từ kệ. Nhập hàng sẽ lấp đầy kệ trong giới hạn số xu hiện có. Chạm vào tên món để xem chi tiết và chỉnh giá bán.
+        Hàng được bán trực tiếp từ kệ. Chọn số lượng cần nhập trong giới hạn chỗ trống và số xu hiện có. Chạm vào tên món để xem chi tiết và chỉnh giá bán.
         </>
       }>Kho hàng</PanelHeading>
       <CatalogControls state={state} />
@@ -27,11 +27,17 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
         {visibleProducts.map((id) => {
           const p = PRODUCTS[id];
           const shelf = state.stock[id].shelf;
+          const capacity = state.stock[id].capacity;
+          const stockTone = shelf === 0 ? 'empty' : shelf <= Math.ceil(capacity / 3) ? 'low' : 'healthy';
           const expiry = nextExpiry(state, id);
           const daysLeft = expiry === null ? null : Math.max(0, Math.ceil((expiry - state.timeMs) / state.config.dayMs));
           return (
-            <li key={id} className={`${shelf === 0 ? 'empty' : shelf <= 1 ? 'low' : ''} ${isTrending(state, id) ? 'trending-product' : ''}`}>
-              <ProductIcon id={id} size={36} />
+            <li key={id} className={`${stockTone === 'healthy' ? '' : stockTone} ${isTrending(state, id) ? 'trending-product' : ''}`}>
+              <div className="inv-visual">
+                <span className="inv-icon"><ProductIcon id={id} size={36} /></span>
+                <span className="product-level">Cấp {productLevel(id)}</span>
+                <span className={`inv-stock ${stockTone}`} aria-label={`${shelf} trên ${capacity} món trên kệ`}>{shelf}/{capacity}</span>
+              </div>
               <button
                 className="inv-info"
                 onClick={() => {
@@ -39,14 +45,15 @@ export function InventoryPanel({ state }: { state: DeepReadonly<SimState> }) {
                   select({ kind: 'product', id });
                 }}
               >
-                <strong>{p.name} <span className="product-level">Cấp {productLevel(id)}</span> {isTrending(state, id) && <span className="trend-tag">Bán chạy</span>}</strong>
-                <span className="muted small">
-                  {shelf}/{state.stock[id].capacity} trên kệ · giá {state.prices[id]} · lãi {state.prices[id] - stockUnitCost(state, id)} {BRAND.currency}/món nhập hôm nay
-                  {state.prices[id] > p.referencePrice && <span className="warn-text"> · cao hơn tham khảo</span>}
-                  {daysLeft !== null && <span className={daysLeft <= 2 ? 'warn-text' : ''}> · lô gần nhất còn {daysLeft} ngày</span>}
+                <strong className="inv-name">{p.name}{isTrending(state, id) && <span className="trend-tag">Bán chạy</span>}</strong>
+                <span className="inv-description small muted">
+                  <span>Giá bán {state.prices[id]} {BRAND.currency}</span>
+                  <span>Lãi {state.prices[id] - stockUnitCost(state, id)} {BRAND.currency}/món nhập hôm nay</span>
+                  {state.prices[id] > p.referencePrice && <span className="warn-text">Cao hơn giá tham khảo</span>}
+                  {daysLeft !== null && <span className={daysLeft <= 2 ? 'warn-text' : ''}>Lô gần nhất còn {daysLeft} ngày</span>}
                 </span>
               </button>
-              <RestockButton state={state} productId={id} compact />
+              <div className="inv-actions"><RestockButton state={state} productId={id} compact /></div>
             </li>
           );
         })}

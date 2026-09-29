@@ -3,7 +3,7 @@ import { CheckIcon, CrossMarkIcon, StarIcon } from '../../art/Icons';
 import { BRAND } from '../../brand';
 import { formatRating } from '../../ui/Stars';
 import { GameButton } from '../../ui/primitives';
-import { GOAL_LABEL, percent, SHIFT_LABEL, signed } from './dayText';
+import { GOAL_LABEL, percent, SHIFT_LABEL, signed, signedNumber } from './dayText';
 import './day.css';
 
 /** Tổng kết cuối ngày: xếp hạng theo mục tiêu, lãi lỗ theo hoạt động, chỉ số vận hành và từng ca. */
@@ -15,7 +15,7 @@ export function DaySummaryDialog({ report, onClose }: { report: DeepReadonly<Day
         <DayGrade report={report} />
         <div className="day-summary-body">
           <div className="day-highlights">
-            <div className="day-highlight"><span>Lãi ròng</span><strong className={report.netProfit >= 0 ? 'pos' : 'neg'}>{signed(report.netProfit)} <small>{BRAND.currency}</small></strong></div>
+            <div className="day-highlight"><span>Lãi ròng</span><strong className={report.netProfit >= 0 ? 'pos' : 'neg'}>{signedNumber(report.netProfit)}<small>{BRAND.currency}</small></strong></div>
             <div className="day-highlight"><span>Đã phục vụ</span><strong>{report.sales + report.referrals}<small>/{report.customers} khách</small></strong></div>
             <div className="day-highlight"><span>Khách bỏ về</span><strong className={report.leftAngry + report.turnedAway > 0 ? 'neg' : 'pos'}>{report.leftAngry + report.turnedAway}</strong></div>
           </div>

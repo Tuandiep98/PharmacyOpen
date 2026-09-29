@@ -25,7 +25,7 @@ export type Command =
   | { type: 'pickProduct'; workerId: string; orderId: string; productId: ProductId }
   | { type: 'refer'; workerId: string; orderId: string }
   | { type: 'checkout'; workerId: string; orderId: string }
-  | { type: 'restock'; productId: ProductId; workerId?: string }
+  | { type: 'restock'; productId: ProductId; workerId?: string; quantity?: number }
   | { type: 'hire'; candidateId: string }
   | { type: 'assignCounter'; counterId: string; workerId: string }
   | { type: 'buyUpgrade'; upgradeId: string }
@@ -58,6 +58,7 @@ export type RejectReason =
   | 'safety-referral-required'
   | 'insufficient-funds'
   | 'shelf-full'
+  | 'invalid-quantity'
   | 'unknown-candidate'
   | 'already-hired'
   | 'staff-full'
@@ -102,7 +103,7 @@ export function applyCommand(state: SimState, command: Command, emit: Emit): Com
     case 'checkout':
       return checkout(state, command.workerId, command.orderId);
     case 'restock':
-      return restock(state, command.productId, command.workerId ?? null, emit);
+      return restock(state, command.productId, command.workerId ?? null, command.quantity, emit);
     case 'hire':
       return hire(state, command.candidateId, emit);
     case 'assignCounter':
@@ -244,7 +245,7 @@ function checkout(state: SimState, workerId: string, orderId: string): CommandRe
   return OK;
 }
 
-function restock(state: SimState, productId: ProductId, workerId: string | null, emit: Emit): CommandResult {
+function restock(state: SimState, productId: ProductId, workerId: string | null, quantity: number | undefined, emit: Emit): CommandResult {
   const product = PRODUCTS[productId];
   if (!product) return reject('unknown-product');
   if (!isProductUnlocked(state, productId)) return reject('product-locked');
@@ -253,9 +254,11 @@ function restock(state: SimState, productId: ProductId, workerId: string | null,
   if (missing <= 0) return reject('shelf-full');
   // Mua tối đa số lượng đủ tiền; tổng tài sản (tiền + hàng) không giảm nên không thể kẹt vốn.
   const unitCost = stockUnitCost(state, productId);
-  const qty = Math.min(missing, Math.floor(state.money / unitCost));
-  if (qty <= 0) return reject('insufficient-funds');
+  const qty = quantity ?? Math.min(missing, Math.floor(state.money / unitCost));
+  if (quantity === undefined && qty <= 0) return reject('insufficient-funds');
+  if (!Number.isSafeInteger(qty) || qty <= 0 || qty > missing) return reject('invalid-quantity');
   const cost = qty * unitCost;
+  if (cost > state.money) return reject('insufficient-funds');
   state.money -= cost;
   addStock(entry, qty, state.timeMs + state.config.stockShelfLifeMs);
   state.stats.spentOnStock += cost;

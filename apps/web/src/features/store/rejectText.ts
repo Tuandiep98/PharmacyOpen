@@ -13,6 +13,7 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   'safety-referral-required': 'Khách đang mô tả triệu chứng. Hãy khuyên khách đi khám.',
   'insufficient-funds': 'Không đủ xu.',
   'shelf-full': 'Kệ đã đầy.',
+  'invalid-quantity': 'Số lượng nhập phải là số nguyên và không vượt chỗ trống trên kệ.',
   'counter-assigned-elsewhere': 'Quầy đang giao cho nhân viên khác — chạm “Tự phục vụ” để nhận lại.',
   'not-your-order': 'Khách này đang do nhân viên khác phục vụ.',
   'unknown-candidate': 'Không tìm thấy ứng viên.',

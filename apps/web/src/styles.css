@@ -1261,10 +1261,11 @@ button {
 }
 
 .inventory-list li {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: start;
   gap: 10px;
-  padding: 8px 10px;
+  padding: 12px;
   border-radius: 14px;
   border: 2px solid var(--line);
 }
@@ -1278,9 +1279,30 @@ button {
 
 .inv-info {
   display: grid;
-  flex: 1;
+  align-content: start;
+  gap: 3px;
   min-width: 0;
 }
+.inv-visual { display: grid; justify-items: center; align-content: start; gap: 5px; width: 44px; }
+.inv-icon { width: 44px; height: 44px; display: grid; place-items: center; }
+.inv-visual .product-level { margin: 0; white-space: nowrap; }
+.inv-stock { min-width: 42px; padding: 2px 4px; border: 1.5px solid currentColor; border-radius: 999px; text-align: center; font-size: 11px; font-weight: 900; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.inv-stock.healthy { color: var(--primary); background: var(--good-soft); }
+.inv-stock.low { color: #75500f; background: var(--warn-soft); }
+.inv-stock.empty { color: var(--danger); background: var(--danger-soft); }
+.inv-name { display: block; font-size: 15px; line-height: 1.3; }
+.inv-name .trend-tag { margin-left: 5px; }
+.inv-description { display: grid; gap: 2px; line-height: 1.35; }
+.inv-actions { grid-column: 1 / -1; padding-top: 8px; border-top: 1px solid var(--line); }
+.inv-actions .btn { min-height: 44px; }
+.restock-control { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; width: 100%; }
+.restock-control .notice { flex-basis: 100%; }
+.restock-stepper { display: inline-grid; grid-template-columns: 44px 38px 44px; align-items: center; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); overflow: hidden; }
+.restock-stepper button { width: 44px; height: 44px; border: 0; background: transparent; color: var(--primary); font: inherit; font-size: 22px; font-weight: 900; cursor: pointer; }
+.restock-stepper button:disabled { color: var(--ink-soft); opacity: .45; cursor: default; }
+.restock-stepper button:focus-visible { outline: 3px solid var(--sun); outline-offset: -3px; }
+.restock-stepper output { text-align: center; font-weight: 900; font-variant-numeric: tabular-nums; }
+@media (max-width: 360px) { .inv-actions .btn { width: 100%; } }
 
 .locked-panel {
   display: grid;

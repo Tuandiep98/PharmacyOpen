@@ -45,4 +45,5 @@ export const GOAL_LABEL: Record<DayGoalId, string> = {
 
 export const percent = (value: number) => `${Math.round(value * 100)}%`;
 
-export const signed = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)} ${BRAND.currency}`;
+export const signedNumber = (n: number) => `${n > 0 ? '+' : n < 0 ? '−' : ''}${Math.abs(n)}`;
+export const signed = (n: number) => `${signedNumber(n)} ${BRAND.currency}`;
