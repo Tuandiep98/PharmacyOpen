@@ -405,6 +405,25 @@ button:disabled { cursor: not-allowed; }
   background: var(--surface-tint);
 }
 
+/* Lớp mờ phủ cảnh khi người chơi tự tạm dừng; chạm nút để chơi tiếp. */
+.pause-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  background: rgba(38, 58, 54, 0.35);
+  backdrop-filter: blur(2px);
+}
+.pause-resume {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding-inline: 22px;
+  font-size: 17px;
+}
+
 /* Cùng năm đích đến, nhưng mật độ thay đổi theo chỗ trống thực tế. */
 .bottom-nav {
   display: block;

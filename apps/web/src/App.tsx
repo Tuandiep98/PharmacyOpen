@@ -21,6 +21,7 @@ import {
   InfoIcon,
   MapIcon,
   MenuIcon,
+  PauseIcon,
   SpeakerIcon,
   StaffIcon,
   StarIcon,
@@ -84,8 +85,10 @@ export function App() {
   const setOffline = useUi((s) => s.setOffline);
   const daySummary = useUi((s) => s.daySummary);
   const setDaySummary = useUi((s) => s.setDaySummary);
+  // Người chơi tự bấm tạm dừng từ menu tuỳ chọn.
+  const [userPaused, setUserPaused] = useState(false);
   // Hộp thoại che màn hình thì tạm dừng mô phỏng.
-  const paused = showInfo || showBrand || offline !== null || daySummary !== null;
+  const paused = userPaused || showInfo || showBrand || offline !== null || daySummary !== null;
 
   useEffect(() => {
     bridge.setRunning(!paused);
@@ -105,13 +108,26 @@ export function App() {
 
   return (
     <div className="app">
-      <Hud state={state} onInfo={() => setShowInfo(true)} onBrand={() => setShowBrand(true)} />
+      <Hud
+        state={state}
+        paused={userPaused}
+        onTogglePause={() => setUserPaused((v) => !v)}
+        onInfo={() => setShowInfo(true)}
+        onBrand={() => setShowBrand(true)}
+      />
       <main className="stage">
         <div className="scene-wrap">
           <StoreScene state={state} />
           <OpeningPanel state={state} />
           <DeliveryChip state={state} />
           <Toasts />
+          {userPaused && (
+            <div className="pause-veil">
+              <button className="btn primary pause-resume" onClick={() => setUserPaused(false)}>
+                <PauseIcon size={26} paused /> Tiếp tục
+              </button>
+            </div>
+          )}
         </div>
         <div className="side">
           <ServiceTray state={state} />
@@ -383,10 +399,14 @@ function useEventFeedback() {
 
 function Hud({
   state,
+  paused,
+  onTogglePause,
   onInfo,
   onBrand,
 }: {
   state: DeepReadonly<SimState>;
+  paused: boolean;
+  onTogglePause: () => void;
   onInfo: () => void;
   onBrand: () => void;
 }) {
@@ -452,6 +472,16 @@ function Hud({
           </IconButton>
           {menuOpen && (
             <div className="hud-menu-panel" id="hud-menu-panel">
+              <button
+                className="hud-menu-item"
+                aria-pressed={paused}
+                onClick={() => {
+                  setMenuOpen(false);
+                  onTogglePause();
+                }}
+              >
+                <PauseIcon size={22} paused={paused} /> {paused ? "Tiếp tục" : "Tạm dừng"}
+              </button>
               <SoundToggle />
               <button
                 className="hud-menu-item"

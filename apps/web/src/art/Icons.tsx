@@ -185,6 +185,14 @@ export const SpeakerIcon = ({ muted, ...p }: IconProps & { muted?: boolean }) =>
   </Svg>
 );
 
+/** Nút tròn tạm dừng / tiếp tục: hai vạch khi đang chạy, tam giác khi đang dừng. */
+export const PauseIcon = ({ paused = false, ...p }: IconProps & { paused?: boolean }) => (
+  <Svg {...p}>
+    <circle cx={12} cy={12} r={9} fill={ART.mint} />
+    {paused ? <path d="M10,8 L16,12 L10,16 Z" fill={INK} /> : <path d="M10,8.5 V15.5 M14,8.5 V15.5" strokeWidth={2.4} />}
+  </Svg>
+);
+
 export const CheckIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx={12} cy={12} r={9} fill={ART.leafLight} />
