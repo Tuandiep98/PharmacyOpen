@@ -81,6 +81,8 @@
   line-height: 1.35;
   box-shadow: 0 3px 0 rgb(38 58 54 / 22%);
   animation: speech-pop 180ms var(--sheet-ease) both;
+  /* Dịch vào trong khung khi sát mép (SceneOverlay tính --dx/--dy), đuôi dời ngược lại. */
+  translate: var(--dx, 0) var(--dy, 0);
 }
 .scene-overlay .speech::after {
   content: "";
@@ -92,6 +94,7 @@
   border-right: 2px solid var(--bubble-edge);
   border-bottom: 2px solid var(--bubble-edge);
   transform: rotate(45deg);
+  translate: var(--tail-dx, 0) 0;
 }
 .speech.side-left {
   right: -22px;
