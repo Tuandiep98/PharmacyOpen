@@ -457,14 +457,14 @@ export function StoreScene({
                     <WorkerFigure
                       worker={worker}
                       action={action}
-                      accessory={wornItemOf(state, worker.id)}
+                      accessories={wornItemOf(state, worker.id)}
                     />
                   </g>
                 )}
                 <WorkerFigure
                   worker={worker}
                   action={action}
-                  accessory={wornItemOf(state, worker.id)}
+                  accessories={wornItemOf(state, worker.id)}
                 />
               </g>
               <rect
@@ -726,7 +726,7 @@ function SceneDecor({
             className="scene-decor"
             transform={`translate(${x} ${y}) scale(${scale})`}
           >
-            <CollectibleArt defId={item.defId} />
+            <CollectibleArt defId={item.defId} grade={item.grade} effects={item.effects} />
           </g>
         ) : null;
       })}

@@ -1,5 +1,4 @@
 import {
-  itemAt,
   PLAYER_WORKER_ID,
   type DeepReadonly,
   type SimState,
@@ -13,30 +12,35 @@ import {
   type CharacterAction,
 } from "./Character";
 
-/** Id món sưu tầm người này đang đeo (nếu có). */
+/** Danh sách món đeo theo lớp, gồm cả bản lưu cũ. */
 export function wornItemOf(
   state: DeepReadonly<SimState> | undefined,
   workerId: string,
-): string | undefined {
-  return state ? itemAt(state, `wear:${workerId}`)?.defId : undefined;
+): { defId: string; grade: "S" | "A" | "B" | "C"; effects: readonly { stat: string; value: number }[] }[] {
+  if (!state) return [];
+  return Object.entries(state.collection.equipped)
+    .filter(([place]) => place === `wear:${workerId}` || place.startsWith(`wear:${workerId}:`))
+    .map(([, uid]) => state.collection.items.find((item) => item.uid === uid))
+    .filter((item): item is NonNullable<typeof item> => !!item)
+    .map(({ defId, grade, effects }) => ({ defId, grade, effects }));
 }
 
 /** Vẽ đúng nhân vật cho một nhân viên: An có hình riêng, NPC dựng từ look + vai trò. */
 export function WorkerFigure({
   worker,
   action = "idle",
-  accessory,
+  accessories,
 }: {
   worker: DeepReadonly<Worker>;
   action?: CharacterAction;
-  accessory?: string;
+  accessories?: ReturnType<typeof wornItemOf>;
 }) {
   if (worker.id === PLAYER_WORKER_ID)
     return (
       <PharmacistFigure
         expression={worker.expression}
         action={action}
-        accessory={accessory}
+        accessories={accessories}
       />
     );
   return (
@@ -45,7 +49,7 @@ export function WorkerFigure({
       role={worker.role}
       expression={worker.expression}
       action={action}
-      accessory={accessory}
+      accessories={accessories}
     />
   );
 }
@@ -67,7 +71,7 @@ export function WorkerPortrait({
         r={33}
         fill={worker.role === "pharmacist" ? "#DCEFE3" : "#F8ECD6"}
       />
-      <WorkerFigure worker={worker} accessory={wornItemOf(state, worker.id)} />
+      <WorkerFigure worker={worker} accessories={wornItemOf(state, worker.id)} />
     </svg>
   );
 }

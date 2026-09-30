@@ -1,0 +1,64 @@
+.collectible-art .collectible-figure {
+  filter: drop-shadow(0 1.3px 1px #263a3650);
+}
+.collectible-art.grade-S .collectible-figure {
+  filter: drop-shadow(0 1.8px 1.1px #61491965);
+}
+.collectible-art .collectible-aura {
+  opacity: .2;
+  transform-origin: 0 -18px;
+  animation: collectible-breathe 3.6s ease-in-out infinite;
+}
+.collectible-art.finish-2 .collectible-gleam { opacity: .72; }
+.collectible-art.finish-3 .collectible-gleam { opacity: 1; }
+.collectible-art .collectible-spark {
+  transform-origin: 0 -18px;
+  animation: collectible-twinkle 4.3s ease-in-out infinite;
+}
+.collectible-art.finish-organic .collectible-spark { animation-duration: 6s; }
+.collectible-art.finish-solid .collectible-spark { animation-duration: 5.2s; }
+.collectible-art.grade-S .plant-leaves {
+  transform-origin: 0 -14px;
+  animation: collectible-sway 5s ease-in-out infinite;
+}
+.collectible-art.grade-S .collectible-bell {
+  transform-origin: 0 -5px;
+  animation: collectible-bell 6s ease-in-out infinite;
+}
+.collectible-art.grade-S .cat-paw {
+  transform-origin: 11px -12px;
+  animation: collectible-wave 4.8s ease-in-out infinite;
+}
+.collectible-art.grade-S .collectible-lantern {
+  transform-origin: 0 -38px;
+  animation: collectible-sway 5.8s ease-in-out infinite;
+}
+.collectible-art.grade-S .collectible-lights ellipse {
+  animation: collectible-twinkle 2.8s ease-in-out infinite;
+}
+.collectible-art.grade-S .collectible-lights ellipse:nth-of-type(2n) { animation-delay: -1.3s; }
+.collectible-art.grade-S .hourglass-sand { animation: collectible-sand 2.5s linear infinite; }
+.collectible-art.grade-S .collectible-speaker { animation: collectible-bass 4s ease-in-out infinite; }
+@keyframes collectible-sway { 50% { transform: rotate(2.5deg); } }
+@keyframes collectible-bell { 0%, 82%, 100% { transform: rotate(0); } 86% { transform: rotate(-5deg); } 90% { transform: rotate(4deg); } 94% { transform: rotate(-2deg); } }
+@keyframes collectible-wave { 0%, 78%, 100% { transform: rotate(0); } 85%, 93% { transform: rotate(-12deg); } }
+@keyframes collectible-sand { to { stroke-dashoffset: -4; } }
+@keyframes collectible-bass { 0%, 80%, 100% { transform: translateX(0); } 84%, 88% { transform: translateX(0.5px); } 86%, 90% { transform: translateX(-0.5px); } }
+@keyframes collectible-breathe {
+  50% { opacity: .38; transform: scale(1.08); }
+}
+@keyframes collectible-twinkle {
+  0%, 72%, 100% { opacity: .25; }
+  79%, 86% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .collectible-art .collectible-aura,
+  .collectible-art .collectible-spark,
+  .collectible-art .plant-leaves,
+  .collectible-art .collectible-bell,
+  .collectible-art .cat-paw,
+  .collectible-art .collectible-lantern,
+  .collectible-art .collectible-lights ellipse,
+  .collectible-art .hourglass-sand,
+  .collectible-art .collectible-speaker { animation: none; }
+}

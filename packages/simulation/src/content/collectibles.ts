@@ -14,6 +14,9 @@ export interface CollectibleDef {
   id: string;
   name: string;
   slot: CollectibleSlot;
+  /** Vị trí đeo hoặc các mặt trưng bày vật lý có thể dùng. */
+  wearLayer?: "head" | "eyes" | "neck" | "chest";
+  places?: string[];
   fit: CollectFit;
   description: string;
   /** Giá trị ở hạng B; hạng khác nhân theo GRADE_POWER (dấu giữ nguyên). */
@@ -25,6 +28,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "round-glasses",
     name: "Kính gọng tròn",
     slot: "wear",
+    wearLayer: "eyes",
     fit: "pharmacy",
     description: "Trông chững chạc, khách thấy yên tâm khi được tư vấn.",
     effects: [{ stat: "rating", base: 0.025 }],
@@ -33,6 +37,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "care-pin",
     name: "Huy hiệu Tận tâm",
     slot: "wear",
+    wearLayer: "chest",
     fit: "pharmacy",
     description: "Ghim nhỏ trên ngực áo, khách nhớ mặt người bán.",
     effects: [{ stat: "returnChance", base: 0.03 }],
@@ -41,6 +46,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "neck-bow",
     name: "Nơ cổ áo",
     slot: "wear",
+    wearLayer: "neck",
     fit: "neutral",
     description: "Gọn gàng, lịch sự.",
     effects: [{ stat: "rating", base: 0.018 }],
@@ -49,6 +55,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "flower-band",
     name: "Băng đô hoa",
     slot: "wear",
+    wearLayer: "head",
     fit: "neutral",
     description: "Tươi tắn, khách quen hay khen.",
     effects: [{ stat: "returnChance", base: 0.02 }],
@@ -57,6 +64,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "cat-ears",
     name: "Mũ tai mèo",
     slot: "wear",
+    wearLayer: "head",
     fit: "odd",
     description: "Người qua đường tò mò ghé xem, nhưng khách lớn tuổi thấy kỳ kỳ.",
     effects: [
@@ -68,6 +76,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "beach-shades",
     name: "Kính râm bãi biển",
     slot: "wear",
+    wearLayer: "eyes",
     fit: "odd",
     description: "Hợp đi biển hơn đứng quầy.",
     effects: [
@@ -79,6 +88,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "succulent",
     name: "Chậu sen đá",
     slot: "counter",
+    places: ["counter-1", "counter-2", "shelf", "store-floor"],
     fit: "pharmacy",
     description: "Xanh mát, khách đứng chờ thấy thư thả hơn.",
     effects: [{ stat: "queuePatience", base: 0.04 }],
@@ -95,6 +105,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "mint-jar",
     name: "Hũ kẹo bạc hà",
     slot: "counter",
+    places: ["counter-1", "counter-2", "shelf"],
     fit: "neutral",
     description: "Mỗi khách một viên kẹo, lần sau nhớ đường quay lại.",
     effects: [{ stat: "returnChance", base: 0.03 }],
@@ -103,6 +114,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "lucky-cat",
     name: "Mèo vẫy tay",
     slot: "counter",
+    places: ["counter-1", "counter-2", "shelf", "store-floor"],
     fit: "neutral",
     description: "Vẫy suốt ngày, người đi ngang cũng vẫy lại.",
     effects: [
@@ -114,6 +126,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "dried-flowers",
     name: "Lọ hoa khô",
     slot: "shelf",
+    places: ["shelf", "counter-1", "counter-2", "store-floor"],
     fit: "neutral",
     description: "Kệ hàng mềm mại hơn hẳn.",
     effects: [{ stat: "rating", base: 0.015 }],
@@ -122,6 +135,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "hourglass",
     name: "Đồng hồ cát",
     slot: "shelf",
+    places: ["shelf", "counter-1", "counter-2"],
     fit: "pharmacy",
     description: "Nhắc cả tiệm làm việc đúng giờ, ứng viên thấy tiệm nề nếp.",
     effects: [
@@ -133,6 +147,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "teddy",
     name: "Gấu bông nhỏ",
     slot: "shelf",
+    places: ["shelf", "store-floor"],
     fit: "neutral",
     description: "Trẻ con kéo tay bố mẹ vào tiệm.",
     effects: [{ stat: "returnChance", base: 0.02 }],
@@ -141,6 +156,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "money-plant",
     name: "Cây kim tiền",
     slot: "store",
+    places: ["store-floor", "store-wall", "shelf", "counter-1", "counter-2"],
     fit: "pharmacy",
     description: "Góc tiệm xanh tươi, nhìn là muốn ghé.",
     effects: [
@@ -152,6 +168,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "notice-board",
     name: "Bảng tin khu phố",
     slot: "store",
+    places: ["store-wall"],
     fit: "pharmacy",
     description: "Dán lịch họp tổ dân phố, tin tìm việc, ai cũng đứng lại đọc.",
     effects: [
@@ -163,6 +180,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "paper-lantern",
     name: "Đèn lồng giấy",
     slot: "store",
+    places: ["store-wall"],
     fit: "neutral",
     description: "Tối lên đèn, tiệm ấm áp dễ nhận ra.",
     effects: [{ stat: "awareness", base: 1 }],
@@ -171,6 +189,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "disco-lights",
     name: "Dây đèn nháy",
     slot: "store",
+    places: ["store-wall"],
     fit: "odd",
     description: "Cả hẻm đều thấy, nhưng khách bảo chói mắt.",
     effects: [
@@ -182,6 +201,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     id: "candy-speaker",
     name: "Loa kẹo kéo",
     slot: "store",
+    places: ["store-floor", "shelf"],
     fit: "odd",
     description: "Mở nhạc to kéo khách, người đứng chờ thì nhức tai.",
     effects: [

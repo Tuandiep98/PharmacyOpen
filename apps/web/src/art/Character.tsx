@@ -651,14 +651,13 @@ export function StaffFigure({
   role,
   expression,
   action = "idle",
-  accessory,
+  accessories = [],
 }: {
   look: StaffLook;
   role: StaffRole;
   expression: FaceExpression;
   action?: CharacterAction;
-  /** Id đồ sưu tầm đang đeo (kính, huy hiệu, băng đô…). */
-  accessory?: string;
+  accessories?: { defId: string; grade: "S" | "A" | "B" | "C"; effects: readonly { stat: string; value: number }[] }[];
 }) {
   const skin = pick(SKIN, look.skin);
   const hair = pick(HAIR, look.hair);
@@ -667,13 +666,13 @@ export function StaffFigure({
       <BackHair hair={hair} style={look.hairStyle} />
       <Uniform role={role} skin={skin} pants="#56695D" action={action} />
       {look.messy && <MessyClothes />}
-      {accessory && <WornAccessory defId={accessory} part="body" />}
+      {accessories.map((item) => <WornAccessory key={item.defId} {...item} part="body" />)}
       <g transform={headPose(action)}>
         <Head skin={skin} hair={hair} style={look.hairStyle} cap={ART.leaf} />
         {look.messy && <MessyHair hair={hair} />}
         <Face expression={expression} action={action} />
         {look.gender === "female" && <Lashes />}
-        {accessory && <WornAccessory defId={accessory} part="head" />}
+        {accessories.map((item) => <WornAccessory key={item.defId} {...item} part="head" />)}
       </g>
     </g>
   );
@@ -733,17 +732,17 @@ function MessyClothes() {
 export function PharmacistFigure({
   expression,
   action = "idle",
-  accessory,
+  accessories = [],
 }: {
   expression: FaceExpression;
   action?: CharacterAction;
-  accessory?: string;
+  accessories?: { defId: string; grade: "S" | "A" | "B" | "C"; effects: readonly { stat: string; value: number }[] }[];
 }) {
   const skin = SKIN[1];
   return (
     <g>
       <Uniform role="pharmacist" skin={skin} pants="#596C69" action={action} />
-      {accessory && <WornAccessory defId={accessory} part="body" />}
+      {accessories.map((item) => <WornAccessory key={item.defId} {...item} part="body" />)}
       <g transform={headPose(action)}>
         <Head skin={skin} hair={HAIR[0]} style={0} />
         <path
@@ -754,7 +753,7 @@ export function PharmacistFigure({
           strokeLinecap="round"
         />
         <Face expression={expression} action={action} />
-        {accessory && <WornAccessory defId={accessory} part="head" />}
+        {accessories.map((item) => <WornAccessory key={item.defId} {...item} part="head" />)}
       </g>
     </g>
   );

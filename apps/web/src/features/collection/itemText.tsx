@@ -15,8 +15,10 @@ import "./collection.css";
 /** Tên chỗ đặt dễ đọc. */
 export function placeLabel(state: DeepReadonly<SimState>, place: string): string {
   if (place.startsWith("wear:")) {
-    const worker = state.workers[place.slice(5)];
-    return worker ? `${worker.name} đeo` : "Người đã nghỉ";
+    const [, workerId, layer] = place.split(":");
+    const worker = state.workers[workerId!];
+    const label: Record<string, string> = { head: "đầu", eyes: "mắt", neck: "cổ", chest: "ngực" };
+    return worker ? `${worker.name} · ${label[layer ?? ""] ?? "đang đeo"}` : "Người đã nghỉ";
   }
   if (place.startsWith("counter-")) return `Quầy ${place.slice(8)}`;
   if (place === "shelf") return "Kệ hàng";

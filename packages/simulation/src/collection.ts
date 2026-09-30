@@ -87,12 +87,24 @@ export function placesFor(
   const def = COLLECTIBLES[item.defId];
   if (!def) return [];
   if (def.slot === "wear")
-    return Object.keys(state.workers).map((id) => `wear:${id}`);
-  if (def.slot === "counter")
-    return SLOT_PLACES.counter.filter((place) =>
-      state.counters.some((c) => c.id === place),
-    );
-  return SLOT_PLACES[def.slot];
+    return Object.keys(state.workers).map((id) => `wear:${id}:${def.wearLayer}`);
+  return (def.places ?? SLOT_PLACES[def.slot]).filter((place) =>
+    !place.startsWith("counter-") || state.counters.some((c) => c.id === place),
+  );
+}
+
+const wearerId = (place: string) => place.split(":")[1];
+
+/** Chỗ đeo đời cũ không ghi lớp; suy ra từ món để tránh hai kính cùng nằm trên mắt. */
+function sameWearLayer(state: SimState, a: string, b: string): boolean {
+  if (!a.startsWith("wear:") || !b.startsWith("wear:") || wearerId(a) !== wearerId(b)) return false;
+  const layer = (place: string) => {
+    const explicit = place.split(":")[2];
+    if (explicit) return explicit;
+    const item = itemAt(state, place);
+    return item ? COLLECTIBLES[item.defId]?.wearLayer : undefined;
+  };
+  return layer(a) === layer(b);
 }
 
 /** Chỗ đang đặt món này (null nếu đang cất). */
@@ -138,7 +150,7 @@ export function collectionBonus(
   if (!state.collection) return 0;
   let total = 0;
   for (const [place, uid] of Object.entries(state.collection.equipped)) {
-    if (place.startsWith("wear:") && !wearerActive(state, place.slice(5)))
+    if (place.startsWith("wear:") && !wearerActive(state, wearerId(place)!))
       continue;
     const item = state.collection.items.find((i) => i.uid === uid);
     for (const effect of item?.effects ?? [])
@@ -163,9 +175,13 @@ export function equipItem(
 ): CollectionResult {
   const item = state.collection.items.find((i) => i.uid === uid);
   if (!item) return "unknown-item";
-  if (!placesFor(state, item).includes(place)) return "invalid-place";
+  const legacyWear = place === `wear:${wearerId(place)}` &&
+    COLLECTIBLES[item.defId]?.slot === "wear" && !!state.workers[wearerId(place)!];
+  if (!placesFor(state, item).includes(place) && !legacyWear) return "invalid-place";
   const previous = placeOf(state, uid);
   if (previous) delete state.collection.equipped[previous];
+  for (const oldPlace of Object.keys(state.collection.equipped))
+    if (sameWearLayer(state, oldPlace, place)) delete state.collection.equipped[oldPlace];
   state.collection.equipped[place] = uid;
   emit({ type: "itemEquipped", uid, place });
   return "ok";
@@ -240,19 +256,21 @@ export function restoreCollection(raw: unknown): CollectionState | null {
     typeof source.equipped === "object" && source.equipped !== null
       ? (source.equipped as Record<string, unknown>)
       : {};
-  const allowed = [
-    ...SLOT_PLACES.counter,
-    ...SLOT_PLACES.shelf,
-    ...SLOT_PLACES.store,
-    "wear:w-player",
-  ];
-  for (const [place, uid] of Object.entries(equipped))
-    if (
-      allowed.includes(place) &&
-      typeof uid === "string" &&
-      restored.items.some((i) => i.uid === uid)
-    )
-      restored.equipped[place] = uid;
+  for (const [place, uid] of Object.entries(equipped)) {
+    if (typeof uid !== "string" || Object.values(restored.equipped).includes(uid)) continue;
+    const item = restored.items.find((i) => i.uid === uid);
+    if (!item) continue;
+    const def = COLLECTIBLES[item.defId]!;
+    if (def.slot === "wear") {
+      if (place !== "wear:w-player" && place !== `wear:w-player:${def.wearLayer}`) continue;
+      const layerTaken = Object.entries(restored.equipped).some(([oldPlace, oldUid]) =>
+        oldPlace.startsWith("wear:w-player") &&
+        COLLECTIBLES[restored.items.find((i) => i.uid === oldUid)!.defId]?.wearLayer === def.wearLayer,
+      );
+      if (layerTaken) continue;
+    } else if (!(def.places ?? SLOT_PLACES[def.slot]).includes(place)) continue;
+    restored.equipped[place] = uid;
+  }
   return restored;
 }
 
@@ -260,7 +278,7 @@ export function restoreCollection(raw: unknown): CollectionState | null {
 export function pruneEquipped(state: SimState): void {
   for (const [place, uid] of Object.entries(state.collection.equipped)) {
     const gone =
-      (place.startsWith("wear:") && !state.workers[place.slice(5)]) ||
+      (place.startsWith("wear:") && !state.workers[wearerId(place)!]) ||
       (place.startsWith("counter-") &&
         !state.counters.some((c) => c.id === place)) ||
       !state.collection.items.some((i) => i.uid === uid);

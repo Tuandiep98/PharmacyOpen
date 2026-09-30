@@ -179,7 +179,7 @@ function DayRewardCard({
             onClick={() => setItemOpen((v) => !v)}
           >
             <span className="item-card-icon">
-              <CollectibleIcon defId={item.defId} size={44} />
+              <CollectibleIcon defId={item.defId} grade={item.grade} effects={item.effects} size={44} />
               <span className={`grade-badge grade-${item.grade} size-sm`}>
                 {item.grade}
               </span>

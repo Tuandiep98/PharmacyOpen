@@ -15,7 +15,7 @@ import {
   type SimState,
 } from "@pharmacy/simulation";
 import { useState } from "react";
-import { CollectibleIcon } from "../../art/Collectibles";
+import { appearanceLevel, CollectibleIcon } from "../../art/Collectibles";
 import { GiftIcon } from "../../art/Icons";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
@@ -30,6 +30,7 @@ type State = DeepReadonly<SimState>;
 type Item = DeepReadonly<CollectibleItem>;
 
 const GRADE_ORDER: Record<Grade, number> = { S: 0, A: 1, B: 2, C: 3 };
+const APPEARANCE_LABEL = ["Mộc mạc", "Chỉn chu", "Tinh xảo", "Rực rỡ"] as const;
 const FIT_LABEL = {
   pharmacy: "Hợp nhà thuốc",
   neutral: "Dễ thương",
@@ -144,7 +145,7 @@ function PlaceGrid({
               >
                 <span className="place-icon">
                   {item ? (
-                    <CollectibleIcon defId={item.defId} size={36} />
+                    <CollectibleIcon defId={item.defId} grade={item.grade} effects={item.effects} size={36} />
                   ) : (
                     <span className="place-empty" aria-hidden />
                   )}
@@ -167,23 +168,21 @@ function PlaceGrid({
       <h3>Nhân vật đeo</h3>
       <ul className="place-grid">
         {Object.values(state.workers).map((worker) => {
-          const item = itemOf(`wear:${worker.id}`);
+          const worn = Object.entries(state.collection.equipped)
+            .filter(([place]) => place === `wear:${worker.id}` || place.startsWith(`wear:${worker.id}:`))
+            .map(([place]) => ({ place, item: itemOf(place) }))
+            .filter((entry) => !!entry.item);
           return (
             <li key={worker.id}>
-              <div className={`place-tile wearer ${item ? "filled" : ""}`}>
+              <div className={`place-tile wearer ${worn.length ? "filled" : ""}`}>
                 <StaffAvatar worker={worker} size={40} badge="sm" />
                 <span className={`place-name ${nameClassOf(worker)}`}>
                   {worker.name.split(" ").pop()}
                 </span>
-                <span className="small muted">
-                  {item ? (
-                    <span className={gradeNameClass(item.grade)}>
-                      {COLLECTIBLES[item.defId]?.name}
-                    </span>
-                  ) : (
-                    "Chưa đeo gì"
-                  )}
-                </span>
+                <span className="small muted">{worn.length ? `${worn.length} món đang đeo` : "Chưa đeo gì"}</span>
+                {worn.map(({ place, item }) => item && <button key={place} type="button" className="worn-chip" onClick={() => onPick(item.uid)}>
+                  <span className={gradeNameClass(item.grade)}>{COLLECTIBLES[item.defId]?.name}</span>
+                </button>)}
               </div>
             </li>
           );
@@ -209,6 +208,7 @@ function ItemCard({
   const [confirmDiscard, setConfirmDiscard] = useState(false);
   const def = COLLECTIBLES[item.defId];
   if (!def) return null;
+  const visualLevel = appearanceLevel(item);
   const place = placeOf(state, item.uid);
   const run = (command: Parameters<typeof bridge.dispatch>[0]) => {
     const r = bridge.dispatch(command);
@@ -216,7 +216,7 @@ function ItemCard({
     return r.ok;
   };
   return (
-    <li className={`item-card grade-edge-${item.grade} ${open ? "open" : ""}`}>
+    <li className={`item-card grade-edge-${item.grade} finish-card-${visualLevel} ${open ? "open" : ""}`}>
       <button
         type="button"
         className="item-card-head"
@@ -224,7 +224,7 @@ function ItemCard({
         onClick={onToggle}
       >
         <span className="item-card-icon">
-          <CollectibleIcon defId={item.defId} size={44} />
+          <CollectibleIcon defId={item.defId} grade={item.grade} effects={item.effects} size={78} />
           <span className={`grade-badge grade-${item.grade} size-sm`}>
             {item.grade}
           </span>
@@ -234,6 +234,7 @@ function ItemCard({
           <span className="small muted">
             {SLOT_LABEL[def.slot]} · {FIT_LABEL[def.fit]}
           </span>
+          <span className="small muted">Vẻ ngoài: {APPEARANCE_LABEL[visualLevel]}</span>
           <span className={`small ${place ? "item-placed" : "muted"}`}>
             {place ? `Đang ở: ${placeLabel(state, place)}` : "Đang cất"}
           </span>

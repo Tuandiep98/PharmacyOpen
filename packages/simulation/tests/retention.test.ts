@@ -237,6 +237,28 @@ describe("đồ sưu tầm", () => {
     expect(s.collection.items).toHaveLength(1);
   });
 
+  it("một người đeo nhiều lớp, hai món cùng lớp thay nhau, đồ đặt được ở chỗ phù hợp", () => {
+    const sim = new Simulation(createInitialState(11));
+    const s = mutable(sim);
+    const glasses = makeItem(s, "round-glasses", "S");
+    const shades = makeItem(s, "beach-shades", "A");
+    const pin = makeItem(s, "care-pin", "A");
+    const bow = makeItem(s, "neck-bow", "B");
+    const plant = makeItem(s, "succulent", "B");
+    s.collection.items.push(glasses, shades, pin, bow, plant);
+    for (const [item, layer] of [[glasses, "eyes"], [pin, "chest"], [bow, "neck"]] as const)
+      expect(sim.dispatch({ type: "equipItem", uid: item.uid, place: `wear:w-player:${layer}` }).ok).toBe(true);
+    expect(Object.keys(s.collection.equipped)).toHaveLength(3);
+    expect(collectionBonus(s, "rating")).toBeGreaterThan(0);
+    expect(collectionBonus(s, "returnChance")).toBeGreaterThan(0);
+    expect(sim.dispatch({ type: "equipItem", uid: shades.uid, place: "wear:w-player:eyes" }).ok).toBe(true);
+    expect(Object.values(s.collection.equipped)).not.toContain(glasses.uid);
+    expect(Object.keys(s.collection.equipped)).toHaveLength(3);
+    expect(sim.dispatch({ type: "equipItem", uid: plant.uid, place: "shelf" }).ok).toBe(true);
+    expect(s.collection.equipped.shelf).toBe(plant.uid);
+    expect(sim.dispatch({ type: "equipItem", uid: plant.uid, place: "store-wall" }).ok).toBe(false);
+  });
+
   it("bộ sưu tập đi theo người chơi khi điều chuyển chi nhánh", () => {
     const sim = new Simulation(createInitialState(2));
     const s = mutable(sim);
