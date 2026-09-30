@@ -226,6 +226,13 @@ export const BoxIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Mũi tên gập xuống: mở/thu một khối nội dung. */
+export const ChevronDownIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M6,9.5 L12,15.5 L18,9.5" strokeWidth={2.4} />
+  </Svg>
+);
+
 /** Dấu nhân đóng hộp thoại. */
 export const CloseIcon = (p: IconProps) => (
   <Svg {...p}>

@@ -1,5 +1,6 @@
 import {
   dailyOperationsCase,
+  dailyOperationsView,
   type DeepReadonly,
   type SimState,
 } from "@pharmacy/simulation";
@@ -29,7 +30,7 @@ export function OperationsDialog({ state }: { state: DeepReadonly<SimState> }) {
         <h1 id="operations-title">{incident.title}</h1>
         <p>{incident.story}</p>
         <div className="operations-choices">
-          {incident.choices.map((choice) => (
+          {dailyOperationsView(state).map((choice) => (
             <GameButton
               surface="inset"
               className="operations-choice"
@@ -44,12 +45,16 @@ export function OperationsDialog({ state }: { state: DeepReadonly<SimState> }) {
               }}
             >
               <strong>{choice.title}</strong>
-              <span>{choice.consequence}</span>
+              <span>
+                {choice.cost > 0 ? `${choice.cost} xu · ` : ""}
+                {choice.hint}
+              </span>
             </GameButton>
           ))}
         </div>
         <p className="small muted">
-          Điểm thấp hoặc nợ lương lớn sẽ dẫn tới điều chuyển sang chi nhánh nhỏ.
+          Quản lý vùng chấm điểm vào cuối ngày. Điểm thấp hoặc nợ lương lớn sẽ
+          dẫn tới điều chuyển sang chi nhánh nhỏ.
         </p>
       </div>
     </div>

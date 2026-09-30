@@ -1,4 +1,4 @@
-import type { DeepReadonly, WorkerTask } from "@pharmacy/simulation";
+import type { DeepReadonly, Grade, WorkerTask } from "@pharmacy/simulation";
 import { useLayoutEffect, useRef, useState } from "react";
 import { BoxIcon, ParcelIcon } from "../../art/Icons";
 import { ProductIcon } from "../../art/Products";
@@ -30,7 +30,8 @@ export interface OverlayItem {
   key: string;
   /** Đỉnh đầu nhân vật, đơn vị pixel trong khung cảnh. */
   at: { x: number; y: number };
-  tag?: { text: string; kind: TagKind };
+  /** `grade`: hạng nhân viên, tô viền và chữ bảng tên. */
+  tag?: { text: string; kind: TagKind; grade?: Grade };
   bubble?: BubbleSpec;
   fading?: boolean;
 }
@@ -314,7 +315,7 @@ export function SceneOverlay({
           >
             {item.tag && !tag?.hidden && (
               <span
-                className={`nametag nametag-${item.tag.kind}`}
+                className={`nametag nametag-${item.tag.kind}${item.tag.grade ? ` grade-tag-${item.tag.grade}` : ""}`}
                 style={{ top: tagTop, marginLeft: tag?.dx ?? 0 }}
               >
                 {tag?.text ?? item.tag.text}

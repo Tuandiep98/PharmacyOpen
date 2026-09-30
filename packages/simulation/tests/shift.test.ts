@@ -12,7 +12,7 @@ import {
   type SimEvent,
   type SimState,
 } from "../src";
-import { autoPlay, runFor } from "./helpers";
+import { autoPlay, runDays, runFor } from "./helpers";
 
 const mutable = (sim: Simulation) => sim.snapshot as SimState;
 
@@ -234,7 +234,7 @@ describe("tổng kết ngày", () => {
       counterId: "counter-1",
       workerId: "w-dung",
     });
-    runFor(sim, state.config.dayMs * 2 + 100);
+    runDays(sim, 2);
 
     for (const r of sim.snapshot.dayReports) {
       expect(r.netProfit).toBe(

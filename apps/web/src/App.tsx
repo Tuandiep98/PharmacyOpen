@@ -285,8 +285,8 @@ function useEventFeedback() {
         switch (e.type) {
           case "operationsChosen":
             pushToast(
-              e.choice === "shortcut" ? "warn" : "info",
-              `Đã chốt cách xử lý sự cố. Điểm quản lý vùng: ${e.score}/100.`,
+              "info",
+              "Đã chốt cách xử lý sự cố. Kết quả có trong báo cáo cuối ngày.",
             );
             break;
           case "transferAccepted":

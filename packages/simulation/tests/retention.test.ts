@@ -23,7 +23,7 @@ import {
 } from "../src";
 import { generateRecruit } from "../src/recruit";
 import { createStream } from "../src/rng";
-import { autoPlay, runFor } from "./helpers";
+import { autoPlay, runDays, runFor } from "./helpers";
 
 const mutable = (sim: Simulation) => sim.snapshot as SimState;
 
@@ -48,7 +48,7 @@ describe("tiệm mới mở: khách ghé thưa, tăng dần theo độ nhận bi
     const served = createInitialState(5);
     const sim = new Simulation(served);
     const before = served.awareness;
-    runFor(sim, served.config.dayMs + 200, autoPlay);
+    runDays(sim, 1, autoPlay);
     const report = served.dayReports.at(-1)!;
     expect(served.awareness).toBeGreaterThan(before);
     expect(report.awarenessChange).toBeLessThanOrEqual(AWARENESS_DAILY_MAX);
@@ -57,7 +57,7 @@ describe("tiệm mới mở: khách ghé thưa, tăng dần theo độ nhận bi
     // Không ai phục vụ: khách bỏ về, tiếng xấu lan nhanh hơn tiếng tốt nhưng cũng có sàn mỗi ngày.
     const ignored = createInitialState(5);
     ignored.awareness = 40;
-    runFor(new Simulation(ignored), ignored.config.dayMs + 200);
+    runDays(new Simulation(ignored), 1);
     expect(ignored.awareness).toBeLessThan(40);
     expect(ignored.awareness).toBeGreaterThanOrEqual(40 + AWARENESS_DAILY_MIN);
   });
@@ -158,7 +158,7 @@ describe("top khu vực", () => {
   it("bảng đánh giá cần ít nhất 30 đánh giá trong 7 ngày", () => {
     const sim = new Simulation(createInitialState(8));
     const state = mutable(sim);
-    runFor(sim, state.config.dayMs * 3 + 200);
+    runDays(sim, 3);
     const mine = localLeaderboard(state, "rating").mine[0]!;
     expect(mine.qualified).toBe(mine.sample >= RANKING_RULES.minReviews);
     expect(localLeaderboard(state, "revenue").mine[0]!.qualified).toBe(true);

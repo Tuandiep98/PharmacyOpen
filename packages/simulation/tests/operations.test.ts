@@ -4,7 +4,9 @@ import {
   createSave,
   dayReport,
   dailyOperationsCase,
+  dailyOperationsView,
   loadSave,
+  OPERATIONS_CASES,
   Simulation,
 } from "../src";
 import { runFor } from "./helpers";
@@ -30,6 +32,33 @@ describe("sự cố vận hành và điều chuyển", () => {
     const saved = loadSave(createSave(sim.snapshot, 0));
     expect(saved.ok).toBe(true);
     if (saved.ok) expect(saved.state.operations.choice).toBe("careful");
+  });
+
+  it("giấu điểm, xáo thứ tự nút và câu chữ ổn định theo ngày", () => {
+    for (const incident of OPERATIONS_CASES) {
+      expect(incident.choices.map((c) => c.id).sort()).toEqual([
+        "careful",
+        "practical",
+        "shortcut",
+      ]);
+      for (const choice of incident.choices)
+        for (const text of choice.variants)
+          expect(`${text.title} ${text.hint}`).not.toMatch(/điểm|\d/);
+    }
+    const state = createInitialState(3);
+    const orders = new Set<string>();
+    const titles = new Set<string>();
+    for (let day = 2; day < 40; day++) {
+      state.day = day;
+      const view = dailyOperationsView(state);
+      expect(view).toEqual(dailyOperationsView(state));
+      expect(view).toHaveLength(3);
+      expect(view[0]).not.toHaveProperty("score");
+      orders.add(view.map((c) => c.id).join());
+      for (const c of view) titles.add(c.title);
+    }
+    expect(orders.size).toBeGreaterThan(3);
+    expect(titles.size).toBeGreaterThan(OPERATIONS_CASES.length * 3);
   });
 
   it("điểm thấp sau đủ ngày buộc nhận chi nhánh nhỏ và giữ số lần điều chuyển", () => {

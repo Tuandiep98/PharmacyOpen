@@ -11,6 +11,7 @@ import {
 import { useEffect, useId, useRef, useState } from "react";
 import { WorkerPortrait } from "../../art/WorkerFigure";
 import { BRAND } from "../../brand";
+import { gradeNameClass } from "../../ui/gradeName";
 import "./staff.css";
 
 type Gradable = DeepReadonly<Worker> | DeepReadonly<Recruit>;
@@ -33,6 +34,11 @@ export function gradeOf(subject: Gradable): StaffScore | null {
     traits: subject.traits,
     level: "level" in subject ? subject.level : 1,
   });
+}
+
+/** Class tô tên nhân viên/ứng viên theo hạng; người chơi giữ nguyên kiểu chữ. */
+export function nameClassOf(subject: Gradable): string {
+  return gradeNameClass(gradeOf(subject)?.grade);
 }
 
 /**

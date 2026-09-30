@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   arrivalFactor,
   currentShift,
@@ -16,14 +17,14 @@ import {
   type SimState,
 } from "@pharmacy/simulation";
 import { StaffFigure } from "../../art/Character";
-import { PadlockIcon, StaffIcon } from "../../art/Icons";
+import { ChevronDownIcon, PadlockIcon, StaffIcon } from "../../art/Icons";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
 import { EmptyState, GameButton, PanelHeading } from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
 import { SHIFT_LABEL } from "../day/dayText";
 import { REJECT_TEXT } from "../store/rejectText";
-import { GradeBadge, gradeOf } from "./GradeBadge";
+import { GradeBadge, gradeOf, nameClassOf } from "./GradeBadge";
 import { StatBars, TraitDetails, TraitTags } from "./StaffPanel";
 
 const ROLE: Record<string, string> = {
@@ -91,9 +92,9 @@ export function RecruitPanel({ state }: { state: DeepReadonly<SimState> }) {
           </strong>
         </div>
         <div>
-          <span className="small muted">Người mới vào</span>
+          <span className="small muted">Ca còn trống</span>
           <strong>
-            {full ? "Hết chỗ" : openShift ? SHIFT_LABEL[openShift] : "Ca đủ người"}
+            {full ? "Hết chỗ" : openShift ? SHIFT_LABEL[openShift] : "Các ca đã đủ"}
           </strong>
         </div>
         <div>
@@ -186,6 +187,7 @@ function RecruitCard({
 }) {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
+  const [open, setOpen] = useState(false);
   const affordable = state.money >= recruit.hireCost;
   const grade = gradeOf(recruit);
   const value = grade ? shiftValueEstimate(state, grade.score) : 0;
@@ -195,7 +197,7 @@ function RecruitCard({
   };
   return (
     <li
-      className={`staff-card recruit-card grade-border-${grade?.grade ?? "C"}`}
+      className={`staff-card recruit-card grade-border-${grade?.grade ?? "C"}${open ? " open" : ""}`}
     >
       <div className="recruit-top">
         <span className="staff-avatar recruit-avatar">
@@ -215,7 +217,7 @@ function RecruitCard({
           <GradeBadge subject={recruit} size="lg" />
         </span>
         <div className="staff-info">
-          <strong>{recruit.name}</strong>
+          <strong className={nameClassOf(recruit)}>{recruit.name}</strong>
           <span className="small muted">{ROLE[recruit.role]}</span>
           <span className="small muted">{recruit.blurb}</span>
         </div>
@@ -241,44 +243,60 @@ function RecruitCard({
         knowledge={recruit.knowledge}
         communication={recruit.communication}
       />
-      <dl className="recruit-money">
-        <div>
-          <dt>Lương</dt>
-          <dd>
-            {recruit.wage} {BRAND.currency}/ca
-          </dd>
+      <button
+        type="button"
+        className="recruit-toggle"
+        aria-expanded={open}
+        aria-controls={`recruit-detail-${recruit.id}`}
+        onClick={() => setOpen((v) => !v)}
+      >
+        <span>{open ? "Thu gọn" : "Xem lương & tuyển"}</span>
+        <span className="recruit-toggle-chevron" aria-hidden>
+          <ChevronDownIcon size={20} />
+        </span>
+      </button>
+      {open && (
+        <div id={`recruit-detail-${recruit.id}`} className="recruit-detail">
+          <dl className="recruit-money">
+            <div>
+              <dt>Lương</dt>
+              <dd>
+                {recruit.wage} {BRAND.currency}/ca
+              </dd>
+            </div>
+            <div>
+              <dt>Ước làm ra</dt>
+              <dd className={value > recruit.wage ? "pos" : "neg"}>
+                ~{value} {BRAND.currency} lãi gộp/ca
+              </dd>
+            </div>
+          </dl>
+          <div className="recruit-actions">
+            {recruit.hiddenTraits.length > 0 && (
+              <GameButton
+                size="small"
+                disabled={state.money < state.config.interviewCost}
+                onClick={() => run({ type: "interviewRecruit", slot })}
+              >
+                Phỏng vấn · {state.config.interviewCost} {BRAND.currency}
+              </GameButton>
+            )}
+            <GameButton
+              tone="primary"
+              size="small"
+              disabled={full || !affordable}
+              onClick={() => run({ type: "hire", candidateId: recruit.id })}
+            >
+              {full
+                ? "Đội đã đủ người"
+                : affordable
+                  ? `Tuyển · ${recruit.hireCost} ${BRAND.currency}`
+                  : `Cần ${recruit.hireCost} ${BRAND.currency}`}
+            </GameButton>
+          </div>
+          <TraitDetails traits={recruit.traits} />
         </div>
-        <div>
-          <dt>Ước làm ra</dt>
-          <dd className={value > recruit.wage ? "pos" : "neg"}>
-            ~{value} {BRAND.currency} lãi gộp/ca
-          </dd>
-        </div>
-      </dl>
-      <div className="recruit-actions">
-        {recruit.hiddenTraits.length > 0 && (
-          <GameButton
-            size="small"
-            disabled={state.money < state.config.interviewCost}
-            onClick={() => run({ type: "interviewRecruit", slot })}
-          >
-            Phỏng vấn · {state.config.interviewCost} {BRAND.currency}
-          </GameButton>
-        )}
-        <GameButton
-          tone="primary"
-          size="small"
-          disabled={full || !affordable}
-          onClick={() => run({ type: "hire", candidateId: recruit.id })}
-        >
-          {full
-            ? "Đội đã đủ người"
-            : affordable
-              ? `Tuyển · ${recruit.hireCost} ${BRAND.currency}`
-              : `Cần ${recruit.hireCost} ${BRAND.currency}`}
-        </GameButton>
-      </div>
-      <TraitDetails traits={recruit.traits} />
+      )}
     </li>
   );
 }

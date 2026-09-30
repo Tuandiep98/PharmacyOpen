@@ -13,7 +13,7 @@ import { GameButton } from "../../ui/primitives";
 import { useServiceActions } from "../store/useServiceActions";
 import { workerProgress, workerStatus } from "./workerStatus";
 import { ActivityBadge } from "./ActivityBadge";
-import { GradeBadge, gradeOf, StaffAvatar } from "./GradeBadge";
+import { GradeBadge, gradeOf, nameClassOf, StaffAvatar } from "./GradeBadge";
 import "./staff.css";
 
 type State = DeepReadonly<SimState>;
@@ -116,7 +116,9 @@ export function CounterStaffPicker({
                       </span>
                     )}
                   </span>
-                  <strong className="pick-name">{shortName(w)}</strong>
+                  <strong className={`pick-name ${nameClassOf(w)}`}>
+                    {shortName(w)}
+                  </strong>
                   <span className="pick-status">
                     {kind === "current" && <span aria-hidden>✓ </span>}
                     {label}
@@ -228,7 +230,9 @@ export function CounterCard({
       <div className="counter-summary-main">
         {operator && <StaffAvatar worker={operator} size={48} />}
         <div className="counter-summary-text">
-          <strong>{operator ? operator.name : "Quầy chưa mở"}</strong>
+          <strong className={operator ? nameClassOf(operator) : ""}>
+            {operator ? operator.name : "Quầy chưa mở"}
+          </strong>
           {operator ? (
             <ActivityBadge state={state} worker={operator} />
           ) : (

@@ -312,3 +312,42 @@ describe("tiến trình khi vắng mặt", () => {
     expect(elapsed).toBeLessThan(3000);
   });
 });
+
+describe("tăng ca cuối ngày", () => {
+  /** Tiệm vừa hết giờ (còn một tick) với ít nhất một khách không bao giờ hết kiên nhẫn. */
+  function closingWithCustomer(seed: number): Simulation {
+    const sim = new Simulation(createInitialState(seed));
+    for (let i = 0; i < 20_000; i++) {
+      if (Object.keys(sim.snapshot.customers).length > 0) break;
+      sim.step();
+    }
+    const s = mutable(sim);
+    expect(Object.keys(s.customers).length).toBeGreaterThan(0);
+    for (const c of Object.values(s.customers))
+      c.patienceMs = c.patienceMaxMs = 1e9;
+    s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
+    s.dayStartedAtMs = s.timeMs - s.config.dayMs + s.config.tickMs;
+    return sim;
+  }
+
+  it("hết giờ còn khách thì chưa chốt ngày, khách đi hết mới sang ngày mới", () => {
+    const sim = closingWithCustomer(5);
+    const day = sim.snapshot.day;
+    runFor(sim, 5_000);
+    expect(sim.snapshot.day).toBe(day);
+    expect(sim.snapshot.dayReports.at(-1)?.day).not.toBe(day);
+    for (const c of Object.values(mutable(sim).customers)) c.patienceMs = 0;
+    runFor(sim, sim.snapshot.config.tickMs * 3);
+    expect(sim.snapshot.day).toBe(day + 1);
+    expect(sim.snapshot.dayReports.at(-1)?.day).toBe(day);
+  });
+
+  it("tăng ca có trần: quá overtimeMaxMs thì vẫn chốt ngày", () => {
+    const sim = closingWithCustomer(9);
+    const day = sim.snapshot.day;
+    runFor(sim, sim.snapshot.config.overtimeMaxMs - 1_000);
+    expect(sim.snapshot.day).toBe(day);
+    runFor(sim, 2_000);
+    expect(sim.snapshot.day).toBe(day + 1);
+  });
+});

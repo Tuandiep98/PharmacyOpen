@@ -1555,12 +1555,16 @@ button {
   .stage {
     display: grid;
     grid-template-columns: 1fr minmax(340px, 400px);
+    /* Hàng phải bị chặn theo chiều cao màn hình, nếu không .side cao theo nội dung và không cuộn được. */
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .side {
     border-left: 1px solid var(--line);
     background: var(--panel);
+    min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .tray {
@@ -1593,6 +1597,13 @@ button {
     box-shadow: none;
     animation: none;
     border: 0;
+  }
+
+  /* .side là vùng cuộn duy nhất ở đây. Nếu sheet-body vẫn là scroll container có
+   * overscroll-behavior: contain thì lăn chuột trên nội dung bị chặn, không tới được .side. */
+  .sheet-body {
+    overflow: visible;
+    overscroll-behavior: auto;
   }
 }
 

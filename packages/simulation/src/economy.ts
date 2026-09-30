@@ -282,12 +282,24 @@ export function dayProgress(state: DeepReadonly<SimState>): number {
   );
 }
 
+/** Còn khách chưa rời tiệm: đang xếp hàng, ở quầy hoặc đang trò chuyện. */
+export function customersInStore(state: DeepReadonly<SimState>): boolean {
+  return Object.values(state.customers).some((c) => c.phase !== "leaving");
+}
+
 /**
  * Cuối ngày: trả lương theo số ca đã vào làm (nợ cũ trước, lương mới sau; thiếu xu thì ghi nợ),
- * chốt tổng kết, bắt đầu ngày mới ở pha chuẩn bị. Gọi mỗi tick.
+ * chốt tổng kết, bắt đầu ngày mới ở pha chuẩn bị. Gọi mỗi tick. Hết giờ mà còn khách thì tăng ca
+ * phục vụ nốt (tối đa `overtimeMaxMs`) rồi mới chốt.
  */
 export function endDayIfDue(state: SimState, emit: Emit): void {
-  if (state.timeMs - state.dayStartedAtMs < state.config.dayMs) return;
+  const elapsed = state.timeMs - state.dayStartedAtMs;
+  if (elapsed < state.config.dayMs) return;
+  if (
+    elapsed < state.config.dayMs + state.config.overtimeMaxMs &&
+    customersInStore(state)
+  )
+    return;
 
   // Khiếu nại cũ tự đóng sau 2 ngày game; đánh giá và số sao vẫn giữ nguyên.
   for (const complaint of state.complaints) {

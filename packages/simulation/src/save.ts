@@ -463,11 +463,12 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
         (item) => item.id === choice,
       )?.cost ?? 0;
     const operations = isObject(state.operations) ? state.operations : {};
+    // Bản v14 xoay vòng trên 4 sự cố đầu tiên; sự cố thêm sau không được tính.
+    const v14CaseCount = 4;
     const incidentIndex =
       isNum(state.seed) && isNum(state.day) && state.day >= 2
-        ? (((state.seed + state.day - 2) % OPERATIONS_CASES.length) +
-            OPERATIONS_CASES.length) %
-          OPERATIONS_CASES.length
+        ? (((state.seed + state.day - 2) % v14CaseCount) + v14CaseCount) %
+          v14CaseCount
         : -1;
     const todayCost = costOf(
       OPERATIONS_CASES[incidentIndex]?.id,

@@ -1946,6 +1946,61 @@ button:disabled {
   }
 }
 
+/*
+ * Tên theo hạng (nhân viên, ứng viên, đồ sưu tầm), cùng họ màu với huy hiệu hạng.
+ * Phân tầng bằng màu thuần + độ đậm, không dùng glow mờ: trên nền sáng, quầng mờ quanh chữ tối
+ * làm nhòe nét. Mọi màu đạt tương phản ≥ 4.5:1 trên --panel, --surface-soft và --warn-soft.
+ * Riêng S có chữ chuyển sắc vàng kim và một bóng đổ sắc (không nhoè) để nổi bật hơn A.
+ */
+.grade-name {
+  font-weight: 700;
+}
+.grade-name-C {
+  color: #5b6761;
+}
+.grade-name-B {
+  color: #1f7a4a;
+  font-weight: 800;
+}
+.grade-name-A {
+  color: #2458b3;
+  font-weight: 800;
+}
+.grade-name-S {
+  color: #8f5200;
+  font-weight: 900;
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .grade-name-S {
+    background: linear-gradient(180deg, #a36600 0%, #8f5200 55%, #7a4400 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+    filter: drop-shadow(0 1px 0 rgb(143 82 0 / 22%));
+  }
+}
+@media (forced-colors: active) {
+  .grade-name-S {
+    -webkit-text-fill-color: CanvasText;
+    filter: none;
+  }
+}
+
+/* Bảng tên trong cảnh có nền đặc theo vai trò: hạng thể hiện bằng vòng viền sắc và tông chữ sáng. */
+.nametag.grade-tag-B {
+  color: #e3f7ea;
+}
+.nametag.grade-tag-A {
+  color: #e6efff;
+  box-shadow: 0 0 0 2px #8db8f0;
+}
+.nametag.grade-tag-S {
+  color: #ffe8a8;
+  box-shadow: 0 0 0 2px #f0b030;
+}
+
 /* Dark mode tạm tắt: đổi `not all` về `(prefers-color-scheme: dark)` khi bảng màu tối ổn. */
 @media not all {
   :root {

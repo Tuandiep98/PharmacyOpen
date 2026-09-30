@@ -110,7 +110,17 @@ export interface RegionStanding {
   staff: number | null;
 }
 
-export type OperationsCaseId = "storage" | "supplier" | "staff" | "rumour";
+export type OperationsCaseId =
+  | "storage"
+  | "supplier"
+  | "staff"
+  | "rumour"
+  | "outage"
+  | "leak"
+  | "expiry"
+  | "audit"
+  | "queue"
+  | "delivery";
 export type OperationsChoiceId = "careful" | "practical" | "shortcut";
 
 export interface OperationsState {
@@ -189,6 +199,11 @@ export interface SimConfig {
   prepMs: number;
   /** Cuối ngày ngừng nhận khách mới trong khoảng này để phục vụ nốt rồi chốt sổ. */
   closingMs: number;
+  /**
+   * Hết giờ mà còn khách trong tiệm thì tăng ca phục vụ nốt, chưa chốt ngày; trần an toàn để một
+   * ngày không kéo dài mãi (khách còn lại lúc đó sang ngày sau như trước).
+   */
+  overtimeMaxMs: number;
   /** Hoàn tất đủ việc chuẩn bị thì khách hao kiên nhẫn chậm hơn theo hệ số này trong ngày. */
   prepPatienceFactor: number;
   /** Giá bán tối đa = giá tham khảo × hệ số này (giá tối thiểu = giá vốn + 1). */

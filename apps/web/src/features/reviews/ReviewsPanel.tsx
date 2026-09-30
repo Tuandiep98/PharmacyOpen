@@ -13,7 +13,7 @@ import {
   type SimState,
 } from "@pharmacy/simulation";
 import { useState } from "react";
-import { StaffAvatar } from "../staff/GradeBadge";
+import { nameClassOf, StaffAvatar } from "../staff/GradeBadge";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
 import { formatRating, Stars } from "../../ui/Stars";
@@ -122,7 +122,7 @@ function ReviewsView({ state }: { state: State }) {
           <li key={w.id} className="staff-card">
             <StaffAvatar worker={w} size={44} />
             <div className="staff-info">
-              <strong>{w.name}</strong>
+              <strong className={nameClassOf(w)}>{w.name}</strong>
               <MetricRow
                 label="Nghiệp vụ"
                 value={w.perfCount ? w.perfSum / w.perfCount / 100 : null}
@@ -289,7 +289,13 @@ function ReviewHeader({
       <p className="review-comment">“{review.comment}”</p>
       <ReasonTags reasons={review.reasons} />
       <span className="small muted">
-        {worker ? `Phục vụ: ${worker.name}` : "Chưa được ai phục vụ"}
+        {worker ? (
+          <>
+            Phục vụ: <span className={nameClassOf(worker)}>{worker.name}</span>
+          </>
+        ) : (
+          "Chưa được ai phục vụ"
+        )}
         {worker &&
           !review.countsForStaff &&
           " · không tính cho nhân viên (lỗi không thuộc về người phục vụ)"}

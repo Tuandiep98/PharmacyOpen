@@ -34,6 +34,7 @@ import { ART, INK } from "../../art/palette";
 import { ProductArt } from "../../art/Products";
 import { beginProductGesture } from "../../ui/drag";
 import { useUi } from "../../ui/uiStore";
+import { gradeOf } from "../staff/GradeBadge";
 import { catalogPageProducts, catalogPageSize } from "../../ui/catalog";
 import { useServiceActions } from "./useServiceActions";
 import { SceneOverlay, type OverlayItem } from "./SceneOverlay";
@@ -313,6 +314,7 @@ export function StoreScene({
       tag: {
         text: worker.name.split(" ").pop() || worker.name,
         kind: worker.id === PLAYER_WORKER_ID ? "player" : worker.role,
+        grade: gradeOf(worker)?.grade,
       },
       bubble: line
         ? {

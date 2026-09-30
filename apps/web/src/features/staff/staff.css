@@ -240,9 +240,10 @@ button.grade-badge:focus-visible {
 /* Tuyển dụng: dải tình hình đội, chú giải hạng, thẻ ứng viên. */
 .recruit-summary {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
-  align-items: center;
-  gap: 8px;
+  /* Panel có thể hẹp dù màn hình rộng (cột phải desktop), nên nút luôn nằm hàng riêng. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: 10px 8px;
   margin: 0 0 10px;
   padding: 10px 12px;
   border: 1.5px solid var(--line);
@@ -251,22 +252,24 @@ button.grade-badge:focus-visible {
 }
 .recruit-summary > div {
   display: grid;
+  align-content: start;
+  gap: 2px;
   min-width: 0;
 }
-.recruit-summary strong {
-  overflow: hidden;
-  font-size: 16px;
-  font-variant-numeric: tabular-nums;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.recruit-summary > div + div {
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
 }
-@media (max-width: 420px) {
-  .recruit-summary {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .recruit-summary > button {
-    grid-column: 1 / -1;
-  }
+.recruit-summary strong {
+  font-size: 16px;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.recruit-summary > button {
+  grid-column: 1 / -1;
+  width: 100%;
+  justify-content: center;
 }
 .grade-legend {
   margin: 0 0 10px;
@@ -336,6 +339,48 @@ button.grade-badge:focus-visible {
 .recruit-card {
   display: grid;
   gap: 6px;
+}
+/* Thẻ ứng viên thu gọn tới thanh chỉ số; mở ra mới thấy lương, nút tuyển và chi tiết đặc điểm. */
+.recruit-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  margin-top: 2px;
+  padding: 6px 10px;
+  border: 1.5px dashed var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.recruit-toggle:hover {
+  background: var(--surface-tint);
+}
+.recruit-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.recruit-toggle-chevron {
+  display: grid;
+  place-items: center;
+  transition: transform 180ms ease;
+}
+.recruit-card.open .recruit-toggle {
+  border-style: solid;
+}
+.recruit-card.open .recruit-toggle-chevron {
+  transform: rotate(180deg);
+}
+.recruit-detail {
+  display: grid;
+  gap: 6px;
+  animation: pop 160ms ease both;
 }
 .recruit-top {
   display: grid;

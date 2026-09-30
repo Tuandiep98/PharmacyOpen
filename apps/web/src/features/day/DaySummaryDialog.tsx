@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   COLLECTIBLES,
   dayGoals,
@@ -8,6 +9,7 @@ import {
 } from "@pharmacy/simulation";
 import {
   CheckIcon,
+  ChevronDownIcon,
   CoinIcon,
   CrossMarkIcon,
   StarIcon,
@@ -20,6 +22,7 @@ import { useBridge } from "../../game/useGame";
 import { formatRating } from "../../ui/Stars";
 import { GameButton } from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
+import { gradeNameClass } from "../../ui/gradeName";
 import { ItemEffects } from "../collection/itemText";
 import {
   GOAL_LABEL,
@@ -109,7 +112,7 @@ export function DaySummaryDialog({
 
 /**
  * Thưởng mục tiêu ngày (xu và có thể một món sưu tầm), độ nhận biết của tiệm và thứ hạng khu vực sau
- * khi chốt ngày. Món mới có nút mở thẳng Bộ sưu tập để đặt/đeo.
+ * khi chốt ngày. Món mới chỉ báo tên; chạm vào để mở chỉ số và nút đặt/đeo.
  */
 function DayRewardCard({
   report,
@@ -120,6 +123,7 @@ function DayRewardCard({
 }) {
   const bridge = useBridge();
   const openView = useUi((s) => s.openView);
+  const [itemOpen, setItemOpen] = useState(false);
   const state = bridge.state;
   const item = report.reward.itemUid
     ? state.collection.items.find((i) => i.uid === report.reward.itemUid)
@@ -148,30 +152,6 @@ function DayRewardCard({
           </span>
         </span>
       </div>
-      {item && def && (
-        <div className="day-reward-item">
-          <span className="item-card-icon">
-            <CollectibleIcon defId={item.defId} size={44} />
-            <span className={`grade-badge grade-${item.grade} size-sm`}>
-              {item.grade}
-            </span>
-          </span>
-          <span className="day-reward-item-text">
-            <b>Nhận được: {def.name}</b>
-            <ItemEffects item={item} />
-          </span>
-          <GameButton
-            size="small"
-            tone="secondary"
-            onClick={() => {
-              openView({ tab: "expansion", view: "collection" });
-              onClose();
-            }}
-          >
-            Đặt / đeo
-          </GameButton>
-        </div>
-      )}
       <div className="day-reward-row">
         <TrophyIcon size={26} />
         <span>
@@ -189,6 +169,49 @@ function DayRewardCard({
           </span>
         </span>
       </div>
+      {item && def && (
+        <div className={`day-reward-item${itemOpen ? " open" : ""}`}>
+          <button
+            type="button"
+            className="day-reward-item-head"
+            aria-expanded={itemOpen}
+            aria-controls="day-reward-item-detail"
+            onClick={() => setItemOpen((v) => !v)}
+          >
+            <span className="item-card-icon">
+              <CollectibleIcon defId={item.defId} size={44} />
+              <span className={`grade-badge grade-${item.grade} size-sm`}>
+                {item.grade}
+              </span>
+            </span>
+            <span className="day-reward-item-text">
+              <span className="day-reward-item-eyebrow">
+                Nhận được đồ sưu tầm
+              </span>
+              <b className={gradeNameClass(item.grade)}>{def.name}</b>
+            </span>
+            <span className="day-reward-item-chevron" aria-hidden>
+              <ChevronDownIcon size={20} />
+            </span>
+          </button>
+          {itemOpen && (
+            <div id="day-reward-item-detail" className="day-reward-item-detail">
+              <ItemEffects item={item} />
+              <GameButton
+                size="small"
+                tone="secondary"
+                className="day-reward-item-action"
+                onClick={() => {
+                  openView({ tab: "expansion", view: "collection" });
+                  onClose();
+                }}
+              >
+                Đặt / đeo
+              </GameButton>
+            </div>
+          )}
+        </div>
+      )}
     </section>
   );
 }

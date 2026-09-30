@@ -61,6 +61,25 @@ export function runFor(
 }
 
 /**
+ * Chạy tới khi đã chốt thêm `days` ngày. Ngày có thể dài hơn `dayMs` vì tăng ca phục vụ nốt khách,
+ * nên test cần "hết ngày" dùng hàm này thay vì chạy cứng n × dayMs.
+ */
+export function runDays(
+  sim: Simulation,
+  days: number,
+  player?: (sim: Simulation) => void,
+): void {
+  const target = sim.snapshot.day + days;
+  const { dayMs, overtimeMaxMs, tickMs } = sim.snapshot.config;
+  const limit = Math.ceil(((dayMs + overtimeMaxMs) * days) / tickMs) + 10;
+  for (let i = 0; i < limit && sim.snapshot.day < target; i++) {
+    player?.(sim);
+    sim.step();
+  }
+  if (sim.snapshot.day < target) throw new Error("ngày không kết thúc");
+}
+
+/**
  * Tuyển một hồ sơ cố định và cho làm cả hai ca. Thêm đặc điểm "Trâu bò" để kịch bản chạy nhiều ngày
  * không bị mệt rồi xin nghỉ (test riêng về mệt mỏi nằm ở staff.test.ts).
  */

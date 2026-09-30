@@ -40,6 +40,7 @@ export {
   totalWagesOwed,
   wagesDueToday,
   wagesDueTonight,
+  customersInStore,
   DAY_REWARD_COINS,
   DAY_REWARD_ITEM_CHANCE,
   dayRewardCoins,
@@ -127,6 +128,9 @@ export * from "./progression";
 export {
   OPERATIONS_CASES,
   dailyOperationsCase,
+  dailyOperationsView,
   type OperationsCase,
   type OperationsChoice,
+  type OperationsChoiceText,
+  type OperationsChoiceView,
 } from "./operations";

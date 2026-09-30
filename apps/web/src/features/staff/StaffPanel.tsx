@@ -45,7 +45,7 @@ import { useServiceActions } from "../store/useServiceActions";
 import { DismissButton } from "./DismissButton";
 import { CounterCard } from "./CounterAssign";
 import { ActivityBadge } from "./ActivityBadge";
-import { gradeOf, StaffAvatar } from "./GradeBadge";
+import { gradeOf, nameClassOf, StaffAvatar } from "./GradeBadge";
 import { RecruitPanel } from "./RecruitPanel";
 import "./staff.css";
 
@@ -448,7 +448,7 @@ function TeamView({ state }: { state: DeepReadonly<SimState> }) {
             <div className="team-card-head">
               <StaffAvatar worker={w} size={48} />
               <div className="team-card-identity">
-                <strong>{w.name}</strong>
+                <strong className={nameClassOf(w)}>{w.name}</strong>
                 <span className="small muted">{ROLE[w.role]}</span>
               </div>
               {counterOf(w.id) >= 0 && (

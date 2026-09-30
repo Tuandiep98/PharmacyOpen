@@ -15,7 +15,7 @@ import { ChatIcon, ClinicIcon, ParcelIcon } from "../../art/Icons";
 import { chatBeat, customerLine, storyTitle } from "./dialogue";
 import "./chat.css";
 import { ProductIcon } from "../../art/Products";
-import { StaffAvatar } from "../staff/GradeBadge";
+import { nameClassOf, StaffAvatar } from "../staff/GradeBadge";
 import { beginProductGesture } from "../../ui/drag";
 import { useUi } from "../../ui/uiStore";
 import { GameButton } from "../../ui/primitives";
@@ -207,7 +207,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         )}
         <div className="auto-counter-info" aria-live="polite">
           <span className="npc-title">
-            <strong>{operator.name}</strong>
+            <strong className={nameClassOf(operator)}>{operator.name}</strong>
             <span>đứng quầy{counterLabel}</span>
           </span>
           <span className="npc-activity">
@@ -315,7 +315,8 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
             counterLabel={`quầy${counterLabel}`}
           />
           <span>
-            Quầy{counterLabel} · <b>{operator.name}</b>
+            Quầy{counterLabel} ·{" "}
+            <b className={nameClassOf(operator)}>{operator.name}</b>
           </span>
         </div>
       )}

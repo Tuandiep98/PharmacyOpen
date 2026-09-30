@@ -32,6 +32,7 @@ export const DEFAULT_CONFIG: SimConfig = {
   dayMs: 240_000,
   prepMs: 15_000,
   closingMs: 15_000,
+  overtimeMaxMs: 60_000,
   prepPatienceFactor: 0.9,
   priceMaxFactor: 1.5,
   owedWageSpeedFactor: 0.8,

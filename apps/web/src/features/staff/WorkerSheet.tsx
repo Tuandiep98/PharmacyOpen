@@ -1,6 +1,6 @@
 import type { DeepReadonly, SimState } from "@pharmacy/simulation";
 import { DismissButton } from "./DismissButton";
-import { StaffAvatar } from "./GradeBadge";
+import { nameClassOf, StaffAvatar } from "./GradeBadge";
 import { useServiceActions } from "../store/useServiceActions";
 import {
   LevelBar,
@@ -35,7 +35,7 @@ export function WorkerSheet({
           {worker.role === "pharmacist" ? "Dược sĩ" : "Nhân viên"} ·{" "}
           {worker.controller === "player" ? "Bạn điều khiển" : "Tự làm việc"}
         </span>
-        <h1>{worker.name}</h1>
+        <h1 className={nameClassOf(worker)}>{worker.name}</h1>
         <span className="detail-status">
           <ActivityBadge state={state} worker={worker} />
         </span>

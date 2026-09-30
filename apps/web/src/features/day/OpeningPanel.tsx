@@ -10,6 +10,7 @@ import { CheckIcon, ClockIcon } from "../../art/Icons";
 import { useBridge } from "../../game/useGame";
 import { GameButton } from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
+import { nameClassOf } from "../staff/GradeBadge";
 import { REJECT_TEXT } from "../store/rejectText";
 import { PLAYER_WORKER_ID } from "../store/useServiceActions";
 import { PREP_TASKS } from "./dayText";
@@ -26,10 +27,18 @@ export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
   const phase = dayPhase(state);
 
   if (phase === "closing") {
+    // Hết giờ mà còn khách: tiệm tăng ca, chỉ chốt sổ khi đã phục vụ xong.
+    const remaining = Object.values(state.customers).filter(
+      (c) => c.phase !== "leaving",
+    ).length;
+    const overtime =
+      dayElapsed(state) >= state.config.dayMs && remaining > 0;
     return (
       <div className="day-banner" role="status">
         <ClockIcon size={18} />
-        Đã đóng cửa — phục vụ nốt khách đang chờ rồi chốt sổ.
+        {overtime
+          ? `Tăng ca — còn ${remaining} khách, chốt sổ khi phục vụ xong.`
+          : "Đã đóng cửa — phục vụ nốt khách đang chờ rồi chốt sổ."}
       </div>
     );
   }
@@ -63,7 +72,10 @@ export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
       </header>
       {npcPrepares && (
         <p className="small muted">
-          {operator?.name} đang đứng quầy và sẽ lần lượt làm các việc này.
+          {operator && (
+            <span className={nameClassOf(operator)}>{operator.name}</span>
+          )}{" "}
+          đang đứng quầy và sẽ lần lượt làm các việc này.
         </p>
       )}
       <ul className="prep-list">

@@ -21,8 +21,9 @@ import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
 import { EmptyState, GameButton, PanelHeading } from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
+import { gradeNameClass } from "../../ui/gradeName";
 import { REJECT_TEXT } from "../store/rejectText";
-import { StaffAvatar } from "../staff/GradeBadge";
+import { nameClassOf, StaffAvatar } from "../staff/GradeBadge";
 import { effectText, ItemEffects, placeLabel } from "./itemText";
 
 type State = DeepReadonly<SimState>;
@@ -150,7 +151,13 @@ function PlaceGrid({
                 </span>
                 <span className="place-name">{placeLabel(state, place)}</span>
                 <span className="small muted">
-                  {item ? COLLECTIBLES[item.defId]?.name : "Trống"}
+                  {item ? (
+                    <span className={gradeNameClass(item.grade)}>
+                      {COLLECTIBLES[item.defId]?.name}
+                    </span>
+                  ) : (
+                    "Trống"
+                  )}
                 </span>
               </button>
             </li>
@@ -165,11 +172,17 @@ function PlaceGrid({
             <li key={worker.id}>
               <div className={`place-tile wearer ${item ? "filled" : ""}`}>
                 <StaffAvatar worker={worker} size={40} badge="sm" />
-                <span className="place-name">
+                <span className={`place-name ${nameClassOf(worker)}`}>
                   {worker.name.split(" ").pop()}
                 </span>
                 <span className="small muted">
-                  {item ? COLLECTIBLES[item.defId]?.name : "Chưa đeo gì"}
+                  {item ? (
+                    <span className={gradeNameClass(item.grade)}>
+                      {COLLECTIBLES[item.defId]?.name}
+                    </span>
+                  ) : (
+                    "Chưa đeo gì"
+                  )}
                 </span>
               </div>
             </li>
@@ -217,7 +230,7 @@ function ItemCard({
           </span>
         </span>
         <span className="item-card-text">
-          <strong>{def.name}</strong>
+          <strong className={gradeNameClass(item.grade)}>{def.name}</strong>
           <span className="small muted">
             {SLOT_LABEL[def.slot]} · {FIT_LABEL[def.fit]}
           </span>
