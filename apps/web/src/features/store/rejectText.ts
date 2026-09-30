@@ -61,5 +61,6 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   "unknown-item": "Không tìm thấy món này trong bộ sưu tập.",
   "invalid-place": "Món này không đặt được ở chỗ đó.",
   "not-equipped": "Món này đang được cất, chưa đặt ở đâu.",
+  "fuse-needs-three": "Cần chọn đúng 3 món khác nhau để ghép.",
   "invalid-standing": "Dữ liệu xếp hạng không hợp lệ.",
 };

@@ -38,7 +38,7 @@ export function workerStatus(
         return "Đang trò chuyện với khách quen";
     }
   }
-  if (worker.restDay === state.day) return "Nghỉ hôm nay";
+  if (worker.restDay === state.day) return "Nghỉ phép hôm nay";
   if (!isOnDuty(state, worker)) return "Ngoài ca, đang nghỉ";
   if (!isPresent(state, worker)) return "Chưa tới ca, đang trên đường";
   if (state.counters.some((c) => c.operatorId === worker.id))

@@ -6,7 +6,7 @@ import { useUi } from "../../ui/uiStore";
 import { GameButton } from "../../ui/primitives";
 import { REJECT_TEXT } from "../store/rejectText";
 
-/** Cho nhân viên nghỉ: chạm hai lần để xác nhận (không dùng hộp thoại trình duyệt). */
+/** Cho nhân viên thôi việc (khác nghỉ phép): chạm hai lần để xác nhận (không dùng hộp thoại trình duyệt). */
 export function DismissButton({
   worker,
   onDone,
@@ -44,8 +44,8 @@ export function DismissButton({
       }}
     >
       {confirming
-        ? `Xác nhận cho nghỉ${worker.wageOwed ? ` · trả nợ ${worker.wageOwed} ${BRAND.currency}` : ""}`
-        : "Cho nghỉ"}
+        ? `Xác nhận cho thôi việc${worker.wageOwed ? ` · trả nợ ${worker.wageOwed} ${BRAND.currency}` : ""}`
+        : "Cho thôi việc"}
     </GameButton>
   );
 }

@@ -100,6 +100,8 @@ export interface CollectionState {
   items: CollectibleItem[];
   equipped: Record<string, string>;
   nextUid: number;
+  /** Số lần ghép liên tiếp chưa ra hạng A/S (bảo hiểm ghép đồ); save cũ không có = 0. */
+  fusePity?: number;
 }
 
 /** Hạng của tiệm trong khu vực ở lần chốt ngày gần nhất (null = chưa đủ điều kiện lên bảng). */

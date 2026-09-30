@@ -43,6 +43,7 @@ import {
 import { REJECT_TEXT } from "../store/rejectText";
 import { useServiceActions } from "../store/useServiceActions";
 import { DismissButton } from "./DismissButton";
+import { staffAlerts } from "./staffAlerts";
 import { CounterCard } from "./CounterAssign";
 import { ActivityBadge } from "./ActivityBadge";
 import { gradeOf, nameClassOf, StaffAvatar } from "./GradeBadge";
@@ -276,7 +277,7 @@ function FatigueBar({ worker }: { worker: DeepReadonly<Worker> }) {
   const level = ratio >= 0.7 ? "high" : ratio >= 0.35 ? "mid" : "low";
   return (
     <span className="meter-line">
-      <b className="small">Mệt</b>
+      <b className="meter-label">Mệt</b>
       <span
         className={`progress-track fatigue-${level}`}
         role="meter"
@@ -303,16 +304,20 @@ function ResignNotice({ worker }: { worker: DeepReadonly<Worker> }) {
     if (!r.ok) pushToast("bad", REJECT_TEXT[r.reason]);
   };
   return (
-    <div className="notice bad resign-notice" role="alert">
-      <WarningIcon size={18} />
-      <span>
-        {worker.name} xin thôi việc vì làm quá sức. Hết hôm nay chưa giữ chân
-        thì sẽ nghỉ hẳn.
-      </span>
+    <div className="resign-notice" role="alert">
+      <p className="resign-text">
+        <WarningIcon size={18} />
+        <span>
+          <b>Xin thôi việc vì quá sức</b>
+          <span className="small">Chưa giữ chân thì nghỉ hẳn cuối ngày.</span>
+        </span>
+      </p>
       <div className="resign-actions">
         <GameButton size="small" tone="primary" onClick={retain}>
-          Tăng lương giữ chân · {worker.wage} → {retainWage(worker.wage)}{" "}
-          {BRAND.currency}/ca
+          Giữ chân
+          <small>
+            {worker.wage} → {retainWage(worker.wage)} {BRAND.currency}/ca
+          </small>
         </GameButton>
         <DismissButton worker={worker} />
       </div>
@@ -364,9 +369,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
   const view = useUi((s) => s.staffView);
   const setView = useUi((s) => s.setStaffView);
   const available = state.recruits.filter((r) => r !== null).length;
-  const resigning = Object.values(state.workers).filter(
-    (w) => w.resigning,
-  ).length;
+  const alertCount = staffAlerts(state).length;
   return (
     <div className="panel">
       <Segmented
@@ -378,7 +381,7 @@ export function StaffPanel({ state }: { state: DeepReadonly<SimState> }) {
             id: "team",
             label: "Đội ngũ",
             icon: <StaffIcon />,
-            badge: resigning,
+            badge: alertCount,
           },
           {
             id: "recruit",
@@ -412,6 +415,7 @@ function TeamView({ state }: { state: DeepReadonly<SimState> }) {
         Đội ngũ
       </PanelHeading>
       <WageSummary state={state} />
+      <StaffAlertBox state={state} />
 
       {state.counters.map((counter) => (
         <CounterCard key={counter.id} state={state} counterId={counter.id} />
@@ -443,94 +447,84 @@ function TeamView({ state }: { state: DeepReadonly<SimState> }) {
         {team.map((w) => (
           <li
             key={w.id}
+            id={`team-card-${w.id}`}
             className={`staff-card team-card ${counterOf(w.id) >= 0 ? "on-counter" : ""} ${w.controller === "ai" ? `grade-border-${gradeOf(w)?.grade ?? "C"}` : ""}`}
           >
             <div className="team-card-head">
               <StaffAvatar worker={w} size={48} />
               <div className="team-card-identity">
                 <strong className={nameClassOf(w)}>{w.name}</strong>
-                <span className="small muted">{ROLE[w.role]}</span>
+                <span className="team-card-sub">
+                  <span className="small muted">{ROLE[w.role]}</span>
+                  <ActivityBadge state={state} worker={w} />
+                </span>
               </div>
               {counterOf(w.id) >= 0 && (
                 <span className="tag mint">Quầy {counterOf(w.id) + 1}</span>
               )}
               {w.restDay === state.day ? (
-                <span className="tag off-duty">Nghỉ hôm nay</span>
+                <span className="tag leave-tag">Đang nghỉ phép</span>
               ) : (
-                !isOnDuty(state, w) && (
-                  <span className="tag off-duty">Ngoài ca</span>
+                w.restDay === state.day + 1 && (
+                  <span className="tag leave-tag">Nghỉ phép mai</span>
                 )
               )}
             </div>
-            <p className="team-card-status">
-              <ActivityBadge state={state} worker={w} />
-            </p>
             {w.controller === "ai" && (
-              <>
+              <div className="team-card-tags">
                 <TraitTags traits={w.traits} hidden={w.hiddenTraits.length} />
-                <LevelBar worker={w} />
-                <FatigueBar worker={w} />
-                <RestLine state={state} worker={w} />
-                {w.resigning && <ResignNotice worker={w} />}
-              </>
+                <ReviewTraits state={state} worker={w} />
+              </div>
             )}
-            <ReviewTraits state={state} worker={w} />
-            <div
-              className="team-card-metrics"
-              aria-label={`Thống kê của ${w.name}`}
-            >
-              <span>
-                Đã bán <b>{w.served}</b>
-              </span>
-              <span>
-                Nghiệp vụ{" "}
-                <b>
-                  {w.perfCount
-                    ? `${Math.round(w.perfSum / w.perfCount)}/100`
-                    : "—"}
-                </b>
-              </span>
-              <span>
-                Đánh giá{" "}
-                <b>
+            {w.controller === "player" && <ReviewTraits state={state} worker={w} />}
+            {w.controller === "ai" && <WorkerMeters state={state} worker={w} />}
+            {w.resigning && <ResignNotice worker={w} />}
+            <dl className="team-card-metrics" aria-label={`Thống kê của ${w.name}`}>
+              <div>
+                <dt>Đã bán</dt>
+                <dd>{w.served}</dd>
+              </div>
+              <div>
+                <dt>Nghiệp vụ</dt>
+                <dd>
+                  {w.perfCount ? Math.round(w.perfSum / w.perfCount) : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt>Đánh giá</dt>
+                <dd>
                   {w.repCount
                     ? `${(w.repStarsSum / w.repCount).toLocaleString("vi-VN", { maximumFractionDigits: 1 })}★`
                     : "—"}
-                </b>
-              </span>
-            </div>
+                </dd>
+              </div>
+            </dl>
             {w.controller === "ai" && (
-              <details className="team-card-details">
-                <summary>
-                  Lịch ca · {w.shifts.map((s) => SHIFT_LABEL[s]).join(", ")}
-                </summary>
-                <ShiftToggle state={state} worker={w} />
-              </details>
-            )}
-            {w.controller === "ai" && (
-              <details className="team-card-details">
-                <summary>
-                  Vị trí · {STATIONS[stationOf(state, w)].name}
-                  {counterOf(w.id) >= 0 ? ` ${counterOf(w.id) + 1}` : ""}
-                </summary>
-                <StationPicker state={state} worker={w} />
-              </details>
-            )}
-            <div className="team-card-actions">
-              {w.controller === "player" &&
-                counterOf(w.id) < 0 &&
-                state.counters.map((c, i) => (
-                  <GameButton
-                    key={c.id}
-                    size="small"
-                    onClick={() => assignCounter(w.id, c.id)}
-                  >
-                    Tự đứng quầy {state.counters.length > 1 ? i + 1 : ""}
-                  </GameButton>
-                ))}
-              {w.controller === "ai" && (
+              <div className="team-card-rows">
                 <details className="team-card-details">
-                  <summary>Kỹ năng &amp; lương</summary>
+                  <summary>
+                    <span>Lịch ca</span>
+                    <b>{w.shifts.map((s) => SHIFT_LABEL[s]).join(", ")}</b>
+                  </summary>
+                  <ShiftToggle state={state} worker={w} />
+                </details>
+                <details className="team-card-details">
+                  <summary>
+                    <span>Vị trí</span>
+                    <b>
+                      {STATIONS[stationOf(state, w)].name}
+                      {counterOf(w.id) >= 0 ? ` ${counterOf(w.id) + 1}` : ""}
+                    </b>
+                  </summary>
+                  <StationPicker state={state} worker={w} />
+                </details>
+                <details className="team-card-details">
+                  <summary>
+                    <span>Kỹ năng &amp; lương</span>
+                    <b>
+                      {w.wage} {BRAND.currency}/ca
+                    </b>
+                  </summary>
                   <TraitDetails traits={w.traits} />
                   <StatBars
                     speed={w.speed}
@@ -540,8 +534,27 @@ function TeamView({ state }: { state: DeepReadonly<SimState> }) {
                   <WageLine worker={w} />
                   {!w.resigning && <DismissButton worker={w} />}
                 </details>
-              )}
-            </div>
+              </div>
+            )}
+            {(w.controller === "ai"
+              ? w.restDay !== state.day && !w.resigning
+              : counterOf(w.id) < 0) && (
+              <div className="team-card-actions">
+                {w.controller === "player" ? (
+                  state.counters.map((c, i) => (
+                    <GameButton
+                      key={c.id}
+                      size="small"
+                      onClick={() => assignCounter(w.id, c.id)}
+                    >
+                      Tự đứng quầy {state.counters.length > 1 ? i + 1 : ""}
+                    </GameButton>
+                  ))
+                ) : (
+                  <RestToggle state={state} worker={w} />
+                )}
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -632,7 +645,80 @@ function CounterPolicy({ state }: { state: DeepReadonly<SimState> }) {
 }
 
 /** Số ngày làm liên tục và lịch nghỉ: làm liên tục lâu sẽ mệt thêm mỗi ngày. */
-function RestLine({
+/** Khung cảnh báo đầu Đội ngũ: ai xin thôi việc, ai mệt nặng — chạm để tới thẻ, hoặc xếp nghỉ phép ngay. */
+function StaffAlertBox({ state }: { state: DeepReadonly<SimState> }) {
+  const alerts = staffAlerts(state);
+  if (alerts.length === 0) return null;
+  const urgent = alerts.some((a) => a.kind === "resigning");
+  return (
+    <section
+      className={`staff-alerts ${urgent ? "urgent" : ""}`}
+      role={urgent ? "alert" : "status"}
+      aria-label="Nhân viên cần chú ý"
+    >
+      <strong className="staff-alerts-title">
+        <WarningIcon size={18} /> {alerts.length} nhân viên cần chú ý
+      </strong>
+      <ul>
+        {alerts.map(({ worker, kind, text }) => (
+          <li key={worker.id} className={`staff-alert ${kind}`}>
+            <StaffAvatar worker={worker} size={32} badge="sm" staticBadge />
+            <button
+              type="button"
+              className="staff-alert-text"
+              onClick={() =>
+                document
+                  .getElementById(`team-card-${worker.id}`)
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            >
+              <b className={nameClassOf(worker)}>{worker.name}</b>
+              <span>{text}</span>
+            </button>
+            {kind === "tired" && <RestToggle state={state} worker={worker} />}
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Cấp tay nghề và độ mệt đặt cạnh nhau; chuỗi ngày làm liền hiện ngay dưới thanh mệt khi cần chú ý. */
+function WorkerMeters({
+  state,
+  worker,
+}: {
+  state: DeepReadonly<SimState>;
+  worker: DeepReadonly<Worker>;
+}) {
+  const limit = state.config.streakFatigueDays;
+  // Ngắn gọn dưới thanh mệt; giải thích đầy đủ nằm ở title khi rê chuột.
+  const streakNote =
+    worker.streak >= limit
+      ? `Làm ${worker.streak} ngày liền`
+      : worker.streak >= limit - 1
+        ? "Nên cho nghỉ"
+        : null;
+  return (
+    <div className="team-card-meters">
+      <LevelBar worker={worker} />
+      <div className="meter-stack">
+        <FatigueBar worker={worker} />
+        {streakNote && (
+          <span
+            className="small neg"
+            title={`Làm liên tục ${worker.streak} ngày; từ ngày thứ ${limit} mệt thêm mỗi ngày.`}
+          >
+            {streakNote}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Nút xếp nghỉ phép ngày mai (bật/tắt); khác "Cho thôi việc". */
+function RestToggle({
   state,
   worker,
 }: {
@@ -641,7 +727,6 @@ function RestLine({
 }) {
   const bridge = useBridge();
   const pushToast = useUi((s) => s.pushToast);
-  const limit = state.config.streakFatigueDays;
   const tomorrow = worker.restDay === state.day + 1;
   const toggle = () => {
     const r = bridge.dispatch({
@@ -650,28 +735,23 @@ function RestLine({
       rest: !tomorrow,
     });
     if (!r.ok) pushToast("bad", REJECT_TEXT[r.reason]);
+    else
+      pushToast(
+        tomorrow ? "info" : "good",
+        tomorrow
+          ? `Đã huỷ nghỉ phép ngày mai của ${worker.name}.`
+          : `${worker.name} nghỉ phép ngày mai — vẫn trong đội, nghỉ cho đỡ mệt rồi đi làm lại.`,
+      );
   };
   return (
-    <span className="rest-line">
-      <span className={`small ${worker.streak >= limit - 1 ? "neg" : "muted"}`}>
-        Làm liên tục {worker.streak} ngày
-        {worker.streak >= limit
-          ? " · đang mệt thêm mỗi ngày"
-          : worker.streak >= limit - 1
-            ? " · nên cho nghỉ"
-            : ""}
-      </span>
-      {worker.restDay !== state.day && (
-        <GameButton
-          size="small"
-          tone={tomorrow ? "primary" : "secondary"}
-          aria-pressed={tomorrow}
-          onClick={toggle}
-        >
-          {tomorrow ? "Mai nghỉ · huỷ" : "Cho nghỉ ngày mai"}
-        </GameButton>
-      )}
-    </span>
+    <GameButton
+      size="small"
+      tone={tomorrow ? "primary" : "secondary"}
+      aria-pressed={tomorrow}
+      onClick={toggle}
+    >
+      {tomorrow ? "✓ Nghỉ phép mai · Huỷ" : "Cho nghỉ phép ngày mai"}
+    </GameButton>
   );
 }
 

@@ -13,10 +13,11 @@ import { ProductIcon } from "../../art/Products";
 import { WorkerPortrait } from "../../art/WorkerFigure";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
-import { EmptyState, GameButton, PanelHeading } from "../../ui/primitives";
+import { EmptyState, GameButton, IconButton, PanelHeading } from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
 import { gameDuration } from "../day/dayText";
 import { REJECT_TEXT } from "../store/rejectText";
+import { DeliveryStatusIcon, type DeliveryStatus } from "./DeliveryStatusIcon";
 import "./delivery.css";
 
 type State = DeepReadonly<SimState>;
@@ -58,26 +59,35 @@ export function DeliveryChip({ state }: { state: State }) {
         ["late", "urgent", "ok"].indexOf(a) -
         ["late", "urgent", "ok"].indexOf(b),
     )[0];
-  const label =
+  const status: DeliveryStatus =
     open.length === 0
-      ? "Đang giao"
+      ? "sent"
       : worst === "late"
-        ? "Trễ hẹn"
+        ? "late"
         : worst === "urgent"
-          ? "Sắp trễ"
-          : "Cần gói";
+          ? "urgent"
+          : "pack";
+  const label = {
+    sent: "Đang giao",
+    late: "Trễ hẹn",
+    urgent: "Sắp trễ",
+    pack: "Cần gói",
+  }[status];
+  const count = open.length > 0 ? open.length : state.deliveries.length;
   return (
-    <GameButton
-      surface="custom"
-      type="button"
-      className={`delivery-chip ${worst ?? "ok"}`}
+    <IconButton
+      surface="raised"
+      tone={status === "late" ? "danger" : status === "urgent" ? "sun" : "neutral"}
+      className={`scene-quick-btn delivery-chip ${status}`}
       onClick={() => select({ kind: "deliveries" })}
       aria-label={`Đơn ship: ${open.length} đơn cần gói hoặc gửi, ${state.deliveries.length - open.length} đơn đang giao. ${label}.`}
+      title={`Đơn ship · ${label}`}
     >
-      <ParcelIcon size={22} />
-      <b>{open.length > 0 ? open.length : state.deliveries.length}</b>
-      <span>{label}</span>
-    </GameButton>
+      <DeliveryStatusIcon status={status} size={30} />
+      <span className="scene-quick-badge" aria-hidden>
+        {count}
+      </span>
+    </IconButton>
   );
 }
 

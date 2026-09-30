@@ -1,0 +1,413 @@
+/* Ghép đồ: máy gacha 3 ô → viên nang → món mới, bảng tỉ lệ công khai, thanh bảo hiểm, túi đồ để chọn. */
+.fusion-machine {
+  --edge-S: #e0a82e;
+  --edge-A: #4a86d0;
+  --edge-B: #4eaa72;
+  --edge-C: #b8bfbb;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 14px 12px;
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 50% 62%, #fff6dc 0, transparent 60%),
+    var(--surface-soft);
+  box-shadow: 0 4px 0 #263a3612;
+  overflow: hidden;
+}
+.fusion-machine > .game-button {
+  width: min(100%, 320px);
+}
+.fusion-slots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+.fusion-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  padding: 0;
+  border: 2px dashed var(--line);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--muted, #6b746f);
+  font: inherit;
+}
+.fusion-slot.filled {
+  border-style: solid;
+  cursor: pointer;
+}
+.fusion-slot.filled.grade-edge-S {
+  border-color: var(--edge-S);
+}
+.fusion-slot.filled.grade-edge-A {
+  border-color: var(--edge-A);
+}
+.fusion-slot.filled.grade-edge-B {
+  border-color: var(--edge-B);
+}
+.fusion-slot.filled.grade-edge-C {
+  border-color: var(--edge-C);
+}
+.fusion-slot:focus-visible,
+.fusion-bag-item:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.fusion-slot .grade-badge,
+.fusion-bag-icon .grade-badge,
+.fusion-result-icon .grade-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+}
+.fusion-slot-plus {
+  font-size: 26px;
+  font-weight: 900;
+  opacity: 0.5;
+}
+
+/* Viên nang: nửa trên hồng, nửa dưới kem, dải giữa có nút vàng. */
+.fusion-orb-wrap {
+  display: grid;
+  place-items: center;
+  min-height: 132px;
+  width: 100%;
+}
+/* Viên nang dáng trứng, nằm nghiêng: nắp hồng đục, đáy trong suốt thấy món quà bên trong. */
+.fusion-orb {
+  position: relative;
+  width: 96px;
+  height: 112px;
+  border: 3px solid var(--ink);
+  border-radius: 50% 50% 46% 46% / 56% 56% 44% 44%;
+  overflow: hidden;
+  rotate: -14deg;
+  box-shadow: 0 6px 0 #263a361f;
+}
+.fusion-orb-top,
+.fusion-orb-bottom {
+  position: absolute;
+  inset-inline: 0;
+}
+.fusion-orb-top {
+  top: 0;
+  height: 46%;
+  background: linear-gradient(160deg, #f8cbd6, #e8879f);
+}
+.fusion-orb-top::after {
+  content: "";
+  position: absolute;
+  top: 18%;
+  left: 18%;
+  width: 30%;
+  height: 20%;
+  border-radius: 50%;
+  background: #ffffffa6;
+  transform: rotate(-30deg);
+}
+.fusion-orb-bottom {
+  bottom: 0;
+  height: 54%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #e6f3ec, #f8fcf9);
+}
+.fusion-orb-bottom svg {
+  width: 40px;
+  height: 40px;
+  rotate: 14deg;
+  opacity: 0.85;
+}
+.fusion-orb-band {
+  position: absolute;
+  top: calc(46% - 3px);
+  inset-inline: 0;
+  height: 6px;
+  background: #fffdf6;
+  border-block: 2.5px solid var(--ink);
+}
+.phase-pick .fusion-orb {
+  animation: fusion-idle 2.6s ease-in-out infinite;
+}
+.phase-rolling .fusion-orb {
+  animation: fusion-shake 0.36s ease-in-out infinite;
+}
+.phase-rolling .fusion-slot.filled,
+.phase-rolling .fusion-slot {
+  opacity: 0.45;
+}
+@keyframes fusion-idle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+@keyframes fusion-shake {
+  0%,
+  100% {
+    transform: rotate(0) scale(1);
+  }
+  25% {
+    transform: rotate(-12deg) scale(1.04);
+  }
+  75% {
+    transform: rotate(12deg) scale(1.04);
+  }
+}
+
+/* Kết quả: tia sáng theo màu hạng, món nảy lên. */
+.fusion-result {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  animation: fusion-pop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.fusion-result > :not(.fusion-rays) {
+  position: relative;
+}
+.fusion-result-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  border: 2px solid var(--line);
+  border-radius: 22px;
+  background: var(--panel);
+}
+.result-S .fusion-result-icon {
+  border-color: var(--edge-S);
+  box-shadow: 0 0 0 4px #ffe9a3;
+}
+.result-A .fusion-result-icon {
+  border-color: var(--edge-A);
+  box-shadow: 0 0 0 4px #cfe1f7;
+}
+.result-B .fusion-result-icon {
+  border-color: var(--edge-B);
+}
+.fusion-rays {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  width: 260px;
+  height: 260px;
+  margin: -130px 0 0 -130px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(
+    var(--ray, #d6f0de) 0 12deg,
+    transparent 12deg 30deg
+  );
+  mask-image: radial-gradient(circle, #000 20%, transparent 68%);
+  -webkit-mask-image: radial-gradient(circle, #000 20%, transparent 68%);
+  animation: fusion-spin 9s linear infinite;
+  pointer-events: none;
+}
+.result-S .fusion-rays {
+  --ray: #ffe08a;
+}
+.result-A .fusion-rays {
+  --ray: #bcd6f5;
+}
+.result-C .fusion-rays {
+  --ray: #e4e7e3;
+}
+.fusion-result .item-effects {
+  justify-content: center;
+}
+@keyframes fusion-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes fusion-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Bảng tỉ lệ. */
+.fusion-odds,
+.fusion-pity {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+}
+.fusion-odds-bars {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fusion-odds-bars li {
+  display: grid;
+  grid-template-columns: 24px 1fr 40px;
+  align-items: center;
+  gap: 8px;
+}
+.fusion-odds-track {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.fusion-odds-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.25s ease;
+}
+.fill-S {
+  background: linear-gradient(90deg, #ffd66b, #e0a82e);
+}
+.fill-A {
+  background: #4a86d0;
+}
+.fill-B {
+  background: #4eaa72;
+}
+.fill-C {
+  background: #b8bfbb;
+}
+.fusion-odds-pct {
+  font-size: 13px;
+  font-weight: 800;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.fusion-pity-tag {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #ffe9a3;
+  color: #5a3a00;
+  font-size: 12px;
+}
+.fusion-pity-text {
+  display: grid;
+  gap: 2px;
+}
+.fusion-pity-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+.fusion-pity-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8ec9a0, #2f9e7a);
+}
+
+/* Túi đồ để chọn. */
+.fusion-bag {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+.fusion-bag-item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 112px;
+  padding: 8px 4px 6px;
+  border: 2px solid var(--line);
+  border-bottom-width: 4px;
+  border-radius: 14px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.fusion-bag-item.grade-edge-S {
+  border-bottom-color: #e0a82e;
+}
+.fusion-bag-item.grade-edge-A {
+  border-bottom-color: #4a86d0;
+}
+.fusion-bag-item.grade-edge-B {
+  border-bottom-color: #4eaa72;
+}
+.fusion-bag-item.grade-edge-C {
+  border-bottom-color: #b8bfbb;
+}
+.fusion-bag-item.picked {
+  border-color: var(--primary);
+  background: var(--good-soft);
+}
+.fusion-bag-item:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.fusion-bag-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  margin-bottom: 8px;
+}
+.fusion-bag-name {
+  max-width: 100%;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+.fusion-bag-order {
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fusion-orb,
+  .fusion-result,
+  .fusion-rays,
+  .fusion-odds-fill {
+    animation: none !important;
+    transition: none;
+  }
+}
+.fusion-machine .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

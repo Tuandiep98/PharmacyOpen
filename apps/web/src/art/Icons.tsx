@@ -278,6 +278,19 @@ export const StarIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Viên nang đồ chơi (nắp hồng, đáy trong có món bên trong) nằm nghiêng: ghép đồ. */
+export const CapsuleIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <g transform="rotate(-20 12 12)">
+      <path d="M5,12 A7,7 0 0 1 19,12 Z" fill="#F2B8C6" />
+      <path d="M5,12 A7,7 0 0 0 19,12 Z" fill={ART.paper} />
+      <path d="M4.2,12 H19.8" strokeWidth={2.2} />
+      <path d="M9.5,15 L12,13.8 L14.5,15 L12,17.2 Z" fill={ART.honey} strokeWidth={1.2} />
+      <path d="M8.4,8.2 Q9.6,6.9 11.2,6.6" stroke="#FFFFFF" strokeWidth={1.4} />
+    </g>
+  </Svg>
+);
+
 export const MapIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M3,6 L9,4 L15,6 L21,4 V18 L15,20 L9,18 L3,20 Z" fill={ART.mint} />

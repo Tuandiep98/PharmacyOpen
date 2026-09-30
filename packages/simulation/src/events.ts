@@ -5,6 +5,7 @@ import type {
   OperationsCaseId,
   OperationsChoiceId,
   DeliverySource,
+  Grade,
   PrepTaskId,
   ShiftId,
   ShiftSummary,
@@ -138,6 +139,15 @@ export type SimEvent = { at: number } & (
   /** place = null khi cất món vào bộ sưu tập. */
   | { type: "itemEquipped"; uid: string; place: string | null }
   | { type: "itemRemoved"; uid: string; defId: string; coins: number }
+  /** Ghép 3 món (consumed = defId món đã dùng) ra 1 món mới; pity = lần này được bảo hiểm. */
+  | {
+      type: "itemsFused";
+      consumed: string[];
+      uid: string;
+      defId: string;
+      grade: Grade;
+      pity: boolean;
+    }
   /** Thưởng mục tiêu ngày; itemUid = null nếu không rơi đồ, overflowCoins > 0 nếu bộ sưu tập đầy. */
   | {
       type: "dayRewarded";

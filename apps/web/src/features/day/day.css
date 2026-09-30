@@ -118,24 +118,6 @@
   display: grid;
 }
 
-.day-banner {
-  position: absolute;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  max-width: calc(100% - 24px);
-  padding: 6px 12px;
-  font-size: 14px;
-  font-weight: 700;
-  background: var(--warn-soft);
-  border: 1.5px solid var(--sun);
-  border-radius: 999px;
-}
-
 .day-summary {
   display: flex;
   flex-direction: column;

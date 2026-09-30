@@ -687,6 +687,33 @@ function HighlightDefs() {
  * Đồ sưu tầm đang đặt trong tiệm: trên mặt quầy (đầu trái, tránh máy tính tiền), góc phải kệ, tường
  * bên trái kệ và góc cửa phía trước. Không nhận chạm để không che thao tác kéo hàng.
  */
+type DecorKind = "counter" | "shelf" | "wall" | "floor";
+
+/**
+ * Tỉ lệ vẽ đồ trang trí theo món và chỗ đặt, so với người cao ~100 đơn vị cảnh: đồ trên quầy/kệ cỡ một
+ * món hàng (18–34), đồ treo tường cỡ khung tranh (~40 rộng), đồ đặt sàn là đồ lớn (chậu cây ~70).
+ * Hình gốc của mỗi món cao khoảng 25–40 đơn vị.
+ */
+const DECOR_SCALE: Record<string, Partial<Record<DecorKind, number>>> = {
+  "service-bell": { counter: 0.85, shelf: 0.8 },
+  "lucky-cat": { counter: 1, shelf: 0.9, floor: 1.15 },
+  "dried-flowers": { counter: 1.1, shelf: 0.95, floor: 1.6 },
+  succulent: { counter: 1, shelf: 1, floor: 1.2 },
+  "money-plant": { counter: 1, shelf: 0.9, wall: 1.05, floor: 1.9 },
+  "notice-board": { wall: 1.3 },
+  "paper-lantern": { wall: 1.05 },
+  "disco-lights": { wall: 1.15 },
+  "candy-speaker": { shelf: 0.9, floor: 1.55 },
+};
+/** Món đứng (chậu cây) đặt lên tường cần giá đỡ; món treo (bảng, đèn) thì không. */
+const WALL_STANDING = new Set(["money-plant"]);
+const DECOR_DEFAULT: Record<DecorKind, number> = {
+  counter: 0.85,
+  shelf: 0.85,
+  wall: 1.1,
+  floor: 1.4,
+};
+
 function SceneDecor({
   state,
   layout,
@@ -698,37 +725,83 @@ function SceneDecor({
 }) {
   const shelfHalf = shelfWidth(shelfLevel) / 2;
   const shelfLeft = layout.shelfCx - shelfHalf;
-  const spots: { place: string; x: number; y: number; scale: number }[] = [
+  const roomyWall = shelfLeft >= 44;
+  const shelfRight = layout.shelfCx + shelfHalf;
+  // Còn chỗ tường bên phải kệ thì gắn giá gỗ nhỏ bên hông kệ, món không che hàng và số tồn.
+  const ledge = layout.width - shelfRight >= 40;
+  const shelfItem = itemAt(state, "shelf");
+  const spots: { place: string; kind: DecorKind; x: number; y: number; fit: number }[] = [
     ...layout.counters.map((c, i) => ({
       place: `counter-${i + 1}`,
-      x: c.x + 17,
+      kind: "counter" as const,
+      x: c.x + 16,
       y: 290,
-      scale: 0.72,
+      fit: 1,
     })),
+    ledge
+      ? { place: "shelf", kind: "shelf", x: shelfRight + 18, y: 204, fit: 1 }
+      : { place: "shelf", kind: "shelf", x: shelfRight - 22, y: 127, fit: 0.75 },
+    roomyWall
+      ? { place: "store-wall", kind: "wall", x: shelfLeft / 2, y: 180, fit: Math.min(1, shelfLeft / 52) }
+      : { place: "store-wall", kind: "wall", x: 19, y: 232, fit: 0.7 },
     {
-      place: "shelf",
-      x: layout.shelfCx + shelfHalf - 4,
-      y: 127,
-      scale: 0.6,
+      place: "store-floor",
+      kind: "floor",
+      x: layout.width - 28,
+      y: 418,
+      fit: 1,
     },
-    shelfLeft >= 44
-      ? { place: "store-wall", x: shelfLeft - 22, y: 176, scale: 0.85 }
-      : { place: "store-wall", x: 17, y: 226, scale: 0.6 },
-    { place: "store-floor", x: layout.width - 18, y: 418, scale: 0.9 },
   ];
   return (
     <g pointerEvents="none" aria-hidden>
-      {spots.map(({ place, x, y, scale }) => {
+      {ledge && shelfItem && (
+        <g>
+          <path
+            d={`M${shelfRight + 4},207 L${shelfRight + 10},220`}
+            stroke={INK}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+          />
+          <rect
+            x={shelfRight - 2}
+            y={203}
+            width={40}
+            height={7}
+            rx={2.5}
+            fill={ART.woodLight}
+            stroke={INK}
+            strokeWidth={2}
+          />
+        </g>
+      )}
+      {spots.map(({ place, kind, x, y, fit }) => {
         const item = itemAt(state, place);
-        return item ? (
-          <g
-            key={place}
-            className="scene-decor"
-            transform={`translate(${x} ${y}) scale(${scale})`}
-          >
-            <CollectibleArt defId={item.defId} grade={item.grade} effects={item.effects} />
+        if (!item) return null;
+        const scale =
+          (DECOR_SCALE[item.defId]?.[kind] ?? DECOR_DEFAULT[kind]) * fit;
+        const wallLedge = kind === "wall" && WALL_STANDING.has(item.defId);
+        return (
+          <g key={place}>
+            {wallLedge && (
+              <rect
+                x={x - 20 * fit}
+                y={y - 1}
+                width={40 * fit}
+                height={6}
+                rx={2.5}
+                fill={ART.woodLight}
+                stroke={INK}
+                strokeWidth={2}
+              />
+            )}
+            <g
+              className="scene-decor"
+              transform={`translate(${x} ${y}) scale(${scale})`}
+            >
+              <CollectibleArt defId={item.defId} grade={item.grade} effects={item.effects} />
+            </g>
           </g>
-        ) : null;
+        );
       })}
     </g>
   );

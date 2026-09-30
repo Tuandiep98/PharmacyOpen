@@ -19,7 +19,7 @@ export type Tab = "store" | "staff" | "inventory" | "reviews" | "expansion";
 /** Mục con trong từng tab quản lý. */
 export type StaffView = "team" | "recruit";
 export type ReviewsView = "reviews" | "ranking";
-export type ExpansionView = "upgrades" | "collection";
+export type ExpansionView = "upgrades" | "collection" | "fusion";
 export type ToastTone = "good" | "bad" | "warn" | "info";
 
 export interface Toast {

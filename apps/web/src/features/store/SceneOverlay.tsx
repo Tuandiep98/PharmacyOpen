@@ -227,7 +227,7 @@ function sceneObstacles(overlay: HTMLElement | null): Rect[] {
   const scene = overlay?.parentElement;
   if (!overlay || !scene) return [];
   const origin = overlay.getBoundingClientRect();
-  return [...scene.querySelectorAll<HTMLElement>(".delivery-chip")].map(
+  return [...scene.querySelectorAll<HTMLElement>(".delivery-chip, .scene-quick-btn")].map(
     (el) => {
       const r = el.getBoundingClientRect();
       return {

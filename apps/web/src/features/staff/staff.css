@@ -206,19 +206,6 @@ button.grade-badge:focus-visible {
   background: var(--danger);
 }
 
-.resign-notice {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 6px;
-  align-items: start;
-}
-.resign-actions {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .shift-coverage {
   display: flex;
   flex-wrap: wrap;
@@ -433,13 +420,6 @@ button.grade-badge:focus-visible {
 }
 .policy-toggle > span {
   display: grid;
-}
-.rest-line {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
 }
 
 /* Bộ chọn người đứng quầy: ô vuông chân dung + cấp + tên ngắn + việc đang làm. */
@@ -704,4 +684,300 @@ button.grade-badge:focus-visible {
 .tag.tone-tag.tone-chatty {
   color: #75500f;
   background: var(--warn-soft);
+}
+
+/*
+ * Thẻ nhân viên gọn: đầu thẻ (tên + vai trò + trạng thái) → nhãn → hai thanh Cấp/Mệt cạnh nhau →
+ * cảnh báo xin nghỉ (nếu có) → ba ô số liệu → các dòng mở rộng có giá trị bên phải → nút ở cuối.
+ */
+.team-card.team-card {
+  gap: 10px;
+  padding: 12px;
+}
+.team-card .team-card-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  min-width: 0;
+}
+.team-card .team-card-sub .activity-badge {
+  min-height: 0;
+  padding: 1px 8px 1px 3px;
+  font-size: 12px;
+}
+.team-card .team-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.team-card .team-card-tags > * {
+  display: contents;
+}
+.team-card .team-card-tags .tag {
+  margin: 0;
+}
+.team-card-meters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+  align-items: start;
+}
+.team-card-meters .meter-line {
+  gap: 6px;
+}
+.meter-stack {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.meter-stack .neg {
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.meter-label {
+  font-size: 12px;
+}
+.team-card .meter-line .small.muted {
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 360px) {
+  .team-card-meters {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cảnh báo xin nghỉ: câu ngắn + hai nút chia đều, không đè lên nhau. */
+.resign-notice {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1.5px solid #de958c;
+  border-radius: 12px;
+  background: var(--danger-soft);
+  color: #7c2a24;
+}
+.resign-text {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  align-items: start;
+  margin: 0;
+}
+.resign-text > span {
+  display: grid;
+  gap: 1px;
+}
+.resign-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.resign-actions .btn {
+  display: grid;
+  place-content: center;
+  width: 100%;
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.15;
+}
+.resign-actions .btn small {
+  font-size: 11.5px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+/* Ba ô số liệu. */
+.team-card .team-card-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.team-card-metrics > div {
+  display: grid;
+  gap: 0;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  text-align: center;
+}
+.team-card-metrics dt {
+  color: var(--ink-soft);
+  font-size: 11.5px;
+}
+.team-card-metrics dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dòng mở rộng: nhãn trái, giá trị phải, mũi tên cuối dòng. */
+.team-card-rows {
+  display: grid;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.team-card .team-card-rows .team-card-details {
+  padding: 0 10px;
+}
+.team-card-rows .team-card-details + .team-card-details {
+  border-top: 1px solid var(--line);
+}
+.team-card .team-card-rows summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 800;
+  list-style: none;
+}
+.team-card .team-card-rows summary::-webkit-details-marker {
+  display: none;
+}
+.team-card .team-card-rows summary::before {
+  content: none;
+}
+.team-card .team-card-rows summary > b {
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--primary);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.team-card .team-card-rows summary::after {
+  content: "›";
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 18px;
+  line-height: 1;
+  transition: transform 150ms ease;
+}
+.team-card .team-card-rows details[open] summary::after {
+  transform: rotate(90deg);
+}
+.team-card .team-card-rows details[open] {
+  padding-bottom: 10px;
+}
+
+.team-card .team-card-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.team-card .team-card-actions .btn {
+  width: 100%;
+}
+
+/* Thẻ quầy: người chọn đứng quầy cuộn ngang một hàng; hai quầy cách nhau một khoảng. */
+.counter-summary + .counter-summary,
+.counter-summary {
+  margin-bottom: 10px;
+}
+.counter-summary .pick-grid {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+  touch-action: pan-x;
+  padding-bottom: 6px;
+}
+.counter-summary .pick-grid > li {
+  flex: none;
+  scroll-snap-align: start;
+}
+
+/* Nhãn nghỉ phép trên thẻ nhân viên. */
+.tag.leave-tag {
+  color: #6b4a00;
+  background: var(--warn-soft);
+  border: 1px solid #e6c27a;
+}
+
+/* Khung cảnh báo nhân viên cần chú ý (đầu Đội ngũ). */
+.staff-alerts {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1.5px solid #e6c27a;
+  border-radius: 14px;
+  background: var(--warn-soft);
+}
+.staff-alerts.urgent {
+  border-color: #de958c;
+  background: var(--danger-soft);
+}
+.staff-alerts-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b4a00;
+}
+.staff-alerts.urgent .staff-alerts-title {
+  color: #8e2f28;
+}
+.staff-alerts ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.staff-alert {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--panel);
+}
+.staff-alert.resigning {
+  box-shadow: inset 3px 0 0 var(--danger);
+}
+.staff-alert.tired {
+  box-shadow: inset 3px 0 0 var(--sun);
+}
+.staff-alert-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.staff-alert-text span {
+  color: var(--ink-soft);
+  font-size: 12.5px;
+}
+.staff-alert .btn {
+  white-space: nowrap;
+}
+@media (max-width: 400px) {
+  .staff-alert {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .staff-alert .btn {
+    grid-column: 1 / -1;
+  }
 }

@@ -73,7 +73,7 @@ Màu trạng thái phải đi kèm chữ hoặc biểu tượng. Không tạo th
 
 Nhân vật chibi nhìn thẳng, cùng tỷ lệ đầu/thân, nét xanh đậm, bảng màu áo trầm vừa. Gốc SVG nằm ở giữa hai bàn chân `(0,0)`; đầu ở khoảng `(0,-78)`, toàn hình cao khoảng 110 đơn vị. Biểu cảm cần đọc được ở chân dung 56 px; giữ nhiều sắc độ da/tóc. Khách khác nhau nhờ tóc, áo và phụ kiện; nhân viên phân biệt được bằng blouse hoặc tạp dề. Không thay ngoại hình theo logic mô phỏng ngoài `look` và vai trò hiện có.
 
-Thứ tự lớp vẽ nhân vật: tóc phía sau → thân/áo → đầu/tóc mái → khuôn mặt. Tóc dài không được phủ lên áo hoặc phụ kiện ở ngực.
+Thứ tự lớp vẽ nhân vật: tóc phía sau → thân/áo → đầu/tóc mái → khuôn mặt. Tóc dài không được phủ lên áo hoặc phụ kiện cài trên áo.
 
 Mặt hàng dùng khung SVG `40×48`, đáy ở `y=47`, mỗi món có dáng bao bì riêng và một dấu hiệu nhận diện ở giữa. Art trong kệ, khay và bảng kho đều lấy từ cùng `ProductArt`/`ProductIcon`. Minh hoạ nâng cấp dùng `UpgradeArt`, khung `96×72`, vẽ đúng đồ vật được mua; khi thêm nâng cấp mới phải thêm tranh tương ứng.
 

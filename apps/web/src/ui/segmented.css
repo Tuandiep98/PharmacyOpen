@@ -75,3 +75,40 @@
   font-size: 12px;
   font-weight: 900;
 }
+
+/* Bản sao ẩn để đo chữ đầy đủ có vừa không (Segmented compact). */
+.segmented-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.segmented-measure .segmented-item {
+  flex: 0 0 auto;
+}
+.segmented.compact .segmented-measure .segmented-item:not(.active) .segmented-label {
+  display: inline;
+}
+/* Gọn: mục không chọn co lại còn icon + badge, mục đang chọn giãn ra hiện chữ. */
+.segmented.compact .segmented-item {
+  flex: 0 0 auto;
+  min-width: 52px;
+  transition: flex-grow 0.2s ease;
+}
+.segmented.compact .segmented-item.active {
+  flex: 1 1 auto;
+}
+.segmented.compact .segmented-item:not(.active) .segmented-label {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .segmented.compact .segmented-item {
+    transition: none;
+  }
+}

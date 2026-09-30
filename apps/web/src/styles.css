@@ -312,42 +312,6 @@ button {
 }
 
 /* ---------- Toast ---------- */
-.toasts {
-  position: absolute;
-  top: 8px;
-  left: 12px;
-  right: 12px;
-  display: grid;
-  gap: 6px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.toast {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 12px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
-  font-size: 14px;
-  font-weight: 700;
-  pointer-events: auto;
-  animation: pop 200ms ease both;
-  border-left: 5px solid var(--ink-soft);
-}
-
-.toast.good {
-  border-left-color: #58c68a;
-}
-.toast.bad {
-  border-left-color: #f2665e;
-}
-.toast.warn {
-  border-left-color: #f2a93b;
-}
-
 /* ---------- Khay phục vụ (luôn hiện dưới cảnh) ---------- */
 .side {
   flex: none;
@@ -1017,12 +981,6 @@ button {
   overflow: hidden;
 }
 
-.sheet::before {
-  content: "";
-  flex: none;
-  height: 8px;
-  background: linear-gradient(90deg, var(--primary), var(--sun));
-}
 
 .inspector[data-size="full"] .sheet {
   height: 100%;

@@ -39,7 +39,7 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     slot: "wear",
     wearLayer: "chest",
     fit: "pharmacy",
-    description: "Ghim nhỏ trên ngực áo, khách nhớ mặt người bán.",
+    description: "Ghim nhỏ cài trên áo, khách nhớ mặt người bán.",
     effects: [{ stat: "returnChance", base: 0.03 }],
   },
   "neck-bow": {
@@ -269,3 +269,21 @@ export const SLOT_PLACES: Record<Exclude<CollectibleSlot, "wear">, string[]> =
   };
 
 export const MAX_COLLECTION = 30;
+
+/*
+ * Ghép đồ (kiểu "trade-up"): bỏ 3 món trong túi để nhận 1 món mới ngẫu nhiên. Hạng món mới theo tổng
+ * điểm hạng 3 món đưa vào (C=0 … S=3), nội suy giữa các mốc dưới đây; loại món theo loại 3 món đưa vào.
+ * Ghép luôn lỗ xu so với bán lẻ 3 món, nên chỉ đáng khi muốn săn hạng cao hoặc đổi món khác loại.
+ */
+export const GRADE_SCORE: Record<Grade, number> = { C: 0, B: 1, A: 2, S: 3 };
+
+/** Tỉ lệ hạng (%) tại các mốc tổng điểm 0 (CCC), 3 (BBB), 6 (AAA), 9 (SSS). */
+export const FUSE_GRADE_ANCHORS: readonly (readonly [number, Record<Grade, number>])[] = [
+  [0, { S: 1, A: 9, B: 45, C: 45 }],
+  [3, { S: 8, A: 32, B: 50, C: 10 }],
+  [6, { S: 30, A: 50, B: 20, C: 0 }],
+  [9, { S: 100, A: 0, B: 0, C: 0 }],
+];
+
+/** Ghép liên tiếp chừng này lần chưa ra A/S thì lần kế tiếp chắc chắn ra A trở lên. */
+export const FUSE_PITY = 10;

@@ -7,9 +7,10 @@ import {
   type DeepReadonly,
   type SimState,
 } from "@pharmacy/simulation";
-import { CoinIcon, GiftIcon, MapIcon } from "../../art/Icons";
+import { CapsuleIcon, CoinIcon, GiftIcon, MapIcon } from "../../art/Icons";
 import { Segmented } from "../../ui/Segmented";
 import { CollectionPanel } from "../collection/CollectionPanel";
+import { FusionPanel } from "../collection/FusionPanel";
 import { UpgradeArt } from "../../art/Upgrades";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
@@ -34,7 +35,7 @@ const MAX_LEVEL: Record<string, number> = {
   signboard: 3,
 };
 
-/** Tab Mở rộng: nâng cấp tiệm và Bộ sưu tập đồ trang trí/đeo (thưởng mục tiêu ngày). */
+/** Tab Mở rộng: nâng cấp tiệm, Bộ sưu tập đồ trang trí/đeo (thưởng mục tiêu ngày) và Ghép đồ. */
 export function UpgradePanel({ state }: { state: DeepReadonly<SimState> }) {
   const view = useUi((s) => s.expansionView);
   const setView = useUi((s) => s.setExpansionView);
@@ -42,6 +43,7 @@ export function UpgradePanel({ state }: { state: DeepReadonly<SimState> }) {
     <div className="panel expansion-panel">
       <Segmented
         label="Mục trong Mở rộng"
+        compact
         value={view}
         onChange={setView}
         options={[
@@ -52,12 +54,20 @@ export function UpgradePanel({ state }: { state: DeepReadonly<SimState> }) {
             icon: <GiftIcon />,
             badge: state.collection.items.length,
           },
+          {
+            id: "fusion",
+            label: "Ghép đồ",
+            icon: <CapsuleIcon />,
+            badge: Math.floor(state.collection.items.length / 3),
+          },
         ]}
       />
       {view === "upgrades" ? (
         <UpgradesView state={state} />
-      ) : (
+      ) : view === "collection" ? (
         <CollectionPanel state={state} />
+      ) : (
+        <FusionPanel state={state} />
       )}
     </div>
   );

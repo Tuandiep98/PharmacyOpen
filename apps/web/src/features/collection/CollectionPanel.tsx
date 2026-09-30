@@ -24,7 +24,7 @@ import { useUi } from "../../ui/uiStore";
 import { gradeNameClass } from "../../ui/gradeName";
 import { REJECT_TEXT } from "../store/rejectText";
 import { nameClassOf, StaffAvatar } from "../staff/GradeBadge";
-import { effectText, ItemEffects, placeLabel } from "./itemText";
+import { effectText, ItemEffects, placeLabel, WEAR_LAYER_LABEL } from "./itemText";
 
 type State = DeepReadonly<SimState>;
 type Item = DeepReadonly<CollectibleItem>;
@@ -244,23 +244,35 @@ function ItemCard({
       {open && (
         <div className="item-actions">
           <p className="small muted">{def.description}</p>
-          <div className="item-place-buttons" role="group" aria-label="Đặt ở">
-            {placesFor(state, item).map((target) => (
-              <GameButton
-                key={target}
-                size="small"
-                tone={target === place ? "primary" : "secondary"}
-                aria-pressed={target === place}
-                disabled={target === place}
-                onClick={() =>
-                  run({ type: "equipItem", uid: item.uid, place: target })
-                }
-              >
-                {target === place ? "✓ " : ""}
-                {placeLabel(state, target)}
-              </GameButton>
-            ))}
-          </div>
+          {def.slot === "wear" ? (
+            <WearerPicker
+              state={state}
+              targets={placesFor(state, item)}
+              current={place}
+              layer={def.wearLayer}
+              onPick={(target) =>
+                run({ type: "equipItem", uid: item.uid, place: target })
+              }
+            />
+          ) : (
+            <div className="item-place-buttons" role="group" aria-label="Đặt ở">
+              {placesFor(state, item).map((target) => (
+                <GameButton
+                  key={target}
+                  size="small"
+                  tone={target === place ? "primary" : "secondary"}
+                  aria-pressed={target === place}
+                  disabled={target === place}
+                  onClick={() =>
+                    run({ type: "equipItem", uid: item.uid, place: target })
+                  }
+                >
+                  {target === place ? "✓ " : ""}
+                  {placeLabel(state, target)}
+                </GameButton>
+              ))}
+            </div>
+          )}
           <div className="item-manage">
             {place && (
               <GameButton
@@ -294,5 +306,58 @@ function ItemCard({
         </div>
       )}
     </li>
+  );
+}
+
+/** Chọn người đeo bằng hàng avatar nhỏ: chạm vào ai thì người đó đeo, người đang đeo có viền và dấu ✓. */
+function WearerPicker({
+  state,
+  targets,
+  current,
+  layer,
+  onPick,
+}: {
+  state: State;
+  targets: string[];
+  current: string | null | undefined;
+  layer: string | undefined;
+  onPick: (place: string) => void;
+}) {
+  const layerText = WEAR_LAYER_LABEL[layer ?? ""];
+  return (
+    <div className="wearer-picker">
+      <span className="small muted">
+        Chọn người đeo{layerText ? ` (${layerText})` : ""}
+      </span>
+      <ul className="wearer-list" role="group" aria-label="Chọn người đeo">
+        {targets.map((target) => {
+          const worker = state.workers[target.split(":")[1]!];
+          if (!worker) return null;
+          const active = target === current;
+          return (
+            <li key={target}>
+              <button
+                type="button"
+                className={`wearer-option ${active ? "active" : ""}`}
+                aria-pressed={active}
+                aria-label={`${worker.name}${active ? " (đang đeo)" : ""}`}
+                title={worker.name}
+                onClick={() => !active && onPick(target)}
+              >
+                <StaffAvatar worker={worker} size={40} badge="sm" staticBadge />
+                <span className={`wearer-name ${nameClassOf(worker)}`}>
+                  {worker.name.split(" ").pop()}
+                </span>
+                {active && (
+                  <span className="wearer-check" aria-hidden>
+                    ✓
+                  </span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

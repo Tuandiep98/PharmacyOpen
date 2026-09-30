@@ -3,7 +3,10 @@ import {
   COLLECTIBLE_IDS,
   FIT_DROP_WEIGHTS,
   FIT_GRADE_WEIGHTS,
+  FUSE_GRADE_ANCHORS,
+  FUSE_PITY,
   GRADE_POWER,
+  GRADE_SCORE,
   ITEM_SELL_PRICE,
   MAX_COLLECTION,
   SLOT_PLACES,
@@ -15,6 +18,7 @@ import {
   GRADES,
   type CollectStat,
   type CollectibleItem,
+  type CollectibleSlot,
   type CollectionState,
   type DeepReadonly,
   type Grade,
@@ -28,7 +32,7 @@ import {
  */
 
 export function emptyCollection(): CollectionState {
-  return { items: [], equipped: {}, nextUid: 1 };
+  return { items: [], equipped: {}, nextUid: 1, fusePity: 0 };
 }
 
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -164,7 +168,8 @@ export type CollectionResult =
   | "ok"
   | "unknown-item"
   | "invalid-place"
-  | "not-equipped";
+  | "not-equipped"
+  | "fuse-needs-three";
 
 /** Đặt/đeo một món; chỗ đó đang có món khác thì món cũ được cất lại. */
 export function equipItem(
@@ -219,6 +224,99 @@ export function removeItem(
   return "ok";
 }
 
+/** Tỉ lệ hạng (%) khi ghép 3 món có các hạng này; `pity` = lần này được bảo hiểm (bỏ B/C). */
+export function fuseGradeOdds(
+  grades: readonly Grade[],
+  pity = false,
+): Record<Grade, number> {
+  const score = grades.reduce((sum, g) => sum + GRADE_SCORE[g], 0);
+  let lo = FUSE_GRADE_ANCHORS[0]!;
+  let hi = FUSE_GRADE_ANCHORS[FUSE_GRADE_ANCHORS.length - 1]!;
+  for (let i = 0; i < FUSE_GRADE_ANCHORS.length - 1; i++) {
+    if (score >= FUSE_GRADE_ANCHORS[i]![0] && score <= FUSE_GRADE_ANCHORS[i + 1]![0]) {
+      lo = FUSE_GRADE_ANCHORS[i]!;
+      hi = FUSE_GRADE_ANCHORS[i + 1]!;
+      break;
+    }
+  }
+  const t = hi[0] === lo[0] ? 0 : (score - lo[0]) / (hi[0] - lo[0]);
+  const odds = {} as Record<Grade, number>;
+  for (const g of GRADES) odds[g] = lo[1][g] + (hi[1][g] - lo[1][g]) * t;
+  if (pity) {
+    odds.B = 0;
+    odds.C = 0;
+  }
+  const total = GRADES.reduce((sum, g) => sum + odds[g], 0);
+  for (const g of GRADES) odds[g] = round3((odds[g] / total) * 100);
+  return odds;
+}
+
+/** Tỉ lệ loại món (%) khi ghép: theo số món mỗi loại trong 3 món đưa vào. */
+export function fuseSlotOdds(
+  defIds: readonly string[],
+): Partial<Record<CollectibleSlot, number>> {
+  const odds: Partial<Record<CollectibleSlot, number>> = {};
+  for (const id of defIds) {
+    const slot = COLLECTIBLES[id]?.slot;
+    if (slot) odds[slot] = (odds[slot] ?? 0) + 100 / defIds.length;
+  }
+  return odds;
+}
+
+/** Lần ghép tới có được bảo hiểm (chắc chắn A trở lên) không. */
+export function fusePityReady(state: DeepReadonly<SimState>): boolean {
+  return (state.collection.fusePity ?? 0) >= FUSE_PITY - 1;
+}
+
+/**
+ * Ghép 3 món khác nhau trong túi thành 1 món mới (luồng RNG `loot`). Món đang đặt/đeo được gỡ trước.
+ * Hạng theo fuseGradeOdds, loại theo fuseSlotOdds, món cụ thể chọn đều trong loại đó.
+ */
+export function fuseItems(
+  state: SimState,
+  uids: readonly string[],
+  emit: Emit,
+): CollectionResult {
+  if (uids.length !== 3 || new Set(uids).size !== 3) return "fuse-needs-three";
+  const inputs = uids.map((uid) =>
+    state.collection.items.find((i) => i.uid === uid),
+  );
+  if (inputs.some((item) => !item || !COLLECTIBLES[item.defId]))
+    return "unknown-item";
+  const used = inputs as CollectibleItem[];
+  const pity = fusePityReady(state);
+  const rng = state.rng.loot;
+  const gradeOdds = fuseGradeOdds(used.map((i) => i.grade), pity);
+  const grade = pickWeighted(rng, GRADES.map((g) => [g, gradeOdds[g]] as const));
+  const slotOdds = fuseSlotOdds(used.map((i) => i.defId));
+  const slot = pickWeighted(
+    rng,
+    Object.entries(slotOdds) as [CollectibleSlot, number][],
+  );
+  const pool = COLLECTIBLE_IDS.filter((id) => COLLECTIBLES[id]!.slot === slot);
+  const defId = pickWeighted(rng, pool.map((id) => [id, 1] as const));
+  for (const item of used) {
+    const place = placeOf(state, item.uid);
+    if (place) delete state.collection.equipped[place];
+  }
+  state.collection.items = state.collection.items.filter(
+    (i) => !uids.includes(i.uid),
+  );
+  const result = makeItem(state, defId, grade);
+  state.collection.items.push(result);
+  state.collection.fusePity =
+    grade === "S" || grade === "A" ? 0 : (state.collection.fusePity ?? 0) + 1;
+  emit({
+    type: "itemsFused",
+    consumed: used.map((i) => i.defId),
+    uid: result.uid,
+    defId,
+    grade,
+    pity,
+  });
+  return "ok";
+}
+
 /**
  * Đọc lại bộ sưu tập từ bản sao lưu riêng của người chơi (tầng web giữ khi "chơi lại từ đầu"). Món lạ,
  * hạng hay hiệu ứng không hợp lệ bị bỏ; hiệu ứng được tính lại từ danh mục theo hạng để không sửa tay
@@ -249,6 +347,9 @@ export function restoreCollection(raw: unknown): CollectionState | null {
       item.uid = e.uid;
     restored.items.push(item);
   }
+  const pity = (source as { fusePity?: unknown }).fusePity;
+  if (typeof pity === "number" && Number.isFinite(pity))
+    restored.fusePity = Math.max(0, Math.min(FUSE_PITY - 1, Math.floor(pity)));
   restored.nextUid =
     1 +
     Math.max(0, ...restored.items.map((i) => Number(i.uid.slice(2)) || 0));

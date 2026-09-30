@@ -24,14 +24,13 @@ import {
 } from "react";
 import { BRAND, useBrandIdentity } from "./brand";
 import { BrandAvatarImage, BrandDialog } from "./features/brand/BrandDialog";
+import { useDocumentBrand } from "./features/brand/useDocumentBrand";
 import {
   BoxIcon,
-  CheckIcon,
   CoinIcon,
   DaypartGlyph,
   type Daypart,
   CloseIcon,
-  CrossMarkIcon,
   InfoIcon,
   MapIcon,
   MenuIcon,
@@ -40,7 +39,6 @@ import {
   StaffIcon,
   StarIcon,
   StoreIcon,
-  WarningIcon,
 } from "./art/Icons";
 import { CustomerInfo } from "./features/store/CustomerInfo";
 import { ServiceTray } from "./features/store/ServiceTray";
@@ -48,12 +46,15 @@ import { PLAYER_WORKER_ID } from "./features/store/useServiceActions";
 import { ProductIcon } from "./art/Products";
 import { registerSpot, StoreScene } from "./features/store/StoreScene";
 import { CounterCard } from "./features/staff/CounterAssign";
-import { DeliveryChip, DeliveryPanel } from "./features/delivery/DeliveryPanel";
+import { DeliveryPanel } from "./features/delivery/DeliveryPanel";
+import { SceneShortcuts } from "./features/store/SceneShortcuts";
 import { LedgerSheet } from "./features/ledger/LedgerSheet";
 import { OfflineDialog } from "./features/ledger/OfflineDialog";
 import { OnboardingDialog } from "./features/onboarding/OnboardingDialog";
 import { DaySummaryDialog } from "./features/day/DaySummaryDialog";
-import { OpeningPanel } from "./features/day/OpeningPanel";
+import { DayBanner, OpeningPanel } from "./features/day/OpeningPanel";
+import { Toasts } from "./ui/Toasts";
+import { staffAlerts } from "./features/staff/staffAlerts";
 import {
   OperationsDialog,
   TransferDialog,
@@ -61,7 +62,7 @@ import {
 import { clockLabel, phaseLabel, SHIFT_LABEL } from "./features/day/dayText";
 import { formatRating, starText } from "./ui/Stars";
 import { useBridge, useGameEvents, useGameState } from "./game/useGame";
-import { useUi, type Tab, type Toast } from "./ui/uiStore";
+import { useUi, type Tab } from "./ui/uiStore";
 import { useSettings } from "./ui/settings";
 import { GameButton, IconButton } from "./ui/primitives";
 import { playSfx } from "./audio/sfx";
@@ -121,6 +122,7 @@ function writeFlag(key: string): void {
 }
 
 export function App() {
+  useDocumentBrand();
   const bridge = useBridge();
   const state = useGameState();
   const [firstVisit] = useState(() => !readFlag(WELCOME_KEY));
@@ -186,8 +188,11 @@ export function App() {
         <div className="scene-wrap">
           <StoreScene state={state} paused={userPaused} />
           <OpeningPanel state={state} />
-          <DeliveryChip state={state} />
-          <Toasts />
+          <SceneShortcuts state={state} />
+          <div className="scene-notices">
+            <DayBanner state={state} />
+            <Toasts />
+          </div>
         </div>
         <div className="side">
           <ServiceTray state={state} />
@@ -1032,9 +1037,8 @@ function PrimaryNav({
   const openComplaints = state.complaints.filter(
     (c) => c.status === "open",
   ).length;
-  const resigning = Object.values(state.workers).filter(
-    (w) => w.resigning,
-  ).length;
+  const alerts = staffAlerts(state);
+  const staffUrgent = alerts.some((a) => a.kind === "resigning");
   return (
     <nav className="bottom-nav" aria-label="Điều hướng chính" inert={paused}>
       <div className="nav-items">
@@ -1043,7 +1047,7 @@ function PrimaryNav({
             item.tab === "reviews"
               ? openComplaints
               : item.tab === "staff"
-                ? resigning
+                ? alerts.length
                 : 0;
           return (
             <GameButton
@@ -1053,14 +1057,20 @@ function PrimaryNav({
               aria-current={tab === item.tab ? "page" : undefined}
               aria-label={
                 badge
-                  ? `${item.label}, ${badge} ${item.tab === "staff" ? "người xin nghỉ" : "khiếu nại chờ phản hồi"}`
+                  ? `${item.label}, ${badge} ${item.tab === "staff" ? "nhân viên cần chú ý" : "khiếu nại chờ phản hồi"}`
                   : undefined
               }
               onClick={() => setTab(item.tab)}
             >
               <span className="nav-icon">
                 {item.icon}
-                {badge > 0 && <span className="nav-badge">{badge}</span>}
+                {badge > 0 && (
+                  <span
+                    className={`nav-badge ${item.tab === "staff" && !staffUrgent ? "warn" : ""}`}
+                  >
+                    {badge}
+                  </span>
+                )}
               </span>
               <span>{item.label}</span>
             </GameButton>
@@ -1086,37 +1096,3 @@ function DragGhost() {
   );
 }
 
-function Toasts() {
-  const toasts = useUi((s) => s.toasts);
-  return (
-    <div className="toasts" aria-live="polite">
-      {toasts.map((t) => (
-        <ToastItem key={t.id} toast={t} />
-      ))}
-    </div>
-  );
-}
-
-function ToastItem({ toast }: { toast: Toast }) {
-  const dismiss = useUi((s) => s.dismissToast);
-  useEffect(() => {
-    const id = window.setTimeout(() => dismiss(toast.id), 3200);
-    return () => window.clearTimeout(id);
-  }, [dismiss, toast.id]);
-  const icon =
-    toast.tone === "good" ? (
-      <CheckIcon size={20} />
-    ) : toast.tone === "info" ? (
-      <InfoIcon size={20} />
-    ) : toast.tone === "warn" ? (
-      <WarningIcon size={20} />
-    ) : (
-      <CrossMarkIcon size={20} />
-    );
-  return (
-    <div className={`toast ${toast.tone}`} onClick={() => dismiss(toast.id)}>
-      {icon}
-      <span>{toast.text}</span>
-    </div>
-  );
-}

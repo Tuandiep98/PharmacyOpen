@@ -17,8 +17,36 @@ import { PREP_TASKS } from "./dayText";
 import "./day.css";
 
 /**
+ * Dải trạng thái lúc đóng cửa (nằm cùng vùng thông báo với toast, phía trên cảnh): tiêu đề ngắn + một
+ * dòng giải thích để màn hẹp xuống dòng gọn gàng.
+ */
+export function DayBanner({ state }: { state: DeepReadonly<SimState> }) {
+  if (dayPhase(state) !== "closing") return null;
+  // Hết giờ mà còn khách: tiệm tăng ca, chỉ chốt sổ khi đã phục vụ xong.
+  const remaining = Object.values(state.customers).filter(
+    (c) => c.phase !== "leaving",
+  ).length;
+  const overtime = dayElapsed(state) >= state.config.dayMs && remaining > 0;
+  return (
+    <div className="toast-card day-banner warn" role="status">
+      <span className="toast-card-icon" aria-hidden>
+        <ClockIcon size={18} />
+      </span>
+      <span className="toast-card-text">
+        <strong>{overtime ? `Tăng ca · còn ${remaining} khách` : "Đã đóng cửa"}</strong>
+        <span>
+          {overtime
+            ? "Chốt sổ khi phục vụ xong."
+            : "Phục vụ nốt khách đang chờ rồi chốt sổ."}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/**
  * Pha chuẩn bị: danh sách việc mở ca và nút "Mở cửa". Hết giờ chuẩn bị thì tiệm tự mở,
- * việc chưa làm được ghi vào tổng kết ngày. Lúc đóng cửa chỉ hiện dải thông báo.
+ * việc chưa làm được ghi vào tổng kết ngày.
  */
 export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
   const bridge = useBridge();
@@ -26,22 +54,6 @@ export function OpeningPanel({ state }: { state: DeepReadonly<SimState> }) {
   const setTab = useUi((s) => s.setTab);
   const phase = dayPhase(state);
 
-  if (phase === "closing") {
-    // Hết giờ mà còn khách: tiệm tăng ca, chỉ chốt sổ khi đã phục vụ xong.
-    const remaining = Object.values(state.customers).filter(
-      (c) => c.phase !== "leaving",
-    ).length;
-    const overtime =
-      dayElapsed(state) >= state.config.dayMs && remaining > 0;
-    return (
-      <div className="day-banner" role="status">
-        <ClockIcon size={18} />
-        {overtime
-          ? `Tăng ca — còn ${remaining} khách, chốt sổ khi phục vụ xong.`
-          : "Đã đóng cửa — phục vụ nốt khách đang chờ rồi chốt sổ."}
-      </div>
-    );
-  }
   if (phase !== "prep") return null;
 
   const secondsLeft = Math.max(

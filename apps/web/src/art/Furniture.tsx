@@ -1,6 +1,6 @@
 import type { DayPhase } from "@pharmacy/simulation";
 import { useId } from "react";
-import type { BrandAvatar } from "../brand";
+import { AVATAR_CELL, AVATAR_SPRITE, type BrandAvatar } from "../brand";
 import { ART, INK, STROKE } from "./palette";
 
 const S = {
@@ -60,14 +60,6 @@ export function DandelionLogo({
   );
 }
 
-/** Vị trí từng hình trong sprite avatar thương hiệu (2×2 ô, xem public/brand-avatars.webp). */
-const AVATAR_CELL: Record<BrandAvatar, [number, number]> = {
-  dandelion: [0, 0],
-  sprout: [1, 0],
-  sun: [0, 1],
-  kite: [1, 1],
-};
-const AVATAR_SPRITE = 1254;
 
 /** Avatar thương hiệu người chơi đã chọn, vẽ trong SVG (cắt tròn) để bảng hiệu khớp với thanh trên cùng. */
 export function BrandAvatarArt({

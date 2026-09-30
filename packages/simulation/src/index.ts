@@ -102,6 +102,9 @@ export * from "./ranking";
 export {
   collectionBonus,
   emptyCollection,
+  fuseGradeOdds,
+  fusePityReady,
+  fuseSlotOdds,
   itemAt,
   makeItem,
   placeOf,

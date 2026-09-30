@@ -12,13 +12,15 @@ import "./collection.css";
  * tổng kết ngày và thông báo dùng được mà không kéo cả bảng Bộ sưu tập vào gói tải đầu.
  */
 
+/** Vị trí đeo trên người, dùng chữ trung tính (cài áo, không gọi tên bộ phận cơ thể nhạy cảm). */
+export const WEAR_LAYER_LABEL: Record<string, string> = { head: "đầu", eyes: "mắt", neck: "cổ", chest: "áo" };
+
 /** Tên chỗ đặt dễ đọc. */
 export function placeLabel(state: DeepReadonly<SimState>, place: string): string {
   if (place.startsWith("wear:")) {
     const [, workerId, layer] = place.split(":");
     const worker = state.workers[workerId!];
-    const label: Record<string, string> = { head: "đầu", eyes: "mắt", neck: "cổ", chest: "ngực" };
-    return worker ? `${worker.name} · ${label[layer ?? ""] ?? "đang đeo"}` : "Người đã nghỉ";
+    return worker ? `${worker.name} · ${WEAR_LAYER_LABEL[layer ?? ""] ?? "đang đeo"}` : "Người đã nghỉ";
   }
   if (place.startsWith("counter-")) return `Quầy ${place.slice(8)}`;
   if (place === "shelf") return "Kệ hàng";

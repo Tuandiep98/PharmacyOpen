@@ -87,20 +87,6 @@ button:disabled {
   filter: drop-shadow(0 3px 0 rgb(64 93 65 / 5%));
 }
 
-.toast {
-  border-radius: 12px;
-  border: 1px solid var(--line);
-  border-left-width: 5px;
-}
-.toast.good {
-  border-left-color: #4eaa72;
-}
-.toast.bad {
-  border-left-color: var(--danger);
-}
-.toast.warn {
-  border-left-color: var(--sun);
-}
 .tray {
   gap: 10px;
   background: var(--panel);
@@ -1625,9 +1611,6 @@ button:disabled {
     box-shadow: none;
     animation: sheet-fullscreen-in 180ms var(--sheet-ease) both;
   }
-  .inspector[data-size="full"] .sheet::before {
-    display: none;
-  }
   .inspector[data-size="full"] .sheet-body {
     padding-top: 14px;
     padding-bottom: calc(20px + env(safe-area-inset-bottom));
@@ -1922,7 +1905,6 @@ button:disabled {
 .modal {
   position: relative;
   border: 2px solid var(--line);
-  border-top: 8px solid var(--primary);
   box-shadow:
     0 0 0 4px rgb(255 253 246 / 35%),
     0 18px 44px rgb(15 38 27 / 28%);
@@ -2158,9 +2140,6 @@ button:disabled {
   }
   :root .reason.staff,
   :root .inv-stock.empty,
-  :root .delivery-chip.late {
-    color: var(--bad-ink);
-  }
   :root .inv-stock.low,
   :root .pick-busy .pick-status,
   :root .tag.delivery-due.urgent {
@@ -2399,4 +2378,9 @@ button:disabled {
     flex: 1;
     min-height: 0;
   }
+}
+/* Badge tab Nhân sự: đỏ khi có người xin thôi việc, vàng khi chỉ có người mệt nặng. */
+.nav-badge.warn {
+  background: var(--sun);
+  color: var(--ink);
 }

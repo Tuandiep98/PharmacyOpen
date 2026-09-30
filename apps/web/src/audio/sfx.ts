@@ -14,7 +14,11 @@ export type Sfx =
   | "return"
   | "page"
   | "leave"
-  | "milestone";
+  | "milestone"
+  /** Mở viên nang ghép đồ: S hoành tráng, A sáng rõ, B/C dùng chung tiếng "bụp" nhẹ. */
+  | "gachaS"
+  | "gachaA"
+  | "gachaB";
 
 let ctx: AudioContext | null = null;
 
@@ -116,6 +120,28 @@ export function playSfx(name: Sfx): void {
     case "leave":
       tone(294, 0, 0.18, "sine", 0.1);
       tone(247, 0.15, 0.28, "sine", 0.1);
+      break;
+    case "gachaS":
+      // Arpeggio vút lên rồi hợp âm ngân, rắc thêm tiếng lấp lánh.
+      [523, 659, 784, 1047, 1319].forEach((f, i) =>
+        tone(f, i * 0.07, 0.16, "triangle", 0.13),
+      );
+      [1047, 1319, 1568].forEach((f) => tone(f, 0.38, 0.9, "sine", 0.08));
+      [2093, 2637, 2349, 3136].forEach((f, i) =>
+        tone(f, 0.45 + i * 0.12, 0.14, "sine", 0.035),
+      );
+      break;
+    case "gachaA":
+      // Chuông sáng ba nốt rồi một nốt ngân.
+      [784, 988, 1175].forEach((f, i) =>
+        tone(f, i * 0.08, 0.14, "triangle", 0.12),
+      );
+      tone(1568, 0.26, 0.42, "sine", 0.08);
+      break;
+    case "gachaB":
+      // Tiếng "bụp" mở nắp nhẹ nhàng.
+      tone(440, 0, 0.08, "sine", 0.12);
+      tone(660, 0.06, 0.14, "triangle", 0.1);
       break;
     case "milestone":
       [523, 659, 784, 1047, 784, 1047].forEach((f, i) =>

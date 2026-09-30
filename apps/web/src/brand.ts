@@ -15,6 +15,14 @@ export const BRAND_AVATARS = [
   { id: "kite", label: "Cánh diều" },
 ] as const;
 export type BrandAvatar = (typeof BRAND_AVATARS)[number]["id"];
+/** Vị trí từng hình trong sprite avatar thương hiệu (2×2 ô, xem public/brand-avatars.webp). */
+export const AVATAR_CELL: Record<BrandAvatar, [number, number]> = {
+  dandelion: [0, 0],
+  sprout: [1, 0],
+  sun: [0, 1],
+  kite: [1, 1],
+};
+export const AVATAR_SPRITE = 1254;
 export type BrandIdentity = { name: string; avatar: BrandAvatar };
 const defaults: BrandIdentity = { name: BRAND.name, avatar: "dandelion" };
 function readIdentity(): BrandIdentity {

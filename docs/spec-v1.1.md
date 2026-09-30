@@ -67,6 +67,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7d   | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca                                         | ✅                            |
 | 7e   | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được)                                                 | ✅                            |
 | 7f   | Giữ chân người chơi: độ nhận biết tiệm, top khu vực, trò chuyện khách quen, hạng S/A/B/C, thưởng mục tiêu và đồ sưu tầm      | ✅                            |
+| 7g   | Ghép đồ: 3 món trong túi đổi 1 món ngẫu nhiên, tỉ lệ công khai, bảo hiểm A+ sau 10 lần                                     | ✅                            |
 | 8    | Online (tuỳ chọn): bảng xếp hạng đã có khung `RankingProvider` + lệnh `setStanding`                                        |                               |
 
 ### Điều chỉnh sau bước 7: nhịp mở danh mục và nâng cấp
@@ -297,6 +298,21 @@ Logic ở `packages/simulation/src/delivery.ts`, lệnh ở `commands.ts`, NPC �
 - Chỉ món đang đặt mới có tác dụng; món đeo chỉ có tác dụng khi người đeo có mặt trong ca. Bán theo hạng: 40/24/12/5 xu. Bỏ đi thì không được xu.
 - Bộ sưu tập thuộc về **người chơi**: điều chuyển chi nhánh vẫn giữ (món đeo trên nhân viên cũ được cất lại). Web lưu thêm một bản riêng (`bo-cong-anh.collection`). "Chơi lại từ đầu" sẽ nạp lại bản này qua `restoreCollection`, hàm này bỏ món lạ và tính lại hiệu ứng theo hạng.
 - Balance 12 seed × 12 ngày sau các thay đổi: Bình + Chi 173,1; Chi + Dũng 171,1; Bình + Dũng 165,1 xu/ngày (đã gồm xu thưởng). Vắng 35 phút ước tính 413–433 xu; không ván nào mất người.
+
+## 3p. Ghép đồ (`fuseItems` trong `collection.ts`)
+
+Tham khảo cơ chế "trade-up"/fusion của các game gacha: đổi nhiều món thừa lấy một lượt quay mới, tỉ lệ hiển thị công khai, có bảo hiểm (pity) để tránh chuỗi xui quá dài.
+
+- Chọn đúng 3 món khác nhau trong túi (kể cả món đang đặt/đeo, sẽ được gỡ trước). 3 món mất, nhận 1 món mới. Dùng luồng RNG `loot`.
+- Hạng món mới theo tổng điểm hạng đưa vào (C=0, B=1, A=2, S=3), nội suy tuyến tính giữa các mốc:
+  - tổng 0 (CCC): S 1% · A 9% · B 45% · C 45%;
+  - tổng 3 (BBB): S 8% · A 32% · B 50% · C 10%;
+  - tổng 6 (AAA): S 30% · A 50% · B 20%;
+  - tổng 9 (SSS): S 100% (chỉ để đổi sang món khác).
+- Loại món mới (đeo/quầy/kệ/trang trí) theo tỉ lệ số món mỗi loại trong 3 món đưa vào; món cụ thể chọn đều trong loại đó.
+- Bảo hiểm: `collection.fusePity` đếm số lần ghép liên tiếp chưa ra A/S. Đủ 9 lần thì lần thứ 10 bỏ B/C khỏi bảng tỉ lệ (chắc chắn A trở lên). `restoreCollection` giữ lại số đếm này.
+- Ghép luôn lỗ xu so với bán lẻ 3 món (vd. BBB bán 36 xu, kỳ vọng ghép ≈ 17 xu), nên đây là kênh săn hạng cao hoặc đổi loại món, không phải kênh kiếm xu.
+- UI: tab con "Ghép đồ" trong Mở rộng. Có 3 ô chọn món, viên nang lắc khoảng 1,1 giây rồi mở ra món mới; người dùng bật giảm chuyển động thì mở ngay. Có bảng tỉ lệ theo hạng và loại, thanh bảo hiểm và lưới túi đồ. Thanh chọn mục ở chế độ gọn: mục đang chọn hiện chữ, các mục khác chỉ còn icon và số.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

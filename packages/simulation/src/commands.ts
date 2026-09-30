@@ -37,6 +37,7 @@ import { cancelDelivery, nextPackItem } from "./delivery";
 import { endChat, maybeStartChat } from "./chat";
 import {
   equipItem,
+  fuseItems,
   pruneEquipped,
   removeItem,
   unequipItem,
@@ -119,6 +120,7 @@ export type Command =
   | { type: "unequipItem"; uid: string }
   | { type: "sellItem"; uid: string }
   | { type: "discardItem"; uid: string }
+  | { type: "fuseItems"; uids: string[] }
   /**
    * Hạng khu vực do máy chủ xếp (chế độ online). Chơi đơn tự tính lúc chốt ngày; khi có máy chủ,
    * tầng web gửi lệnh này để lượng khách theo đúng hạng thật.
@@ -180,6 +182,7 @@ export type RejectReason =
   | "unknown-item"
   | "invalid-place"
   | "not-equipped"
+  | "fuse-needs-three"
   | "invalid-standing";
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
@@ -298,6 +301,8 @@ export function applyCommand(
       return collectionResult(removeItem(state, command.uid, true, emit));
     case "discardItem":
       return collectionResult(removeItem(state, command.uid, false, emit));
+    case "fuseItems":
+      return collectionResult(fuseItems(state, command.uids, emit));
     case "setStanding":
       return setStanding(state, command.standing);
   }
