@@ -53,6 +53,7 @@ export function recordVisit(
         customer.id,
         customer.archetypeId,
         customer.look.hairStyle,
+        new Set(state.loyalty.map((p) => p.name)),
       ),
       archetypeId: customer.archetypeId,
       look: { ...customer.look },

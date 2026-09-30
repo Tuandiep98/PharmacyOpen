@@ -506,6 +506,29 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
         }
       }
   },
+  15: (state) => {
+    // v16: hai khách quen không được trùng tên gọi; người đến sau đổi sang tên kế tiếp còn trống.
+    if (!Array.isArray(state.loyalty)) return;
+    const taken = new Set<string>();
+    for (const profile of state.loyalty) {
+      if (!isObject(profile) || typeof profile.name !== "string") continue;
+      if (taken.has(profile.name)) {
+        const look = isObject(profile.look) ? profile.look : {};
+        const archetype =
+          typeof profile.archetypeId === "string" &&
+          profile.archetypeId in ARCHETYPES
+            ? (profile.archetypeId as ArchetypeId)
+            : "curious";
+        profile.name = loyalName(
+          String(profile.id),
+          archetype,
+          isNum(look.hairStyle) ? look.hairStyle : 0,
+          taken,
+        );
+      }
+      taken.add(profile.name as string);
+    }
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */

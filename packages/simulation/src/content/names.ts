@@ -71,14 +71,26 @@ export function reviewerNickname(id: string, hairStyle: number): string {
   return `${given} ${SURNAME_INITIALS[stableHash(`${id}:surname`) % SURNAME_INITIALS.length]!}.`;
 }
 
+/**
+ * Tên gọi khách quen. Truyền `taken` (tên các khách quen khác) để tránh hai người trùng tên: thử lần
+ * lượt các tên kế tiếp trong danh sách, bắt đầu từ tên theo hash nên khách cũ vẫn giữ tên cũ.
+ */
 export function loyalName(
   id: string,
   archetypeId: ArchetypeId,
   hairStyle: number,
+  taken?: ReadonlySet<string>,
 ): string {
   const female = looksFemale(hairStyle);
   const pool = female ? FEMALE : MALE;
-  const given = pool[stableHash(id) % pool.length]!;
   const honorific = HONORIFIC[archetypeId][female ? "female" : "male"];
-  return honorific ? `${honorific} ${given}` : given;
+  const start = stableHash(id) % pool.length;
+  let first = "";
+  for (let step = 0; step < pool.length; step++) {
+    const given = pool[(start + step) % pool.length]!;
+    const name = honorific ? `${honorific} ${given}` : given;
+    if (!taken?.has(name)) return name;
+    first ||= name;
+  }
+  return first;
 }

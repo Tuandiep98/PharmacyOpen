@@ -143,18 +143,21 @@ interface BubbleGeometry {
   fading: boolean;
 }
 
+type Rect = { l: number; t: number; r: number; b: number };
+
 /**
  * Giữ bong bóng trong khung và không chồng nhau (hai quầy làm cảnh thu nhỏ): đo kích thước thật sau khi
- * vẽ, đẩy thân vào trong khi sát mép (đuôi dời ngược lại để vẫn chỉ đúng đầu nhân vật), rồi nhấc bong
- * bóng ưu tiên thấp lên trên bong bóng đã đặt nếu hai cái đè nhau.
+ * vẽ, đẩy thân vào trong khi sát mép (đuôi dời ngược lại để vẫn chỉ đúng đầu nhân vật), rồi né bong
+ * bóng đã đặt và vật cản cố định (nút Đơn ship): nhấc lên trên, không được thì dịch ngang sang bên trống.
  */
 function layoutBubbles(
   geometry: BubbleGeometry[],
   elements: Map<string, HTMLDivElement>,
   frameWidth: number,
+  obstacles: Rect[],
 ): Record<string, Shift> {
   const result: Record<string, Shift> = {};
-  const placed: { l: number; t: number; r: number; b: number }[] = [];
+  const placed: Rect[] = [...obstacles];
   const order = [...geometry].sort(
     (a, b) =>
       Number(a.fading) - Number(b.fading) ||
@@ -177,25 +180,63 @@ function layoutBubbles(
     else if (left + w > frameWidth - EDGE) dx = frameWidth - EDGE - (left + w);
     const top = g.anchor.y + g.bottom - h;
     let dy = top < EDGE ? EDGE - top : 0;
-    const l = left + dx;
-    const r = l + w;
     if (!g.fading) {
-      for (let pass = 0; pass < 3; pass++) {
+      const fits = (x: number, y: number) =>
+        !placed.some(
+          (p) =>
+            left + x < p.r &&
+            left + x + w > p.l &&
+            top + y < p.b &&
+            top + y + h > p.t,
+        );
+      for (let pass = 0; pass < 4 && !fits(dx, dy); pass++) {
+        const l = left + dx;
         const t = top + dy;
         const hit = placed.find(
-          (p) => l < p.r && r > p.l && t < p.b && t + h > p.t,
-        );
-        if (!hit) break;
+          (p) => l < p.r && l + w > p.l && t < p.b && t + h > p.t,
+        )!;
         const lifted = dy - (t + h - hit.t + 4);
-        if (top + lifted < EDGE) break;
-        dy = lifted;
+        if (top + lifted >= EDGE) {
+          dy = lifted;
+          continue;
+        }
+        // Không nhấc được (đã sát trên): dịch sang trái hoặc phải vật cản, miễn còn trong khung.
+        const toLeft = dx - (l + w - hit.l + 4);
+        const toRight = dx + (hit.r + 4 - l);
+        if (left + toLeft >= EDGE && fits(toLeft, dy)) dx = toLeft;
+        else if (left + toRight + w <= frameWidth - EDGE && fits(toRight, dy))
+          dx = toRight;
+        break;
       }
-      placed.push({ l, t: top + dy, r, b: top + dy + h });
+      placed.push({
+        l: left + dx,
+        t: top + dy,
+        r: left + dx + w,
+        b: top + dy + h,
+      });
     }
     const tail = Math.max(TAIL_MIN, Math.min(w - TAIL_MIN, tail0 - dx)) - tail0;
     result[g.key] = { dx, dy, tail };
   }
   return result;
+}
+
+/** Vật cản cố định trong cảnh mà bong bóng phải né (toạ độ theo lớp chữ phủ). */
+function sceneObstacles(overlay: HTMLElement | null): Rect[] {
+  const scene = overlay?.parentElement;
+  if (!overlay || !scene) return [];
+  const origin = overlay.getBoundingClientRect();
+  return [...scene.querySelectorAll<HTMLElement>(".delivery-chip")].map(
+    (el) => {
+      const r = el.getBoundingClientRect();
+      return {
+        l: r.left - origin.left - 4,
+        t: r.top - origin.top - 4,
+        r: r.right - origin.left + 4,
+        b: r.bottom - origin.top + 4,
+      };
+    },
+  );
 }
 
 function sameShifts(a: Record<string, Shift>, b: Record<string, Shift>) {
@@ -249,14 +290,20 @@ export function SceneOverlay({
       fading: !!p.item.fading,
     }));
   const elements = useRef(new Map<string, HTMLDivElement>());
+  const overlayRef = useRef<HTMLDivElement>(null);
   const [shifts, setShifts] = useState<Record<string, Shift>>({});
   // Chạy sau mỗi lần vẽ (geometry là mảng mới, chữ trong bong bóng có thể đổi); sameShifts chặn vòng lặp.
   useLayoutEffect(() => {
-    const next = layoutBubbles(geometry, elements.current, width);
+    const next = layoutBubbles(
+      geometry,
+      elements.current,
+      width,
+      sceneObstacles(overlayRef.current),
+    );
     setShifts((prev) => (sameShifts(prev, next) ? prev : next));
   }, [geometry, width]);
   return (
-    <div className="scene-overlay" aria-hidden>
+    <div className="scene-overlay" aria-hidden ref={overlayRef}>
       {placements.map(({ item, tag, tagTop, side, bubbleBottom }) => {
         const shift = shifts[item.key];
         return (
@@ -319,6 +366,8 @@ function Bubble({
     "--dy": `${shift?.dy ?? 0}px`,
     "--tail-dx": `${shift?.tail ?? 0}px`,
   } as React.CSSProperties;
+  // Bị nhấc lên để nhường chỗ: nối đuôi xuống đầu nhân vật bằng đường chấm để vẫn biết ai đang nói.
+  const lift = Math.max(0, Math.round(-(shift?.dy ?? 0)));
   if (spec.speaker === "task") {
     const { task } = spec;
     const progress =
@@ -346,6 +395,7 @@ function Bubble({
           )}
         </span>
         <Progress value={progress} />
+        {lift > 0 && <span className="speech-leash" style={{ height: lift }} />}
       </div>
     );
   }
@@ -378,6 +428,7 @@ function Bubble({
         </span>
       )}
       {spec.progress !== undefined && <Progress value={spec.progress} />}
+      {lift > 0 && <span className="speech-leash" style={{ height: lift }} />}
     </div>
   );
 }
