@@ -1,0 +1,10 @@
+.succulent-art .succulent-leaves { transform-origin: 0 -13px; }
+.succulent-art.succulent-A .succulent-leaves,
+.succulent-art.succulent-S .succulent-leaves { animation: succulent-leaf-sway 3.7s ease-in-out infinite; }
+@keyframes succulent-leaf-sway {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1.5deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .succulent-art .succulent-leaves { animation: none; }
+}

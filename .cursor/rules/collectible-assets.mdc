@@ -1,0 +1,18 @@
+---
+description: Art and animation workflow for Bồ Công Anh collectible items
+globs: "apps/web/src/art/**,apps/web/src/features/collection/**,apps/web/public/collectibles/**,assets/collectibles/**,docs/collectible-*.md"
+alwaysApply: false
+---
+
+# Collectible asset rule
+
+- Read `docs/collectible-asset-plan.md` before changing collectible art. Match the game's bold ink, compact color shapes and playful proportions at 32–64 px. The old rule for ordinary scene assets does not force collectible production to one file format.
+- Keep simulation IDs (`COLLECTIBLES` keys), names, S/A/B/C grades, stats, places and save data stable unless the task explicitly changes gameplay.
+- Create a recognizable silhouette at 32–64 px before adding detail or motion. Match `apps/web/src/art/palette.ts` and nearby characters. Use separate layers for moving parts; a generated image is useful only if it still fits the game at scene size.
+- Preserve source, version and grade behavior in `assets/collectibles/manifest.json`; preserve the prompt when image generation is used. Mark new art `review` until the user approves it. Once a pilot establishes the direction, a user-requested collection-wide rollout may update the remaining items together.
+- C, B, A and S must have distinct object silhouettes/material details, not only different UI borders or color filters. Use stats for finishing details within a grade; never obscure the item or imply medical benefit.
+- Animation must follow the object's construction: leaves may sway while a pot stays fixed. Check paint order at the game's viewing angle so an object sits inside its holder rather than behind it. Do not float or sparkle every item. Use SVG/CSS for independent parts; use Lottie only when it improves the actual art and has a static fallback.
+- Respect `prefers-reduced-motion`; pause decorative motion when hidden or offscreen where applicable. Do not embed a large PNG as base64 in Lottie JSON.
+- Before review, inspect the item at 64 px and at its actual scene size; run typecheck, lint, build and the relevant tests. Keep game content fictional and follow `docs/content-rules.md`.
+
+Example: `succulent` retains its gameplay ID and can be placed on a counter, shelf or floor. Its low, layered rosette sits in the soil with the front rim over the roots. C has sparse leaves and a plain chipped pot; B is fuller; A sways only the leaves; S has a dense rosette and finished pot. No water effect.

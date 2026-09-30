@@ -1,64 +1,41 @@
-.collectible-art .collectible-figure {
-  filter: drop-shadow(0 1.3px 1px #263a3650);
-}
-.collectible-art.grade-S .collectible-figure {
-  filter: drop-shadow(0 1.8px 1.1px #61491965);
-}
-.collectible-art .collectible-aura {
-  opacity: .2;
-  transform-origin: 0 -18px;
-  animation: collectible-breathe 3.6s ease-in-out infinite;
-}
-.collectible-art.finish-2 .collectible-gleam { opacity: .72; }
-.collectible-art.finish-3 .collectible-gleam { opacity: 1; }
-.collectible-art .collectible-spark {
-  transform-origin: 0 -18px;
-  animation: collectible-twinkle 4.3s ease-in-out infinite;
-}
-.collectible-art.finish-organic .collectible-spark { animation-duration: 6s; }
-.collectible-art.finish-solid .collectible-spark { animation-duration: 5.2s; }
-.collectible-art.grade-S .plant-leaves {
-  transform-origin: 0 -14px;
-  animation: collectible-sway 5s ease-in-out infinite;
-}
-.collectible-art.grade-S .collectible-bell {
-  transform-origin: 0 -5px;
-  animation: collectible-bell 6s ease-in-out infinite;
-}
-.collectible-art.grade-S .cat-paw {
-  transform-origin: 11px -12px;
-  animation: collectible-wave 4.8s ease-in-out infinite;
-}
-.collectible-art.grade-S .collectible-lantern {
-  transform-origin: 0 -38px;
-  animation: collectible-sway 5.8s ease-in-out infinite;
-}
-.collectible-art.grade-S .collectible-lights ellipse {
-  animation: collectible-twinkle 2.8s ease-in-out infinite;
-}
-.collectible-art.grade-S .collectible-lights ellipse:nth-of-type(2n) { animation-delay: -1.3s; }
-.collectible-art.grade-S .hourglass-sand { animation: collectible-sand 2.5s linear infinite; }
-.collectible-art.grade-S .collectible-speaker { animation: collectible-bass 4s ease-in-out infinite; }
-@keyframes collectible-sway { 50% { transform: rotate(2.5deg); } }
-@keyframes collectible-bell { 0%, 82%, 100% { transform: rotate(0); } 86% { transform: rotate(-5deg); } 90% { transform: rotate(4deg); } 94% { transform: rotate(-2deg); } }
-@keyframes collectible-wave { 0%, 78%, 100% { transform: rotate(0); } 85%, 93% { transform: rotate(-12deg); } }
-@keyframes collectible-sand { to { stroke-dashoffset: -4; } }
-@keyframes collectible-bass { 0%, 80%, 100% { transform: translateX(0); } 84%, 88% { transform: translateX(0.5px); } 86%, 90% { transform: translateX(-0.5px); } }
-@keyframes collectible-breathe {
-  50% { opacity: .38; transform: scale(1.08); }
-}
-@keyframes collectible-twinkle {
-  0%, 72%, 100% { opacity: .25; }
-  79%, 86% { opacity: 1; }
-}
+/* Bộ phận chuyển động theo cấu tạo từng món; dáng cơ bản vẫn đọc được khi tắt animation. */
+.tier-art.finish-0 { filter: saturate(.88); }
+.tier-art.finish-3 { filter: saturate(1.08); }
+.tier-art .glasses-shine, .tier-art .shades-shine { animation: tier-glint 4s ease-in-out infinite; }
+.tier-art .pin-glow { transform-origin: 0 -16px; animation: tier-glow 4s ease-in-out infinite; }
+.tier-art.tier-A .bow-tails, .tier-art.tier-S .bow-tails { transform-origin: 0 -16px; animation: tier-sway 4s ease-in-out infinite; }
+.tier-art.tier-A .band-flowers, .tier-art.tier-S .band-flowers { transform-origin: 0 -13px; animation: tier-sway 4.8s ease-in-out infinite; }
+.tier-art.tier-S .cat-ear-tips { transform-origin: 0 -11px; animation: tier-sway 5.2s ease-in-out infinite; }
+.tier-art.tier-A .bell-dome, .tier-art.tier-S .bell-dome { transform-origin: 0 -5px; animation: tier-bell 5.5s ease-in-out infinite; }
+.tier-art.tier-S .jar-candy { transform-origin: 0 -10px; animation: tier-candy 4.4s ease-in-out infinite; }
+.tier-art.tier-S .cat-paw { transform-origin: 10px -12px; animation: tier-wave 4.8s ease-in-out infinite; }
+.tier-art.tier-A .flower-stems, .tier-art.tier-S .flower-stems { transform-origin: 0 -13px; animation: tier-sway 5s ease-in-out infinite; }
+.tier-art.tier-A .hourglass-sand, .tier-art.tier-S .hourglass-sand { animation: tier-sand 2.5s linear infinite; }
+.tier-art.tier-S .teddy-paw { transform-origin: 7px -8px; animation: tier-wave 5.5s ease-in-out infinite; }
+.tier-art.tier-A .money-foliage, .tier-art.tier-S .money-foliage { transform-origin: 0 -12px; animation: tier-sway 4.7s ease-in-out infinite; }
+.tier-art.tier-S .board-notes { transform-origin: 0 -13px; animation: tier-note 5.2s ease-in-out infinite; }
+.tier-art.tier-A .lantern-tassel, .tier-art.tier-S .lantern-tassel { transform-origin: 0 -4px; animation: tier-sway 4s ease-in-out infinite; }
+.tier-art.tier-S .lantern-glow { animation: tier-glow 3.6s ease-in-out infinite; }
+.tier-art.tier-A .light-bulb, .tier-art.tier-S .light-bulb { animation: tier-bulb 3.6s ease-in-out infinite; }
+.tier-art.tier-A .light-bulb:nth-of-type(2n), .tier-art.tier-S .light-bulb:nth-of-type(2n) { animation-delay: -1.4s; }
+.tier-art.tier-A .speaker-cone, .tier-art.tier-S .speaker-cone { transform-origin: 0 -11px; animation: tier-pulse 2.7s ease-in-out infinite; }
+.tier-art.tier-S .speaker-sound { animation: tier-glint 2.7s ease-in-out infinite; }
+@keyframes tier-glint { 0%, 72%, 100% { opacity: .28; } 83% { opacity: 1; } }
+@keyframes tier-glow { 50% { opacity: .43; transform: scale(1.06); } }
+@keyframes tier-sway { 50% { transform: rotate(2deg); } }
+@keyframes tier-bell { 0%, 80%, 100% { transform: rotate(0); } 85% { transform: rotate(-4deg); } 90% { transform: rotate(3deg); } }
+@keyframes tier-candy { 50% { transform: translateY(-.6px); } }
+@keyframes tier-wave { 0%, 76%, 100% { transform: rotate(0); } 85% { transform: rotate(-10deg); } 93% { transform: rotate(3deg); } }
+@keyframes tier-sand { to { stroke-dashoffset: -6; } }
+@keyframes tier-note { 50% { transform: rotate(.8deg); } }
+@keyframes tier-bulb { 0%, 75%, 100% { opacity: .72; } 83% { opacity: 1; } }
+@keyframes tier-pulse { 50% { transform: scale(1.035); } }
 @media (prefers-reduced-motion: reduce) {
-  .collectible-art .collectible-aura,
-  .collectible-art .collectible-spark,
-  .collectible-art .plant-leaves,
-  .collectible-art .collectible-bell,
-  .collectible-art .cat-paw,
-  .collectible-art .collectible-lantern,
-  .collectible-art .collectible-lights ellipse,
-  .collectible-art .hourglass-sand,
-  .collectible-art .collectible-speaker { animation: none; }
+  .tier-art .glasses-shine, .tier-art .shades-shine, .tier-art .pin-glow,
+  .tier-art .bow-tails, .tier-art .band-flowers, .tier-art .cat-ear-tips,
+  .tier-art .bell-dome, .tier-art .jar-candy, .tier-art .cat-paw,
+  .tier-art .flower-stems, .tier-art .hourglass-sand, .tier-art .teddy-paw,
+  .tier-art .money-foliage, .tier-art .board-notes, .tier-art .lantern-tassel,
+  .tier-art .lantern-glow, .tier-art .light-bulb, .tier-art .speaker-cone,
+  .tier-art .speaker-sound { animation: none; }
 }
