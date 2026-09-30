@@ -6,6 +6,7 @@ import type {
   WorkerExpression,
 } from "@pharmacy/simulation";
 import { ART, HAIR, INK, OUTFIT, PANTS, SKIN, pick } from "./palette";
+import { WornAccessory } from "./Collectibles";
 
 export type FaceExpression = CustomerExpression | WorkerExpression;
 export type CharacterAction =
@@ -650,11 +651,14 @@ export function StaffFigure({
   role,
   expression,
   action = "idle",
+  accessory,
 }: {
   look: StaffLook;
   role: StaffRole;
   expression: FaceExpression;
   action?: CharacterAction;
+  /** Id đồ sưu tầm đang đeo (kính, huy hiệu, băng đô…). */
+  accessory?: string;
 }) {
   const skin = pick(SKIN, look.skin);
   const hair = pick(HAIR, look.hair);
@@ -663,11 +667,13 @@ export function StaffFigure({
       <BackHair hair={hair} style={look.hairStyle} />
       <Uniform role={role} skin={skin} pants="#56695D" action={action} />
       {look.messy && <MessyClothes />}
+      {accessory && <WornAccessory defId={accessory} part="body" />}
       <g transform={headPose(action)}>
         <Head skin={skin} hair={hair} style={look.hairStyle} cap={ART.leaf} />
         {look.messy && <MessyHair hair={hair} />}
         <Face expression={expression} action={action} />
         {look.gender === "female" && <Lashes />}
+        {accessory && <WornAccessory defId={accessory} part="head" />}
       </g>
     </g>
   );
@@ -727,14 +733,17 @@ function MessyClothes() {
 export function PharmacistFigure({
   expression,
   action = "idle",
+  accessory,
 }: {
   expression: FaceExpression;
   action?: CharacterAction;
+  accessory?: string;
 }) {
   const skin = SKIN[1];
   return (
     <g>
       <Uniform role="pharmacist" skin={skin} pants="#596C69" action={action} />
+      {accessory && <WornAccessory defId={accessory} part="body" />}
       <g transform={headPose(action)}>
         <Head skin={skin} hair={HAIR[0]} style={0} />
         <path
@@ -745,6 +754,7 @@ export function PharmacistFigure({
           strokeLinecap="round"
         />
         <Face expression={expression} action={action} />
+        {accessory && <WornAccessory defId={accessory} part="head" />}
       </g>
     </g>
   );

@@ -1,4 +1,5 @@
 import { createInitialState } from "./state";
+import { pruneEquipped } from "./collection";
 import type { Emit } from "./events";
 import type {
   DayReport,
@@ -251,7 +252,10 @@ export function acceptTransfer(state: SimState, emit: Emit): boolean {
   const count = state.operations.transfers + 1;
   const fresh = createInitialState(state.seed + count * 7919, state.config);
   fresh.operations.transfers = count;
+  // Bộ sưu tập là của người chơi, đi theo sang chi nhánh mới; món đeo trên nhân viên cũ được cất lại.
+  fresh.collection = state.collection;
   Object.assign(state, fresh);
+  pruneEquipped(state);
   emit({ type: "transferAccepted", transfers: count });
   return true;
 }

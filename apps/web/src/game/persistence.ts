@@ -13,6 +13,8 @@ import {
 
 const SLOTS = ["bo-cong-anh.save.a", "bo-cong-anh.save.b"] as const;
 const CORRUPT_KEY = "bo-cong-anh.save.corrupt";
+/** Bộ sưu tập của người chơi, tách khỏi save của tiệm (thiết kế hướng tài khoản online sau này). */
+const COLLECTION_KEY = "bo-cong-anh.collection";
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 type Loaded = Extract<LoadResult, { ok: true }>;
@@ -75,9 +77,22 @@ export function writeSave(state: DeepReadonly<SimState>): boolean {
       JSON.stringify(createSave(state, Date.now())),
     );
     nextSlot = (nextSlot + 1) % SLOTS.length;
+    // Bộ sưu tập là của người chơi: giữ thêm một bản riêng, không bị xoá khi chơi lại từ đầu.
+    localStorage.setItem(COLLECTION_KEY, JSON.stringify(state.collection));
     return true;
   } catch {
     return false;
+  }
+}
+
+/** Bộ sưu tập đã lưu riêng (null nếu chưa có hoặc hỏng); mô phỏng tự kiểm tra lại khi nạp. */
+export function readCollectionBackup(): unknown {
+  const raw = read(COLLECTION_KEY);
+  if (raw === null) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
   }
 }
 

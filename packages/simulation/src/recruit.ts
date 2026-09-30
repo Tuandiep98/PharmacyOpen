@@ -11,8 +11,10 @@ import type { Gender, Rarity, StaffRole, TraitId } from "./content/types";
 import type { Emit } from "./events";
 import { LOOK_VARIANTS } from "./looks";
 import { nextFloat, nextInt, pickWeighted, type RngState } from "./rng";
+import { collectionBonus } from "./collection";
 import type {
   DeepReadonly,
+  Grade,
   Recruit,
   SimConfig,
   SimState,
@@ -183,18 +185,21 @@ function rollTraits(
   const traits: TraitId[] = [];
   const hiddenTraits: TraitId[] = [];
   const taken: TraitId[] = [];
+  // Kỹ năng dễ gặp hơn trước: người thường hầu như có một đặc điểm, người khá có thể có kỹ năng đặc biệt.
   switch (rarity) {
     case "common":
-      if (nextFloat(r) < 0.55)
+      if (nextFloat(r) < 0.8)
         addTrait(r, traits, taken, [...MINOR_GOOD, ...MIXED]);
-      if (nextFloat(r) < 0.25) addTrait(r, traits, taken, BAD);
+      if (nextFloat(r) < 0.2) addTrait(r, traits, taken, BAD);
       break;
     case "good":
-      addTrait(r, traits, taken, nextFloat(r) < 0.7 ? MINOR_GOOD : MIXED);
-      if (nextFloat(r) < 0.15) addTrait(r, traits, taken, BAD);
+      addTrait(r, traits, taken, nextFloat(r) < 0.75 ? MINOR_GOOD : MIXED);
+      if (nextFloat(r) < 0.3) addTrait(r, traits, taken, SPECIAL_GOOD);
+      if (nextFloat(r) < 0.12) addTrait(r, traits, taken, BAD);
       break;
     case "rare":
       addTrait(r, traits, taken, SPECIAL_GOOD);
+      if (nextFloat(r) < 0.5) addTrait(r, traits, taken, MINOR_GOOD);
       if (nextFloat(r) < 0.1) addTrait(r, traits, taken, BAD);
       addTrait(
         r,
@@ -212,39 +217,133 @@ function rollTraits(
   return { traits, hiddenTraits };
 }
 
-/** Lương mỗi ca theo năng lực nhìn thấy được; đặc điểm ẩn không tính vào giá (có thể là món hời hoặc rủi ro). */
-function wageFor(
-  role: StaffRole,
-  rarity: Rarity,
-  speed: number,
-  knowledge: number,
-  communication: number,
-  traits: TraitId[],
-): number {
-  let wage =
-    2 +
-    (4 * (speed - 0.8)) / 0.5 +
-    5 * knowledge +
-    2 * communication +
-    RARITIES[rarity].wageBonus;
-  for (const id of traits)
-    wage +=
-      TRAITS[id].tone === "good"
-        ? TRAITS[id].special
-          ? 3
-          : 2
-        : TRAITS[id].tone === "bad"
-          ? -1
-          : 0;
-  if (role === "pharmacist") wage += 2;
-  return Math.max(4, Math.round(wage));
+// ---------------------------------------------------------------- Hạng S/A/B/C
+
+/** Giá trị đặc điểm khi chấm hạng: kỹ năng đặc biệt đáng giá nhất, đặc điểm xấu kéo hạng xuống. */
+function traitValue(id: TraitId): number {
+  const t = TRAITS[id];
+  return t.tone === "good"
+    ? t.special
+      ? 10
+      : 6
+    : t.tone === "bad"
+      ? t.special
+        ? -10
+        : -7
+      : 2;
 }
 
-export function generateRecruit(r: RngState, id: string): Recruit {
-  const rarity = pickWeighted(
-    r,
-    RARITY_IDS.map((rid) => [rid, RARITIES[rid].weight] as const),
+type Gradable = {
+  readonly role: StaffRole;
+  readonly speed: number;
+  readonly knowledge: number;
+  readonly communication: number;
+  readonly traits: readonly TraitId[];
+  readonly level?: number;
+};
+
+export interface StaffScore {
+  /** 0–100: tổng năng lực làm việc (tốc độ, hiểu hàng, giao tiếp, kỹ năng/đặc điểm đã biết). */
+  score: number;
+  grade: Grade;
+  parts: { speed: number; knowledge: number; communication: number; traits: number };
+}
+
+/**
+ * Ngưỡng hạng theo điểm năng lực. Với tỉ lệ ứng viên hiện tại: S ~7%, A ~23%, B ~40%, C ~30%
+ * (đo bằng 5000 ứng viên sinh ngẫu nhiên). Người làm lâu lên cấp thì điểm tăng, có thể lên hạng.
+ */
+export const GRADE_THRESHOLDS: Record<Exclude<Grade, "C">, number> = {
+  S: 87,
+  A: 71,
+  B: 55,
+};
+
+export function gradeFor(score: number): Grade {
+  return score >= GRADE_THRESHOLDS.S
+    ? "S"
+    : score >= GRADE_THRESHOLDS.A
+      ? "A"
+      : score >= GRADE_THRESHOLDS.B
+        ? "B"
+        : "C";
+}
+
+/**
+ * Chấm năng lực theo những gì người chơi nhìn thấy (đặc điểm ẩn chưa tính, lộ ra thì hạng có thể đổi).
+ * Tay nghề (cấp) nâng tốc độ và hiểu hàng thực tế nên người làm lâu có thể lên hạng.
+ * Trọng số: hiểu hàng 34, tốc độ 32, giao tiếp 24, đặc điểm ±10; dược sĩ cộng 3 vì tư vấn chắc hơn.
+ */
+export function staffScore(worker: Gradable): StaffScore {
+  const level = worker.level ?? 1;
+  const holder = { traits: worker.traits, hiddenTraits: [] as TraitId[] };
+  const speed =
+    worker.speed * levelSpeedFactor(level) * traitSpeedFactor(holder);
+  let knowledge = worker.knowledge + 0.02 * (level - 1);
+  if (worker.traits.includes("meticulous")) knowledge += 0.15;
+  if (worker.traits.includes("sharp-memory")) knowledge += 0.3;
+  if (worker.traits.includes("slow-learner")) knowledge *= 0.5;
+  if (worker.traits.includes("reckless")) knowledge *= 0.8;
+  const parts = {
+    speed: 32 * Math.max(0, Math.min(1, (speed - 0.75) / 0.6)),
+    knowledge: 34 * Math.max(0, Math.min(1, knowledge)),
+    communication: 24 * Math.max(0, Math.min(1, worker.communication)),
+    traits: Math.max(
+      -10,
+      Math.min(10, worker.traits.reduce((sum, id) => sum + traitValue(id), 0) / 2),
+    ),
+  };
+  const score = Math.round(
+    Math.max(
+      0,
+      Math.min(
+        100,
+        parts.speed +
+          parts.knowledge +
+          parts.communication +
+          parts.traits +
+          (worker.role === "pharmacist" ? 3 : 0) +
+          5,
+      ),
+    ),
   );
+  return { score, grade: gradeFor(score), parts };
+}
+
+/**
+ * Lương mỗi ca tỉ lệ với năng lực (tiềm năng mang lại doanh thu), có trần để người giỏi không "OP":
+ * điểm 40 → ~6 xu/ca, 65 → ~9, 90 → ~12. Dược sĩ +1. Đặc điểm ẩn không tính vào giá.
+ */
+export function wageFor(score: number, role: StaffRole): number {
+  return Math.max(
+    4,
+    Math.min(14, Math.round(1.5 + score * 0.115) + (role === "pharmacist" ? 1 : 0)),
+  );
+}
+
+/** Phí tuyển nhẹ nhàng: vài ca lương, hạng càng cao càng nhiều ca (C 3 ca … S 6 ca), làm tròn 5 xu. */
+export function hireCostFor(wage: number, grade: Grade): number {
+  const shifts = { C: 3, B: 4, A: 5, S: 6 }[grade];
+  return Math.max(10, Math.round((wage * shifts) / 5) * 5);
+}
+
+/**
+ * `luck` (đồ sưu tầm "dễ tuyển người giỏi", có thể âm): dời trọng số độ hiếm về phía bậc cao/thấp.
+ * Ví dụ +0,1 làm bậc Khá/Hiếm/Huyền thoại nhiều hơn khoảng 10–30%.
+ */
+export function rarityWeights(luck: number): [Rarity, number][] {
+  return RARITY_IDS.map((rid, index) => [
+    rid,
+    Math.max(0.2, RARITIES[rid].weight * (1 + luck * index)),
+  ]);
+}
+
+export function generateRecruit(
+  r: RngState,
+  id: string,
+  luck = 0,
+): Recruit {
+  const rarity = pickWeighted(r, rarityWeights(luck));
   const def = RARITIES[rarity];
   const gender: Gender = nextFloat(r) < 0.5 ? "female" : "male";
   const names = GIVEN_NAMES[gender];
@@ -257,9 +356,15 @@ export function generateRecruit(r: RngState, id: string): Recruit {
   );
   const communication = between(r, def.communication);
   const { traits, hiddenTraits } = rollTraits(r, rarity);
-  const wage = wageFor(role, rarity, speed, knowledge, communication, traits);
-  const hireCost =
-    Math.round((wage * (8 + RARITY_IDS.indexOf(rarity) * 3)) / 5) * 5;
+  const { score, grade } = staffScore({
+    role,
+    speed,
+    knowledge,
+    communication,
+    traits,
+  });
+  const wage = wageFor(score, role);
+  const hireCost = hireCostFor(wage, grade);
   return {
     id,
     name,
@@ -291,12 +396,13 @@ export function generateRecruit(r: RngState, id: string): Recruit {
  */
 export function refreshRecruits(state: SimState, tag = ""): void {
   const slots: (Recruit | null)[] = [];
+  const luck = collectionBonus(state, "recruitLuck");
   for (let i = 0; i < state.config.recruitSlots; i++) {
     const current = state.recruits[i];
     slots.push(
       current?.locked
         ? current
-        : generateRecruit(state.rng.staff, `r${state.day}${tag}-${i}`),
+        : generateRecruit(state.rng.staff, `r${state.day}${tag}-${i}`, luck),
     );
   }
   state.recruits = slots;

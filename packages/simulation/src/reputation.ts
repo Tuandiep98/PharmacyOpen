@@ -22,6 +22,7 @@ import type {
 } from "./content/types";
 import type { Emit } from "./events";
 import { loseExperience } from "./recruit";
+import { collectionBonus } from "./collection";
 import { nextFloat, nextInt } from "./rng";
 import type { ArchetypeId } from "./content/types";
 import type {
@@ -85,6 +86,10 @@ export interface SatisfactionInput {
   requestKind?: RequestKind;
   /** Số lần khách quen đã ghé trước đó: càng gắn bó càng dễ bỏ qua lỗi nhỏ (có trần). */
   loyaltyVisits?: number;
+  /** Cộng/trừ từ lượt trò chuyện với khách quen (chat.ts). */
+  chatBonus?: number;
+  /** Đồ trang trí/đeo đang đặt ("Khách chấm sao", có thể âm). */
+  decorBonus?: number;
 }
 
 /**
@@ -119,6 +124,7 @@ const NEGATIVE_PRIORITY: ReasonCode[] = [
   "strict-customer",
 ];
 const PRAISE_PRIORITY: ReasonCode[] = [
+  "warm-chat",
   "on-time-delivery",
   "helpful-advice",
   "patient-advice",
@@ -254,6 +260,11 @@ export function evaluateSatisfaction(input: SatisfactionInput): {
       LOYALTY_GRACE_MAX,
       input.loyaltyVisits * LOYALTY_GRACE_PER_VISIT,
     );
+  if (input.chatBonus) {
+    sat += input.chatBonus;
+    if (input.chatBonus >= 0.05) reasons.add("warm-chat");
+  }
+  if (input.decorBonus) sat += input.decorBonus;
 
   sat -= archetype.strictness;
   const satisfaction = clamp(sat, 0, 1);
@@ -451,6 +462,8 @@ function addStars(state: SimState, review: Review, delta: 1 | -1): void {
   if (worker) {
     worker.repStarsSum += review.stars * delta;
     worker.repCount += delta;
+    worker.dayStat.starsSum += review.stars * delta;
+    worker.dayStat.starsCount += delta;
   }
 }
 
@@ -479,6 +492,8 @@ export function recordInteraction(
   if (worker && performance !== null) {
     worker.perfSum += performance;
     worker.perfCount += 1;
+    worker.dayStat.perfSum += performance;
+    worker.dayStat.perfCount += 1;
   }
 
   const { satisfaction, reasons } = evaluateSatisfaction({
@@ -501,6 +516,8 @@ export function recordInteraction(
     returning: customer.loyaltyId !== null,
     requestKind: request?.kind,
     loyaltyVisits: visits,
+    chatBonus: customer.chatBonus,
+    decorBonus: collectionBonus(state, "rating"),
   });
 
   const interaction = {

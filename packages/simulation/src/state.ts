@@ -7,6 +7,7 @@ import { recordInteraction } from "./reputation";
 import { recordVisit } from "./loyalty";
 import { refreshRecruits } from "./recruit";
 import { createStream } from "./rng";
+import { emptyCollection } from "./collection";
 import {
   SAVE_VERSION,
   SHIFT_IDS,
@@ -17,9 +18,14 @@ import {
   type SimStats,
   type StockEntry,
   type Worker,
+  type WorkerDayStat,
 } from "./types";
 
 export const PLAYER_WORKER_ID = "w-player";
+
+export function emptyDayStat(): WorkerDayStat {
+  return { sales: 0, perfSum: 0, perfCount: 0, starsSum: 0, starsCount: 0 };
+}
 
 export function createInitialState(
   seed: number,
@@ -77,6 +83,7 @@ export function createInitialState(
     streak: 0,
     restDay: null,
     station: "support",
+    dayStat: emptyDayStat(),
   };
 
   const prices = {} as Record<ProductId, number>;
@@ -110,6 +117,10 @@ export function createInitialState(
     cancelledDeliveries: 0,
     backorders: 0,
     wentElsewhere: 0,
+    rewardCoins: 0,
+    itemSales: 0,
+    chats: 0,
+    chatsCompleted: 0,
   };
 
   const ownConfig = cloneConfig(config);
@@ -128,7 +139,12 @@ export function createInitialState(
       review: createStream(seed, "review"),
       staff: createStream(seed, "staff"),
       delivery: createStream(seed, "delivery"),
+      chat: createStream(seed, "chat"),
+      loot: createStream(seed, "loot"),
     },
+    awareness: ownConfig.awarenessStart,
+    standing: { day: 0, revenue: null, rating: null, staff: null },
+    collection: emptyCollection(),
     nextSpawnAtMs: ownConfig.firstSpawnMs,
     customers: {},
     queue: [],
@@ -214,6 +230,7 @@ export function workerFromCandidate(candidate: StaffCandidateDef): Worker {
     streak: 0,
     restDay: null,
     station: "support",
+    dayStat: emptyDayStat(),
   };
 }
 
@@ -249,7 +266,12 @@ export function dismissCustomer(
     outcome,
     emit,
   );
-  recordVisit(state, customer, outcome);
+  recordVisit(
+    state,
+    customer,
+    outcome,
+    customer.orderId ? state.orders[customer.orderId] : undefined,
+  );
   if (customer.orderId) {
     const order = state.orders[customer.orderId];
     if (order) {

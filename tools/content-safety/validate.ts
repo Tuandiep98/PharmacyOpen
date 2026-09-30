@@ -14,6 +14,16 @@ import {
   REVIEW_TRENDY_CLOSERS,
   STAFF_CANDIDATES,
   UPGRADES,
+  COLLECTIBLES,
+  RIVAL_SHOPS,
+  STORIES,
+  STORY_CUT,
+  STORY_PAUSE,
+  STORY_RESUME,
+  STORY_YIELD,
+  STORY_YIELD_STAFF,
+  type CollectibleDef,
+  type StoryDef,
   type ArchetypeDef,
   type ProductDef,
   type RequestDef,
@@ -169,6 +179,80 @@ export function validateContent(
     add("REFERRAL_MESSAGE", `từ bị cấm: "${hit}"`);
   issues.push(...validateStaffAndUpgrades());
   issues.push(...validateReviewText());
+  issues.push(...validateStories());
+  issues.push(...validateCollectibles());
+  for (const shop of RIVAL_SHOPS)
+    for (const hit of findTerms(shop.name, [...NOWHERE, ...GAME_VOICE]))
+      add(`region.${shop.id}`, `từ bị cấm: "${hit}"`);
+  return issues;
+}
+
+/**
+ * Chuyện khách quen kể ở quầy: chuyện đời thường, không nêu triệu chứng, tên thuốc hay kết quả sức khoẻ
+ * (quầy thuốc không phải nơi "kể bệnh" trong game). Mỗi chuyện phải có mở đầu, đoạn giữa và kết.
+ */
+export function validateStories(
+  stories: Record<string, StoryDef> = STORIES,
+  generic: Record<string, readonly string[]> = {
+    resume: STORY_RESUME,
+    pause: STORY_PAUSE,
+    yield: STORY_YIELD,
+    yieldStaff: STORY_YIELD_STAFF,
+    cut: STORY_CUT,
+  },
+): Issue[] {
+  const issues: Issue[] = [];
+  const banned = [...NOWHERE, ...GAME_VOICE, ...SYMPTOMS, ...HEALTH_OUTCOME];
+  const check = (where: string, text: string) => {
+    for (const hit of findTerms(text, banned))
+      issues.push({ where, problem: `từ bị cấm: "${hit}"` });
+  };
+  for (const [key, story] of Object.entries(stories)) {
+    const where = `stories.${key}`;
+    if (story.id !== key)
+      issues.push({ where, problem: `id "${story.id}" khác khoá "${key}"` });
+    if (!story.opening.trim() || !story.ending.trim())
+      issues.push({ where, problem: "chuyện cần có mở đầu và kết thúc" });
+    if (story.beats.length < 2)
+      issues.push({ where, problem: "chuyện cần ít nhất 2 đoạn giữa" });
+    if (!story.ages.length)
+      issues.push({ where, problem: "chưa gán nhóm tuổi" });
+    check(where, `${story.title} ${story.opening} ${story.ending}`);
+    story.beats.forEach((beat, i) =>
+      check(`${where}.beats[${i}]`, `${beat.say} ${beat.reply}`),
+    );
+  }
+  for (const [key, list] of Object.entries(generic)) {
+    if (!list.length)
+      issues.push({ where: `stories.${key}`, problem: "thiếu câu mẫu" });
+    list.forEach((text, i) => check(`stories.${key}[${i}]`, text));
+  }
+  return issues;
+}
+
+/** Đồ sưu tầm: tên/mô tả an toàn; đồ hợp tiệm không có mặt hại, đồ lạc quẻ phải có ít nhất một mặt hại. */
+export function validateCollectibles(
+  items: Record<string, CollectibleDef> = COLLECTIBLES,
+): Issue[] {
+  const issues: Issue[] = [];
+  for (const [key, item] of Object.entries(items)) {
+    const where = `collectibles.${key}`;
+    if (item.id !== key)
+      issues.push({ where, problem: `id "${item.id}" khác khoá "${key}"` });
+    if (!item.effects.length)
+      issues.push({ where, problem: "món không có hiệu ứng" });
+    const negative = item.effects.some((e) => e.base < 0);
+    if (item.fit === "pharmacy" && negative)
+      issues.push({ where, problem: "đồ hợp tiệm không được có mặt hại" });
+    if (item.fit === "odd" && !negative)
+      issues.push({ where, problem: "đồ lạc quẻ phải có ít nhất một mặt hại" });
+    for (const hit of findTerms(`${item.name} ${item.description}`, [
+      ...NOWHERE,
+      ...GAME_VOICE,
+      ...SYMPTOMS,
+    ]))
+      issues.push({ where, problem: `từ bị cấm: "${hit}"` });
+  }
   return issues;
 }
 

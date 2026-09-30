@@ -1,4 +1,7 @@
 import {
+  COLLECTIBLES,
+  customerName,
+  STORIES,
   dayPhase,
   dailyOperationsCase,
   dayProgress,
@@ -62,6 +65,7 @@ import { useUi, type Tab, type Toast } from "./ui/uiStore";
 import { useSettings } from "./ui/settings";
 import { GameButton, IconButton } from "./ui/primitives";
 import { playSfx } from "./audio/sfx";
+import { placeLabel } from "./features/collection/itemText";
 import { burst, celebrate } from "./fx/confetti";
 import "./ui/detail.css";
 
@@ -599,6 +603,41 @@ function useEventFeedback() {
               `${e.name} đã nghỉ việc. Có thể tuyển lại ở tab Nhân sự.`,
             );
             break;
+          case "itemRemoved": {
+            const name = COLLECTIBLES[e.defId]?.name ?? "Món đồ";
+            if (e.coins > 0) playSfx("sale");
+            pushToast(
+              "info",
+              e.coins > 0
+                ? `Đã bán ${name}: +${e.coins} ${BRAND.currency}.`
+                : `Đã bỏ ${name}.`,
+            );
+            break;
+          }
+          case "itemEquipped": {
+            const item = bridge.state.collection.items.find(
+              (i) => i.uid === e.uid,
+            );
+            const name = item ? COLLECTIBLES[item.defId]?.name : undefined;
+            pushToast(
+              "good",
+              e.place
+                ? `${name ?? "Món đồ"}: ${placeLabel(bridge.state, e.place).toLowerCase()}.`
+                : `Đã cất ${name ?? "món đồ"} vào bộ sưu tập.`,
+            );
+            break;
+          }
+          case "chatEnded": {
+            if (e.closing !== "complete") break;
+            const customer = bridge.state.customers[e.customerId];
+            const name = customer ? customerName(bridge.state, customer) : null;
+            playSfx("return");
+            pushToast(
+              "good",
+              `${name ?? "Khách quen"} kể trọn chuyện “${STORIES[e.storyId]?.title ?? ""}” rồi vui vẻ ra về.`,
+            );
+            break;
+          }
           case "productReady": {
             // Khách nhận đúng món thì tự thanh toán (vẫn qua lệnh checkout có kiểm tra) để bớt một lần chạm.
             const order = bridge.state.orders[e.orderId];

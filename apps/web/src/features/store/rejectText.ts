@@ -57,4 +57,9 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   "delivery-not-packing": "Đơn này đã gói xong.",
   "delivery-not-packed": "Gói đủ món vào đơn trước khi gửi.",
   "delivery-already-sent": "Đơn đã giao cho shipper, không đổi được nữa.",
+  "not-chatting": "Khách không còn trò chuyện ở quầy.",
+  "unknown-item": "Không tìm thấy món này trong bộ sưu tập.",
+  "invalid-place": "Món này không đặt được ở chỗ đó.",
+  "not-equipped": "Món này đang được cất, chưa đặt ở đâu.",
+  "invalid-standing": "Dữ liệu xếp hạng không hợp lệ.",
 };

@@ -2,15 +2,19 @@ import { cloneConfig, DEFAULT_CONFIG } from "./config";
 import { ARCHETYPES } from "./content/archetypes";
 import { PRODUCT_IDS, PRODUCTS } from "./content/products";
 import type { ArchetypeId, ProductId } from "./content/types";
-import { loyalName } from "./content/names";
+import { looksFemale, loyalName } from "./content/names";
+import { COLLECTIBLES } from "./content/collectibles";
+import { emptyCollection } from "./collection";
+import { personaFor } from "./market";
 import { STAFF_CANDIDATES, TRAITS } from "./content/staff";
 import { BACK_STATION_IDS, type BackStationId } from "./content/stations";
 import { levelFor, refreshRecruits } from "./recruit";
 import { createStream } from "./rng";
 import { dayGoals } from "./economy";
 import { OPERATIONS_CASES } from "./operations";
-import { PLAYER_WORKER_ID } from "./state";
+import { emptyDayStat, PLAYER_WORKER_ID } from "./state";
 import {
+  GRADES,
   PREP_TASK_IDS,
   SAVE_VERSION,
   SHIFT_IDS,
@@ -529,6 +533,71 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
       taken.add(profile.name as string);
     }
   },
+  16: (state) => {
+    // v17: độ nhận biết tiệm, hạng khu vực, trò chuyện khách quen, đồ sưu tầm, thưởng mục tiêu ngày.
+    const seed = isNum(state.seed) ? state.seed : 0;
+    if (isObject(state.rng)) {
+      state.rng.chat = createStream(seed, "chat");
+      state.rng.loot = createStream(seed, "loot");
+    }
+    // Tiệm cũ đã mở một thời gian: coi như khu phố đã biết tới theo số ngày, không bị hụt khách đột ngột.
+    const day = isNum(state.day) ? state.day : 1;
+    state.awareness = Math.min(100, 25 + 8 * Math.max(0, day - 1));
+    state.standing = { day: 0, revenue: null, rating: null, staff: null };
+    state.collection = emptyCollection();
+    const fresh = { rewardCoins: 0, itemSales: 0, chats: 0, chatsCompleted: 0 };
+    for (const stats of [
+      state.stats,
+      isObject(state.dayStart) ? state.dayStart.stats : null,
+      isObject(state.shiftMark) ? state.shiftMark.stats : null,
+    ]) {
+      if (isObject(stats))
+        for (const [key, value] of Object.entries(fresh))
+          if (!isNum(stats[key])) stats[key] = value;
+    }
+    if (isObject(state.workers))
+      for (const worker of Object.values(state.workers))
+        if (isObject(worker) && !isObject(worker.dayStat))
+          worker.dayStat = emptyDayStat();
+    if (isObject(state.customers))
+      for (const customer of Object.values(state.customers))
+        if (isObject(customer)) {
+          customer.chat = null;
+          customer.chatBonus = 0;
+        }
+    if (Array.isArray(state.loyalty))
+      for (const profile of state.loyalty) {
+        if (!isObject(profile)) continue;
+        const look = isObject(profile.look) ? profile.look : {};
+        const archetype =
+          typeof profile.archetypeId === "string" &&
+          profile.archetypeId in ARCHETYPES
+            ? (profile.archetypeId as ArchetypeId)
+            : "curious";
+        profile.persona = personaFor(
+          String(profile.id),
+          archetype,
+          looksFemale(isNum(look.hairStyle) ? look.hairStyle : 0),
+        );
+        profile.rapport = Math.min(
+          100,
+          (isNum(profile.goodVisits) ? profile.goodVisits : 0) * 10,
+        );
+        profile.story = null;
+        profile.storiesDone = [];
+      }
+    if (Array.isArray(state.dayReports))
+      for (const report of state.dayReports)
+        if (isObject(report))
+          Object.assign(report, {
+            staff: [],
+            awareness: state.awareness,
+            awarenessChange: 0,
+            chats: 0,
+            chatsCompleted: 0,
+            reward: { coins: 0, itemUid: null },
+          });
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -580,6 +649,31 @@ function isValidDelivery(d: unknown): boolean {
   );
 }
 
+function isValidCollection(c: unknown): boolean {
+  if (!isObject(c) || !Array.isArray(c.items) || !isObject(c.equipped))
+    return false;
+  if (!isNum(c.nextUid)) return false;
+  const uids = new Set<string>();
+  for (const item of c.items) {
+    if (
+      !isObject(item) ||
+      typeof item.uid !== "string" ||
+      typeof item.defId !== "string" ||
+      !(item.defId in COLLECTIBLES) ||
+      !GRADES.includes(item.grade as (typeof GRADES)[number]) ||
+      !Array.isArray(item.effects) ||
+      !item.effects.every(
+        (e: unknown) => isObject(e) && typeof e.stat === "string" && isNum(e.value),
+      )
+    )
+      return false;
+    uids.add(item.uid);
+  }
+  return Object.values(c.equipped).every(
+    (uid) => typeof uid === "string" && uids.has(uid),
+  );
+}
+
 const isTraitList = (v: unknown): boolean =>
   Array.isArray(v) && v.every((id) => typeof id === "string" && id in TRAITS);
 
@@ -611,7 +705,7 @@ function isValidState(state: Loose): state is SimState & Loose {
   if ((s.money as number) < 0) return false;
   if (
     !isObject(s.rng) ||
-    !["spawn", "customer", "ai", "review", "staff", "delivery"].every(
+    !["spawn", "customer", "ai", "review", "staff", "delivery", "chat", "loot"].every(
       (k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s),
     )
   )
@@ -800,6 +894,53 @@ function isValidState(state: Loose): state is SimState & Loose {
     !isNum(s.stats.spentOnOperations) ||
     !isObject(s.dayStart.stats) ||
     !isNum(s.dayStart.stats.spentOnOperations)
+  )
+    return false;
+  if (
+    !isNum(s.awareness) ||
+    s.awareness < 0 ||
+    s.awareness > 100 ||
+    !isObject(s.standing) ||
+    !isNum(s.standing.day) ||
+    !isValidCollection(s.collection)
+  )
+    return false;
+  for (const worker of Object.values(s.workers))
+    if (
+      !isObject(worker) ||
+      !isObject(worker.dayStat) ||
+      !["sales", "perfSum", "perfCount", "starsSum", "starsCount"].every(
+        (k) => isObject(worker.dayStat) && isNum(worker.dayStat[k]),
+      )
+    )
+      return false;
+  if (
+    !s.loyalty.every(
+      (p: unknown) =>
+        isObject(p) &&
+        isObject(p.persona) &&
+        isNum(p.persona.openness) &&
+        isNum(p.rapport) &&
+        Array.isArray(p.storiesDone) &&
+        (p.story === null || isObject(p.story)),
+    )
+  )
+    return false;
+  if (
+    !Object.values(s.customers).every(
+      (c) => isObject(c) && (c.chat === null || isObject(c.chat)),
+    )
+  )
+    return false;
+  if (
+    !["rewardCoins", "itemSales", "chats", "chatsCompleted"].every(
+      (k) =>
+        isObject(s.stats) &&
+        isNum(s.stats[k]) &&
+        isObject(s.dayStart) &&
+        isObject(s.dayStart.stats) &&
+        isNum(s.dayStart.stats[k]),
+    )
   )
     return false;
   if (!isObject(s.operations)) return false;

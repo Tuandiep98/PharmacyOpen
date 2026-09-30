@@ -16,6 +16,10 @@ export type Selection =
   | null;
 
 export type Tab = "store" | "staff" | "inventory" | "reviews" | "expansion";
+/** Mục con trong từng tab quản lý. */
+export type StaffView = "team" | "recruit";
+export type ReviewsView = "reviews" | "ranking";
+export type ExpansionView = "upgrades" | "collection";
 export type ToastTone = "good" | "bad" | "warn" | "info";
 
 export interface Toast {
@@ -42,6 +46,19 @@ export interface Floater {
 
 interface UiState {
   tab: Tab;
+  staffView: StaffView;
+  reviewsView: ReviewsView;
+  expansionView: ExpansionView;
+  setStaffView: (view: StaffView) => void;
+  setReviewsView: (view: ReviewsView) => void;
+  setExpansionView: (view: ExpansionView) => void;
+  /** Mở thẳng một mục con của một tab (vd. từ tổng kết ngày sang Bộ sưu tập). */
+  openView: (
+    view:
+      | { tab: "staff"; view: StaffView }
+      | { tab: "reviews"; view: ReviewsView }
+      | { tab: "expansion"; view: ExpansionView },
+  ) => void;
   selection: Selection;
   activeCounterId: string;
   setActiveCounterId: (id: string) => void;
@@ -73,6 +90,20 @@ const MAX_TOASTS = 3;
 /** Chỉ chứa trạng thái giao diện; state game luôn đọc từ GameBridge, không sao chép vào đây. */
 export const useUi = create<UiState>((set) => ({
   tab: "store",
+  staffView: "team",
+  reviewsView: "reviews",
+  expansionView: "upgrades",
+  setStaffView: (staffView) => set({ staffView }),
+  setReviewsView: (reviewsView) => set({ reviewsView }),
+  setExpansionView: (expansionView) => set({ expansionView }),
+  openView: (target) =>
+    set(
+      target.tab === "staff"
+        ? { tab: "staff", staffView: target.view }
+        : target.tab === "reviews"
+          ? { tab: "reviews", reviewsView: target.view }
+          : { tab: "expansion", expansionView: target.view },
+    ),
   selection: null,
   activeCounterId: "counter-1",
   setActiveCounterId: (activeCounterId) => set({ activeCounterId }),

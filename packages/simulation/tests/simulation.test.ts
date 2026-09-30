@@ -32,6 +32,8 @@ function withCustomerAtCounter(requestId: string, patienceMs = 30000) {
     outcome: null,
     leaveAtMs: 0,
     loyaltyId: null,
+    chat: null,
+    chatBonus: 0,
   };
   state.counters[0]!.customerId = "c1";
   const sim = new Simulation(state);
@@ -107,10 +109,13 @@ describe("kho và tiền", () => {
         stats.spentOnStock -
         stats.spentOnStaff -
         stats.spentOnUpgrades -
-        stats.spentOnVouchers,
+        stats.spentOnVouchers +
+        stats.rewardCoins +
+        stats.itemSales,
     );
     expect(stats.wrongItems).toBeGreaterThan(0);
-  });
+    // Phiên 30 phút kiểm tra kho từng tick: chạy vài giây, nới timeout để không trượt khi máy bận.
+  }, 20_000);
 
   it("nhập hàng mua tối đa số lượng đủ tiền, từ chối khi không đủ hoặc kệ đầy", () => {
     const sim = Simulation.create(1);

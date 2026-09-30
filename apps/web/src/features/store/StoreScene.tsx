@@ -2,6 +2,7 @@ import {
   customerName,
   dayPhase,
   facilityLevel,
+  itemAt,
   isPresent,
   isTrending,
   PRODUCTS,
@@ -14,7 +15,8 @@ import {
 import { memo, useLayoutEffect, useRef, useState } from "react";
 import { useBrandIdentity } from "../../brand";
 import { CustomerFigure } from "../../art/Character";
-import { WorkerFigure } from "../../art/WorkerFigure";
+import { WorkerFigure, wornItemOf } from "../../art/WorkerFigure";
+import { CollectibleArt } from "../../art/Collectibles";
 import {
   Counter,
   CounterScanner,
@@ -450,10 +452,18 @@ export function StoreScene({
               <g className="bob">
                 {selected && (
                   <g className="hl-underlay" filter="url(#fx-ring-gold)">
-                    <WorkerFigure worker={worker} action={action} />
+                    <WorkerFigure
+                      worker={worker}
+                      action={action}
+                      accessory={wornItemOf(state, worker.id)}
+                    />
                   </g>
                 )}
-                <WorkerFigure worker={worker} action={action} />
+                <WorkerFigure
+                  worker={worker}
+                  action={action}
+                  accessory={wornItemOf(state, worker.id)}
+                />
               </g>
               <rect
                 x={-30}
@@ -498,6 +508,7 @@ export function StoreScene({
           );
         })}
 
+        <SceneDecor state={state} layout={layout} shelfLevel={shelfLevel} />
         <StaticQueueLane />
         {overflow > 0 && (
           <g transform="translate(4 300)">
@@ -667,6 +678,57 @@ function HighlightDefs() {
         <feGaussianBlur in="SourceGraphic" stdDeviation={2.2} />
       </filter>
     </defs>
+  );
+}
+
+/**
+ * Đồ sưu tầm đang đặt trong tiệm: trên mặt quầy (đầu trái, tránh máy tính tiền), góc phải kệ, tường
+ * bên trái kệ và góc cửa phía trước. Không nhận chạm để không che thao tác kéo hàng.
+ */
+function SceneDecor({
+  state,
+  layout,
+  shelfLevel,
+}: {
+  state: State;
+  layout: SceneLayout;
+  shelfLevel: number;
+}) {
+  const shelfHalf = shelfWidth(shelfLevel) / 2;
+  const shelfLeft = layout.shelfCx - shelfHalf;
+  const spots: { place: string; x: number; y: number; scale: number }[] = [
+    ...layout.counters.map((c, i) => ({
+      place: `counter-${i + 1}`,
+      x: c.x + 17,
+      y: 290,
+      scale: 0.72,
+    })),
+    {
+      place: "shelf",
+      x: layout.shelfCx + shelfHalf - 4,
+      y: 127,
+      scale: 0.6,
+    },
+    shelfLeft >= 44
+      ? { place: "store-wall", x: shelfLeft - 22, y: 176, scale: 0.85 }
+      : { place: "store-wall", x: 17, y: 226, scale: 0.6 },
+    { place: "store-floor", x: layout.width - 18, y: 418, scale: 0.9 },
+  ];
+  return (
+    <g pointerEvents="none" aria-hidden>
+      {spots.map(({ place, x, y, scale }) => {
+        const item = itemAt(state, place);
+        return item ? (
+          <g
+            key={place}
+            className="scene-decor"
+            transform={`translate(${x} ${y}) scale(${scale})`}
+          >
+            <CollectibleArt defId={item.defId} />
+          </g>
+        ) : null;
+      })}
+    </g>
   );
 }
 

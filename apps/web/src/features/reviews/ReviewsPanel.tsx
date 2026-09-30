@@ -13,13 +13,15 @@ import {
   type SimState,
 } from "@pharmacy/simulation";
 import { useState } from "react";
-import { WorkerPortrait } from "../../art/WorkerFigure";
+import { StaffAvatar } from "../staff/GradeBadge";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
 import { formatRating, Stars } from "../../ui/Stars";
 import { useUi } from "../../ui/uiStore";
 import { EmptyState, GameButton, PanelHeading } from "../../ui/primitives";
-import { StarIcon } from "../../art/Icons";
+import { StarIcon, TrophyIcon } from "../../art/Icons";
+import { Segmented } from "../../ui/Segmented";
+import { RankingPanel } from "../ranking/RankingPanel";
 import { REJECT_TEXT } from "../store/rejectText";
 
 type State = DeepReadonly<SimState>;
@@ -44,7 +46,32 @@ function minutesAgo(state: State, atMs: number): string {
 
 const seconds = (ms: number) => `${Math.round(ms / 1000)} giây`;
 
+/** Tab Đánh giá: đánh giá khách và Top khu vực (xếp hạng các nhà thuốc trong phường). */
 export function ReviewsPanel({ state }: { state: State }) {
+  const view = useUi((s) => s.reviewsView);
+  const setView = useUi((s) => s.setReviewsView);
+  const open = state.complaints.filter((c) => c.status === "open").length;
+  return (
+    <div className="panel reviews-panel">
+      <Segmented
+        label="Mục trong Đánh giá"
+        value={view}
+        onChange={setView}
+        options={[
+          { id: "reviews", label: "Đánh giá", icon: <StarIcon />, badge: open },
+          { id: "ranking", label: "Top khu vực", icon: <TrophyIcon /> },
+        ]}
+      />
+      {view === "reviews" ? (
+        <ReviewsView state={state} />
+      ) : (
+        <RankingPanel state={state} />
+      )}
+    </div>
+  );
+}
+
+function ReviewsView({ state }: { state: State }) {
   const rating = storeRating(state);
   const demand = Math.round((demandMultiplier(state) - 1) * 100);
   const { histogram, count } = state.reputation;
@@ -53,7 +80,7 @@ export function ReviewsPanel({ state }: { state: State }) {
   const reviews = [...state.reviews].reverse().slice(0, 25);
 
   return (
-    <div className="panel reviews-panel">
+    <div className="reviews-view">
       <PanelHeading description="Sao công khai, chất lượng phục vụ và phản hồi của tiệm.">
         Đánh giá
       </PanelHeading>
@@ -93,7 +120,7 @@ export function ReviewsPanel({ state }: { state: State }) {
       <ul className="card-list">
         {Object.values(state.workers).map((w) => (
           <li key={w.id} className="staff-card">
-            <WorkerPortrait worker={w} size={44} />
+            <StaffAvatar worker={w} size={44} />
             <div className="staff-info">
               <strong>{w.name}</strong>
               <MetricRow

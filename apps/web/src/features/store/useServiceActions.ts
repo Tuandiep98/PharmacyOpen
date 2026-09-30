@@ -90,5 +90,11 @@ export function useServiceActions() {
     if (!r.ok) pushToast("bad", REJECT_TEXT[r.reason]);
   };
 
-  return { give, refer, defer, restock, assignCounter };
+  /** Nhường khách sau: kết thúc lượt trò chuyện với khách quen đang ở quầy. */
+  const endChat = (workerId: string, orderId: string) => {
+    const r = bridge.dispatch({ type: "endChat", workerId, orderId });
+    if (!r.ok) pushToast("bad", REJECT_TEXT[r.reason]);
+  };
+
+  return { give, refer, defer, restock, assignCounter, endChat };
 }

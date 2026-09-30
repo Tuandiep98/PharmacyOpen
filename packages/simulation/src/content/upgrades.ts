@@ -47,7 +47,8 @@ export const UPGRADES: Record<string, UpgradeDef> = {
   signboard: {
     id: "signboard",
     name: "Biển hiệu sáng đèn",
-    benefit: "Khách ghé thường xuyên hơn 25%.",
+    benefit:
+      "Khách ghé thường xuyên hơn 25%; mỗi ngày thêm người trong khu biết tới tiệm.",
     tradeoff: "Nếu phục vụ không kịp, hàng chờ đầy và khách bỏ đi.",
     cost: 200,
     effects: [{ type: "spawnInterval", factor: 0.75 }],
@@ -110,7 +111,7 @@ for (const [base, max, costs, effects] of [
           : base === "bench"
             ? "Thêm 1 chỗ chờ; khách bớt sốt ruột."
             : base === "signboard"
-              ? "Thu hút thêm khách tới cửa hàng."
+              ? "Thu hút thêm khách; tiệm được biết tới nhanh hơn mỗi ngày."
               : base === "scanner"
                 ? "Thanh toán nhanh hơn."
                 : "Lấy hàng nhanh hơn; giữ cách trưng bày theo nhóm.",

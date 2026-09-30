@@ -120,6 +120,32 @@ export type SimEvent = { at: number } & (
       productId: ProductId;
       workerId: string | null;
     }
+  | {
+      type: "chatStarted";
+      customerId: string;
+      workerId: string;
+      storyId: string;
+      resumed: boolean;
+    }
+  | {
+      type: "chatEnded";
+      customerId: string;
+      workerId: string | null;
+      storyId: string;
+      closing: "complete" | "pause" | "yield" | "cut";
+      told: number;
+    }
+  /** place = null khi cất món vào bộ sưu tập. */
+  | { type: "itemEquipped"; uid: string; place: string | null }
+  | { type: "itemRemoved"; uid: string; defId: string; coins: number }
+  /** Thưởng mục tiêu ngày; itemUid = null nếu không rơi đồ, overflowCoins > 0 nếu bộ sưu tập đầy. */
+  | {
+      type: "dayRewarded";
+      day: number;
+      coins: number;
+      itemUid: string | null;
+      overflowCoins: number;
+    }
   | { type: "deliveryPacked"; deliveryId: string }
   | { type: "deliverySent"; deliveryId: string; workerId: string | null }
   | { type: "deliveryPickedUp"; deliveryId: string }

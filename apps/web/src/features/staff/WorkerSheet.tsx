@@ -1,6 +1,6 @@
 import type { DeepReadonly, SimState } from "@pharmacy/simulation";
 import { DismissButton } from "./DismissButton";
-import { WorkerPortrait } from "../../art/WorkerFigure";
+import { StaffAvatar } from "./GradeBadge";
 import { useServiceActions } from "../store/useServiceActions";
 import {
   LevelBar,
@@ -29,7 +29,7 @@ export function WorkerSheet({
     <article className="detail-layout worker-detail">
       <header className="detail-hero">
         <div className="detail-portrait worker-portrait">
-          <WorkerPortrait worker={worker} size={84} />
+          <StaffAvatar worker={worker} size={84} badge="lg" />
         </div>
         <span className="detail-eyebrow">
           {worker.role === "pharmacist" ? "Dược sĩ" : "Nhân viên"} ·{" "}

@@ -18,6 +18,8 @@ import { hireAllDay, runFor } from "./helpers";
 function withNpc(seed = 3, candidateId = "chi", money = 1000) {
   const state = createInitialState(seed);
   state.money = money;
+  // Tiệm đã quen mặt với khu phố (độ nhận biết tối đa) để đo NPC ở nhịp khách bình thường.
+  state.awareness = 100;
   const sim = new Simulation(state);
   const workerId = hireAllDay(sim, candidateId);
   expect(
@@ -47,6 +49,8 @@ function placeCustomer(state: SimState, requestId: string, patienceMs = 60000) {
     outcome: null,
     leaveAtMs: 0,
     loyaltyId: null,
+    chat: null,
+    chatBonus: 0,
   };
   state.counters[0]!.customerId = "c1";
 }
@@ -98,7 +102,9 @@ describe("NPC tự phục vụ (idle)", () => {
         stats.spentOnStock -
         stats.spentOnUpgrades -
         stats.spentOnVouchers -
-        stats.spentOnWages,
+        stats.spentOnWages +
+        stats.rewardCoins +
+        stats.itemSales,
     );
   });
 

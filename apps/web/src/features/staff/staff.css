@@ -1,42 +1,140 @@
-/* Nhân sự: độ hiếm (xám → xanh lá → xanh dương → vàng), đặc điểm theo lợi/hại, tay nghề và mệt mỏi. */
+/* Nhân sự: hạng năng lực S/A/B/C (vàng → xanh dương → xanh lá → xám), đặc điểm theo lợi/hại, tay nghề và mệt mỏi. */
 
-.rarity-chip {
+/* Chân dung + nút hạng một chữ đè ở mép dưới. */
+.staff-avatar {
+  position: relative;
+  display: inline-grid;
+  justify-items: center;
+  flex: none;
+  padding-bottom: 12px;
+  line-height: 0;
+}
+.staff-avatar > .grade-anchor,
+.staff-avatar > .grade-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+.grade-anchor {
+  position: relative;
   display: inline-block;
-  margin-left: 4px;
-  padding: 1px 8px;
-  border-radius: 999px;
+  line-height: 1;
+}
+.grade-badge {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  box-shadow: 0 2px 0 rgb(38 58 54 / 35%);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+}
+button.grade-badge {
+  cursor: pointer;
+}
+/* Nút nhỏ nhưng vùng chạm vẫn ~44 px. */
+button.grade-badge::before {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+button.grade-badge:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.grade-badge.size-sm {
+  width: 19px;
+  height: 19px;
+  border-width: 1.5px;
   font-size: 11px;
-  font-weight: 800;
-  border: 1.5px solid currentColor;
-  vertical-align: middle;
 }
-.rarity-common {
-  color: #6b7570;
-  background: #eef0ec;
+.grade-badge.size-lg {
+  width: 32px;
+  height: 32px;
+  font-size: 17px;
 }
-.rarity-good {
-  color: #2f7d4c;
-  background: #e2f3e6;
+.grade-S {
+  color: #5a3a00;
+  background: linear-gradient(135deg, #ffe9a3, #e4a93b);
 }
-.rarity-rare {
-  color: #2e64a6;
-  background: #e3edf9;
+.grade-A {
+  color: #1f4f87;
+  background: #cfe1f7;
 }
-.rarity-legendary {
-  color: #8a5a00;
-  background: linear-gradient(90deg, #fff1c2, #ffdf8a);
+.grade-B {
+  color: #1f6b3e;
+  background: #d6f0de;
+}
+.grade-C {
+  color: #4f5a55;
+  background: #eceeea;
+}
+.grade-pop {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: grid;
+  gap: 6px;
+  width: min(260px, 78vw);
+  padding: 10px 12px;
+  transform: translateX(-50%);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: 0 8px 20px rgb(38 58 54 / 18%);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+}
+.grade-parts {
+  display: grid;
+  gap: 4px;
+}
+.grade-part {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.grade-part-track {
+  height: 6px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--surface-soft);
+}
+.grade-part-track > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.grade-part-track > span.neg {
+  background: var(--danger);
+}
+.grade-hidden {
+  color: #75500f;
 }
 
-.staff-card.rarity-border-common {
+.staff-card.grade-border-C {
   border-left: 5px solid #b8bfbb;
 }
-.staff-card.rarity-border-good {
+.staff-card.grade-border-B {
   border-left: 5px solid #4eaa72;
 }
-.staff-card.rarity-border-rare {
+.staff-card.grade-border-A {
   border-left: 5px solid #4a86d0;
 }
-.staff-card.rarity-border-legendary {
+.staff-card.grade-border-S {
   border-left: 5px solid #e0a82e;
   box-shadow: 0 0 0 2px rgb(224 168 46 / 25%);
 }
@@ -137,6 +235,95 @@
 .coverage-chip.empty {
   background: var(--warn-soft);
   border-color: var(--sun);
+}
+
+/* Tuyển dụng: dải tình hình đội, chú giải hạng, thẻ ứng viên. */
+.recruit-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.recruit-summary > div {
+  display: grid;
+  min-width: 0;
+}
+.recruit-summary strong {
+  overflow: hidden;
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .recruit-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .recruit-summary > button {
+    grid-column: 1 / -1;
+  }
+}
+.grade-legend {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+}
+.grade-legend summary {
+  min-height: 32px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.grade-legend-list {
+  display: grid;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.grade-legend-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recruit-avatar {
+  padding-bottom: 16px;
+}
+.recruit-money {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.recruit-money > div {
+  display: grid;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.recruit-money dt {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+.recruit-money dd {
+  margin: 0;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.recruit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.team-recruit-link {
+  width: 100%;
+  margin: 0 0 8px;
 }
 
 .recruit-head {
@@ -250,13 +437,13 @@
   border-color: #a7c4aa;
   background: var(--surface-tint);
 }
-.pick-tile.rarity-good-edge {
+.pick-tile.grade-B-edge {
   box-shadow: inset 0 3px 0 #4eaa72;
 }
-.pick-tile.rarity-rare-edge {
+.pick-tile.grade-A-edge {
   box-shadow: inset 0 3px 0 #4a86d0;
 }
-.pick-tile.rarity-legendary-edge {
+.pick-tile.grade-S-edge {
   box-shadow: inset 0 3px 0 #e0a82e;
 }
 .pick-tile.pick-current {
@@ -275,9 +462,12 @@
 .pick-level {
   position: absolute;
   left: 50%;
-  bottom: -5px;
+  bottom: -7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   transform: translateX(-50%);
-  padding: 0 5px;
+  padding: 0 5px 0 0;
   border: 1px solid var(--ink);
   border-radius: 999px;
   background: var(--sun);
@@ -344,19 +534,19 @@
 
 /* Dark mode tạm tắt: đổi `not all` về `(prefers-color-scheme: dark)` khi bảng màu tối ổn. */
 @media not all {
-  .rarity-common {
+  .grade-C {
     color: #d5ddd4;
     background: #26332c;
   }
-  .rarity-good {
+  .grade-B {
     color: #a4e8b8;
     background: #204b33;
   }
-  .rarity-rare {
+  .grade-A {
     color: #a9cdfb;
     background: #1c3451;
   }
-  .rarity-legendary {
+  .grade-S {
     color: #ffe0a0;
     background: linear-gradient(90deg, #54401a, #6c4e17);
   }
@@ -400,6 +590,16 @@
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
+}
+.pick-level .grade-badge {
+  margin: -2px 0;
+  box-shadow: none;
+}
+.swap-grade {
+  position: absolute;
+  left: -2px;
+  bottom: -2px;
+  line-height: 0;
 }
 .swap-badge {
   position: absolute;

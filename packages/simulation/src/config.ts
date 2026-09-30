@@ -47,6 +47,12 @@ export const DEFAULT_CONFIG: SimConfig = {
   patienceRate: { queue: 1, deciding: 0.6, working: 0.3 },
   wrongItemPenalty: 0.2,
   emoteMs: 1800,
+  // Tiệm mới mở: ít người biết nên khách mới ghé chừng 45% so với tiệm đã quen mặt (market.ts).
+  awarenessStart: 10,
+  arrivalFloor: 0.42,
+  // Trò chuyện với khách quen: mỗi bước ~2,8 giây khi tiệm vắng, co lại khi đông nhưng không dưới 1,6 giây.
+  chatStepMs: 2800,
+  chatMinStepMs: 1600,
   // Đơn ship: tiệm mới 1–2 đơn/ngày, đông dần theo số nhân viên trong ca, cấp tiệm và danh tiếng.
   deliveryIntervalMs: [70_000, 110_000],
   firstDeliveryMs: 40_000,

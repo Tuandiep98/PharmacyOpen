@@ -13,6 +13,7 @@ import { GameButton } from "../../ui/primitives";
 import { useServiceActions } from "../store/useServiceActions";
 import { workerProgress, workerStatus } from "./workerStatus";
 import { ActivityBadge } from "./ActivityBadge";
+import { GradeBadge, gradeOf, StaffAvatar } from "./GradeBadge";
 import "./staff.css";
 
 type State = DeepReadonly<SimState>;
@@ -98,7 +99,7 @@ export function CounterStaffPicker({
                 <GameButton
                   surface="custom"
                   type="button"
-                  className={`pick-tile pick-${kind} ${w.controller === "ai" ? `rarity-${w.rarity}-edge` : ""}`}
+                  className={`pick-tile pick-${kind} ${w.controller === "ai" ? `grade-${gradeOf(w)?.grade ?? "C"}-edge` : ""}`}
                   aria-pressed={kind === "current"}
                   aria-label={`${kind === "current" ? "" : "Giao "}${counterName} cho ${w.id === PLAYER_WORKER_ID ? "bạn" : w.name}${w.controller === "ai" ? `, cấp ${w.level}` : ""}. ${workerStatus(state, w)}`}
                   title={workerStatus(state, w)}
@@ -109,7 +110,10 @@ export function CounterStaffPicker({
                   <span className="pick-portrait">
                     <WorkerPortrait worker={w} size={40} />
                     {w.controller === "ai" && (
-                      <span className="pick-level">Cấp {w.level}</span>
+                      <span className="pick-level">
+                        <GradeBadge subject={w} size="sm" static />
+                        Cấp {w.level}
+                      </span>
                     )}
                   </span>
                   <strong className="pick-name">{shortName(w)}</strong>
@@ -181,6 +185,9 @@ export function SwapAvatar({
       onClick={onToggle}
     >
       <WorkerPortrait worker={worker} size={size} />
+      <span className="swap-grade">
+        <GradeBadge subject={worker} size="sm" static />
+      </span>
       <span className="swap-badge" aria-hidden>
         <SwapIcon size={14} />
       </span>
@@ -219,7 +226,7 @@ export function CounterCard({
         </span>
       </div>
       <div className="counter-summary-main">
-        {operator && <WorkerPortrait worker={operator} size={48} />}
+        {operator && <StaffAvatar worker={operator} size={48} />}
         <div className="counter-summary-text">
           <strong>{operator ? operator.name : "Quầy chưa mở"}</strong>
           {operator ? (

@@ -137,6 +137,7 @@ describe("vị trí làm việc", () => {
 
   it("một người bán, một người lo kho: tiệm tự chạy, người ở kho lo phần lớn việc nhập hàng", () => {
     const { sim, s } = twoStaff(4);
+    s.awareness = 100;
     s.nextSpawnAtMs = s.timeMs + 1000;
     sim.dispatch({
       type: "assignStation",

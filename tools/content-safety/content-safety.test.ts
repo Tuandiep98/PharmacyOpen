@@ -6,8 +6,10 @@ import {
   GAME_VOICE,
   NOWHERE,
   SYMPTOMS,
+  validateCollectibles,
   validateContent,
   validateReviewText,
+  validateStories,
 } from "./validate";
 import {
   PRODUCTS,
@@ -105,6 +107,44 @@ describe("bộ kiểm tra bắt được vi phạm", () => {
         'từ bị cấm: "paracetamol"',
       ]),
     );
+  });
+
+  it("báo lỗi khi chuyện khách quen kể về bệnh, thiếu kết thúc, hoặc đồ lạc quẻ không có mặt hại", () => {
+    const issues = validateStories(
+      {
+        bad: {
+          id: "bad",
+          title: "Chuyện lạ",
+          ages: ["adult"],
+          depth: 1,
+          opening: "Hôm qua tôi bị sốt cả đêm.",
+          beats: [{ say: "Uống vào là đỡ ngay.", reply: "Vậy à." }],
+          ending: "",
+        },
+      },
+      {},
+    );
+    const problems = issues.map((i) => i.problem);
+    expect(problems).toEqual(
+      expect.arrayContaining([
+        'từ bị cấm: "sốt"',
+        'từ bị cấm: "uống vào là"',
+        "chuyện cần có mở đầu và kết thúc",
+        "chuyện cần ít nhất 2 đoạn giữa",
+      ]),
+    );
+    expect(
+      validateCollectibles({
+        odd: {
+          id: "odd",
+          name: "Đèn quá sáng",
+          slot: "store",
+          fit: "odd",
+          description: "Sáng chói.",
+          effects: [{ stat: "awareness", base: 2 }],
+        },
+      }).map((i) => i.problem),
+    ).toContain("đồ lạc quẻ phải có ít nhất một mặt hại");
   });
 
   it("báo lỗi khi câu tư vấn chứa lời hứa điều trị", () => {

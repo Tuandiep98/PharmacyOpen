@@ -148,8 +148,9 @@ describe("đặc điểm", () => {
 
   it('"Hay đi trễ" chưa tới thì chưa phục vụ được', () => {
     const { sim, s } = withTraits(5, ["late"]);
-    // Không có đơn ship để người đi trễ không bận gói đơn từ ca trước.
+    // Không có đơn ship hay khách từ ca trước để người đi trễ không bận việc dở khi sang ca.
     s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
+    s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
     runFor(sim, s.config.dayMs / 2 - (s.timeMs - s.dayStartedAtMs) + 100);
     const worker = s.workers["w-dung"]!;
     expect(worker.arrivesAtMs).toBeGreaterThan(s.timeMs);
@@ -171,6 +172,8 @@ describe("đặc điểm", () => {
       outcome: null,
       leaveAtMs: 0,
       loyaltyId: null,
+      chat: null,
+      chatBonus: 0,
     };
     s.counters[0]!.customerId = "cx";
     expect(

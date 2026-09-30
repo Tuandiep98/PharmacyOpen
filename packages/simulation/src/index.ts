@@ -40,6 +40,9 @@ export {
   totalWagesOwed,
   wagesDueToday,
   wagesDueTonight,
+  DAY_REWARD_COINS,
+  DAY_REWARD_ITEM_CHANCE,
+  dayRewardCoins,
   type DayGoalId,
 } from "./economy";
 export {
@@ -63,6 +66,13 @@ export {
   MAX_LEVEL,
   QUIT_FATIGUE,
   retainWage,
+  GRADE_THRESHOLDS,
+  gradeFor,
+  hireCostFor,
+  rarityWeights,
+  staffScore,
+  wageFor,
+  type StaffScore,
 } from "./recruit";
 export {
   createSave,
@@ -73,7 +83,38 @@ export {
   type SaveFile,
 } from "./save";
 export { runOffline, type OfflineSummary } from "./offline";
-export { customerName } from "./loyalty";
+export { customerName, rapportDelta } from "./loyalty";
+export {
+  accuracyBonus,
+  arrivalFactor,
+  AWARENESS_DAILY_MAX,
+  AWARENESS_DAILY_MIN,
+  awarenessBreakdown,
+  personaFor,
+  regularsPull,
+  returningChance,
+  standingBoost,
+  trafficPressure,
+  type AwarenessBreakdown,
+} from "./market";
+export * from "./ranking";
+export {
+  collectionBonus,
+  emptyCollection,
+  itemAt,
+  makeItem,
+  placeOf,
+  placesFor,
+  pruneEquipped,
+  restoreCollection,
+} from "./collection";
+export {
+  anyChatting,
+  storiesFor,
+  storyDepth,
+  talkReach,
+  yieldThreshold,
+} from "./chat";
 export { nextExpiry } from "./stock";
 export {
   deliveryCap,

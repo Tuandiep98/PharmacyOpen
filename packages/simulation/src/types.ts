@@ -14,7 +14,101 @@ import type {
 } from "./content/types";
 import type { RngState } from "./rng";
 
-export const SAVE_VERSION = 16;
+export const SAVE_VERSION = 17;
+
+/** Hạng đánh giá dùng chung cho nhân viên và đồ sưu tầm: S > A > B > C. */
+export type Grade = "S" | "A" | "B" | "C";
+export const GRADES: readonly Grade[] = ["S", "A", "B", "C"];
+
+/** Nhóm tuổi của khách quen, quyết định kiểu chuyện họ hay kể. */
+export type AgeGroup = "young" | "adult" | "senior";
+
+/** Tính cách khách quen suy ra một lần khi lập hồ sơ (không tốn RNG mô phỏng). */
+export interface Persona {
+  age: AgeGroup;
+  female: boolean;
+  /** Độ cởi mở 0..1: càng cao càng hay kể chuyện và kể sâu. */
+  openness: number;
+}
+
+/**
+ * Một lượt trò chuyện với khách quen sau khi bán xong. Chuỗi bước: mở đầu (hoặc kể tiếp) → các đoạn
+ * giữa → câu kết. Khách vẫn đứng ở quầy, người bán vẫn bận, nên khách xếp hàng phía sau phải chờ.
+ */
+export interface ChatState {
+  storyId: string;
+  /** Đoạn giữa bắt đầu ở lượt này (0 = kể từ đầu, > 0 = kể tiếp chuyện dở lần trước). */
+  from: number;
+  /** Số đoạn giữa dự định kể trong lượt này. */
+  planned: number;
+  /** Bước hiện tại: 0 = mở đầu, 1..planned = đoạn giữa, planned + 1 = câu kết. */
+  step: number;
+  stepMs: number;
+  stepStartedAtMs: number;
+  /** Cách kết thúc: kể trọn chuyện, hẹn kể tiếp, nhường khách sau, hay cắt ngang khi không ai chờ. */
+  closing: "complete" | "pause" | "yield" | "cut" | null;
+  /** Số đoạn giữa đã kể xong khi bước vào câu kết. */
+  told: number;
+}
+
+/** Số liệu trong ngày của một người, chốt vào DayReport để xếp hạng nhân viên. */
+export interface WorkerDayStat {
+  sales: number;
+  perfSum: number;
+  perfCount: number;
+  starsSum: number;
+  starsCount: number;
+}
+
+export interface StaffDayRecord extends WorkerDayStat {
+  workerId: string;
+  name: string;
+  role: StaffRole;
+  level: number;
+  /** Số ca đã vào làm trong ngày (người chơi tính đủ hai ca). */
+  shifts: number;
+}
+
+/** Thưởng mục tiêu ngày: xu và (có thể) một món đồ sưu tầm. */
+export interface DayReward {
+  coins: number;
+  itemUid: string | null;
+}
+
+export type CollectibleSlot = "wear" | "counter" | "shelf" | "store";
+/** Chỉ số đồ sưu tầm tác động; giá trị có thể âm (đồ không hợp tiệm). */
+export type CollectStat =
+  | "returnChance"
+  | "rating"
+  | "recruitLuck"
+  | "queuePatience"
+  | "awareness";
+
+export interface CollectibleItem {
+  uid: string;
+  defId: string;
+  grade: Grade;
+  effects: { stat: CollectStat; value: number }[];
+  obtainedDay: number;
+}
+
+/**
+ * Bộ sưu tập thuộc về người chơi, không thuộc chi nhánh: điều chuyển hay mở tiệm mới vẫn giữ.
+ * `equipped`: chỗ đặt → uid (vd. "counter-1", "shelf", "store-wall", "wear:w-player").
+ */
+export interface CollectionState {
+  items: CollectibleItem[];
+  equipped: Record<string, string>;
+  nextUid: number;
+}
+
+/** Hạng của tiệm trong khu vực ở lần chốt ngày gần nhất (null = chưa đủ điều kiện lên bảng). */
+export interface RegionStanding {
+  day: number;
+  revenue: number | null;
+  rating: number | null;
+  staff: number | null;
+}
 
 export type OperationsCaseId = "storage" | "supplier" | "staff" | "rumour";
 export type OperationsChoiceId = "careful" | "practical" | "shortcut";
@@ -120,6 +214,13 @@ export interface SimConfig {
   /** Phần kiên nhẫn tối đa bị trừ khi đưa nhầm hàng. */
   wrongItemPenalty: number;
   emoteMs: number;
+  /** Độ nhận biết (0–100) của tiệm mới mở; khách mới ghé tăng dần theo độ nhận biết (market.ts). */
+  awarenessStart: number;
+  /** Hệ số khách ghé khi chưa ai biết tới tiệm (độ nhận biết 0); đạt 100 thì hệ số là 1. */
+  arrivalFloor: number;
+  /** Thời lượng chuẩn một bước trò chuyện với khách quen (co lại khi tiệm đông, có sàn). */
+  chatStepMs: number;
+  chatMinStepMs: number;
   /** Khoảng giữa hai đơn online (chia cho hệ số đông khách, xem delivery.ts) và lúc đơn đầu tiên trong ngày tới sau khi mở cửa. */
   deliveryIntervalMs: [number, number];
   firstDeliveryMs: number;
@@ -181,6 +282,10 @@ export interface Customer {
   outcome: CustomerOutcome | null;
   leaveAtMs: number;
   loyaltyId: string | null;
+  /** Đang trò chuyện ở quầy sau khi mua xong (chỉ khách quen). */
+  chat: ChatState | null;
+  /** Mức hài lòng cộng/trừ từ lượt trò chuyện, tính khi khách rời tiệm. */
+  chatBonus: number;
 }
 
 export type OrderState =
@@ -191,6 +296,8 @@ export type OrderState =
   | "referring"
   /** Đang báo khách tạm hết hàng và hỏi có muốn chờ giao sau không. */
   | "deferring"
+  /** Đã bán xong, khách quen nán lại trò chuyện (customer.chat). */
+  | "chatting"
   | "done"
   | "cancelled";
 
@@ -292,6 +399,8 @@ export interface Worker {
   restDay: number | null;
   /** Vị trí ngoài quầy (kho, hỗ trợ…). Đang đứng quầy thì vẫn giữ để quay về khi rời quầy. */
   station: BackStationId;
+  /** Số liệu hôm nay (xếp hạng nhân viên), đặt lại mỗi sáng. */
+  dayStat: WorkerDayStat;
 }
 
 /** Ứng viên trong danh sách tuyển hằng ngày; khoá thì được giữ sang ngày sau. */
@@ -417,6 +526,12 @@ export interface LoyaltyProfile {
   goodVisits: number;
   lastOutcome: CustomerOutcome;
   nextEligibleAtMs: number;
+  persona: Persona;
+  /** Độ thân 0–100: phục vụ đúng, chu đáo và trò chuyện làm tăng; đưa nhầm hay để khách bỏ về làm giảm. */
+  rapport: number;
+  /** Chuyện đang kể dở (kể tiếp ở lần ghé sau) và các chuyện đã kể trọn. */
+  story: { id: string; beat: number } | null;
+  storiesDone: string[];
 }
 
 export interface SimStats {
@@ -452,6 +567,12 @@ export interface SimStats {
   cancelledDeliveries: number;
   backorders: number;
   wentElsewhere: number;
+  /** Xu thưởng mục tiêu ngày và xu bán đồ sưu tầm (thu nhập ngoài bán hàng, không tính vào lãi ròng). */
+  rewardCoins: number;
+  itemSales: number;
+  /** Lượt trò chuyện với khách quen: bắt đầu và kể trọn chuyện. */
+  chats: number;
+  chatsCompleted: number;
 }
 
 /** Tổng kết một ca: chênh lệch sổ sách giữa lúc vào ca và lúc giao ca. */
@@ -531,6 +652,14 @@ export interface DayReport {
   operationsChange: number;
   incident: OperationsCaseId | null;
   incidentChoice: OperationsChoiceId | null;
+  /** Số liệu từng người trong ngày (xếp hạng nhân viên toàn năng). */
+  staff: StaffDayRecord[];
+  /** Độ nhận biết của tiệm sau khi chốt ngày và mức thay đổi trong ngày. */
+  awareness: number;
+  awarenessChange: number;
+  chats: number;
+  chatsCompleted: number;
+  reward: DayReward;
 }
 
 /** Mốc sổ sách lúc bắt đầu ngày, để tính tổng kết. */
@@ -556,7 +685,15 @@ export interface SimState {
     review: RngState;
     staff: RngState;
     delivery: RngState;
+    chat: RngState;
+    loot: RngState;
   };
+  /** Độ nhận biết 0–100: tiệm mới mở ít người biết nên khách mới ghé thưa, tăng dần theo ngày. */
+  awareness: number;
+  /** Hạng trong khu vực ở lần chốt ngày gần nhất (ranking.ts). */
+  standing: RegionStanding;
+  /** Đồ sưu tầm của người chơi (không thuộc chi nhánh, giữ qua điều chuyển). */
+  collection: CollectionState;
   nextSpawnAtMs: number;
   customers: Record<string, Customer>;
   queue: string[];

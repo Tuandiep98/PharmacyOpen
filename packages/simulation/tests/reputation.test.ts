@@ -39,6 +39,8 @@ function placeCustomer(
     outcome: null,
     leaveAtMs: 0,
     loyaltyId: null,
+    chat: null,
+    chatBonus: 0,
   };
   state.counters[0]!.customerId = id;
 }
@@ -230,6 +232,7 @@ describe("danh tiếng → lượng khách (có trần/sàn)", () => {
   it("danh tiếng cao làm nhiều khách ghé hơn, nhưng hàng chờ giới hạn số khách thực sự vào được", () => {
     const arrivals = (stars: number) => {
       const state = createInitialState(12);
+      state.awareness = 100;
       state.reputation = {
         starsSum: stars * 400,
         count: 400,

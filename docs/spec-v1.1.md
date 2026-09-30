@@ -66,7 +66,8 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7c   | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính               | ✅                            |
 | 7d   | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca                                         | ✅                            |
 | 7e   | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được)                                                 | ✅                            |
-| 8    | Online (tuỳ chọn)                                                                                                          |                               |
+| 7f   | Giữ chân người chơi: độ nhận biết tiệm, top khu vực, trò chuyện khách quen, hạng S/A/B/C, thưởng mục tiêu và đồ sưu tầm      | ✅                            |
+| 8    | Online (tuỳ chọn): bảng xếp hạng đã có khung `RankingProvider` + lệnh `setStanding`                                        |                               |
 
 ### Điều chỉnh sau bước 7: nhịp mở danh mục và nâng cấp
 
@@ -177,7 +178,7 @@ Logic nằm ở `packages/simulation/src/recruit.ts` (sinh ứng viên, cấp đ
 
 - **Một người một ca.** Nhân viên mới làm ca đang diễn ra nếu còn chỗ, không thì ca còn lại. Số chỗ tăng theo nâng cấp (`staffLimits` trong `progression.ts`, hiệu ứng `staff` của nâng cấp): mới mở tiệm 1 người/ca (tối đa 2); Cửa hàng cấp 2 → 2/ca (4); cấp 3 → +1 dự phòng (5); Quầy 2 → 3/ca (7); cấp 4 → 4/ca (9); cấp 5 → +1 dự phòng (10). Cuối lộ trình mỗi ca đủ hai quầy, một người kho, một người hỗ trợ, cộng người dự phòng để luân phiên nghỉ. Save cũ đông hơn giới hạn được giữ nguyên, chỉ không tuyển thêm. Lương tính **theo ca** (`wage` = xu/ca). Ép làm cả hai ca được nhưng mệt thêm. Đầu mỗi ca, quầy người chơi đang giữ được giao cho NPC trong ca (người chơi lấy lại được bất cứ lúc nào).
 - **Ứng viên hằng ngày:** 3 ô (`recruitSlots`), đổi mới mỗi sáng; ô **khoá** được giữ sang ngày sau. Làm mới có trả phí 15 xu, mỗi ngày một lần. Tên Việt hư cấu theo giới tính; 35% là dược sĩ (hiểu hàng hơn, lương cao hơn).
-- **Độ hiếm** (màu trên thẻ): Thường 70% (xám), Khá 22% (xanh lá), Hiếm 7% (xanh dương), Huyền thoại 1% (vàng). Bậc cao có khoảng chỉ số cao hơn. Hiếm/Huyền thoại có một **đặc điểm ẩn** ("???", có thể tốt hoặc xấu), lộ ra khi hết ca làm đầu tiên nhưng có tác dụng ngay. Giá tuyển và lương chỉ tính theo phần nhìn thấy.
+- **Độ hiếm** (chỉ dùng khi sinh ứng viên; giao diện hiện hạng năng lực S/A/B/C, xem §3n): Thường 55%, Khá 30%, Hiếm 12%, Huyền thoại 3%. Bậc cao có khoảng chỉ số cao hơn. Hiếm/Huyền thoại có một **đặc điểm ẩn** ("???", có thể tốt hoặc xấu), lộ ra khi hết ca làm đầu tiên nhưng có tác dụng ngay. Giá tuyển và lương chỉ tính theo phần nhìn thấy.
 - **Đặc điểm** (tô màu: xanh có lợi, đỏ có hại, vàng vừa lợi vừa hại): Trâu bò (hai ca không mệt), Thần tài (20% đơn khách boa gấp đôi), Dẻo miệng (+hài lòng), Trí nhớ tốt (+hiểu hàng), Nhanh tay (+40% tốc độ), Được khách quen quý, Ngăn nắp (khách chờ bớt sốt ruột), Chăm chỉ, Cẩn thận, Hoạt ngôn, Tay nhanh hơn não (nhanh mà hay nhầm), Siêu lười (hay lướt điện thoại), Chậm hiểu, Nóng tính (khách kém hài lòng, lý do đánh giá "Thái độ chưa tốt"), Hay đi trễ (vào ca muộn 6 giây), Cầm nhầm tiền két (két thiếu 1–3 xu ở 15% lượt bán, hiện ở đối soát két cuối ngày). Không có đặc điểm bạo lực; "Nóng tính" thay cho ý tưởng "cục súc".
 - **Tay nghề:** mỗi lượt bán đúng +1 kinh nghiệm, 10 cấp (`LEVEL_XP`), mỗi cấp +3% tốc độ, +0,02 hiểu hàng. Đánh giá thấp do lỗi của chính người đó: 10% khả năng mất 3 kinh nghiệm, không tụt cấp.
 - **Mệt mỏi và xin nghỉ:** cuối ngày nghỉ −40, làm 1 ca −10, làm 2 ca +35 (Trâu bò −10). Chạm 100 thì xin thôi việc: **tăng lương giữ chân** (+20%, ít nhất +1 xu/ca, mệt về 30) hoặc cho nghỉ; hết ngày sau chưa quyết thì tự nghỉ (trả nợ lương nếu đủ xu).
@@ -218,6 +219,84 @@ Logic ở `packages/simulation/src/delivery.ts`, lệnh ở `commands.ts`, NPC �
 - Hồ sơ khách quen có `name` (`content/names.ts`): cách gọi theo kiểu khách (vội/khó tính: anh/chị, cẩn thận: cô/chú, tiết kiệm: bác, hay hỏi: gọi tên) và dáng tóc; chọn bằng băm id, không tốn RNG. Save v12 đặt tên cho hồ sơ cũ.
 - `serviceTone` (reputation.ts) suy giọng người bán từ kỹ năng/tính cách: niềm nở, bình thường, cộc lốc (Nóng tính), nói nhiều (Hoạt ngôn), lúng túng (giao tiếp < 0,45). Giao diện dùng giọng này cho lời thoại; khách dùng cùng tiêu chí để chấm.
 - Tiêu chí mới trong đánh giá: “Nói chuyện lúng túng” (lỗi nhân viên, −0,08 hài lòng) và “Tư vấn kiên nhẫn” (khen: khách thích nghe giải thích, kể nhu cầu, được gợi ý đúng ngay bởi người giao tiếp ≥ 0,6, +0,05). Thẻ nhân viên hiện giọng giao tiếp và các lời khen/chê khách nhắc nhiều nhất.
+
+## 3k. Nhịp khách giai đoạn đầu: độ nhận biết (`market.ts`)
+
+- Tiệm có **độ nhận biết 0–100** (`state.awareness`, bắt đầu `awarenessStart` = 10). Hệ số khách ghé `arrivalFactor` = `arrivalFloor` (0,42) + phần còn lại × độ nhận biết/100, nhân thưởng top khu vực, cộng sức kéo của khách quen (mỗi hồ sơ còn quý tiệm cộng 0,4–1,6%, trần +12%). Nhân vào tốc độ sinh khách cùng danh tiếng sao và sự cố vận hành.
+- Cuối ngày độ nhận biết đổi theo `awarenessBreakdown`, chặn trong [−4; +7] điểm/ngày:
+  - truyền miệng +3 (+2 khi đã quá 50);
+  - biển hiệu sáng đèn +1,2 mỗi cấp;
+  - khách quen quay lại +0,6 mỗi người (trần +3);
+  - tỉ lệ phục vụ ≥ 90% +2, ≥ 75% +1; đưa nhầm −0,5 mỗi lần (trần −3);
+  - khách bỏ về −0,4 mỗi người (trần −3);
+  - top 3 khu vực +2, top 10 +1;
+  - điểm tiệm ≥ 4,3★ +1, < 3★ −1;
+  - đồ sưu tầm "Người biết tới tiệm".
+- Đo được: người chơi tự bán, độ nhận biết đầy khoảng ngày 13–14; khách ngày đầu ~14 so với ~26 khi đã quen mặt.
+- **Giữ chân khách** (`returningChance`): 30% mặc định; +4% khi có người giao tiếp ≥ 0,75 trong ca; +5%/+2% khi 40 lượt gần nhất gần như không đưa nhầm (−4% khi hay nhầm); cộng đồ sưu tầm; chặn [10%; 60%]. Khách quen được chọn theo **độ thân** (`rapport` 0–100): phục vụ đúng +6, không nhầm +4, người bán giao tiếp ≥ 0,7 +3, đưa nhầm −12 mỗi lần, bỏ về −30.
+- Save v16 → v17: tiệm cũ nhận độ nhận biết 25 + 8 × (ngày − 1) (trần 100) để không hụt khách đột ngột.
+
+## 3l. Top khu vực (`ranking.ts`)
+
+- Ba bảng theo 7 ngày gần nhất (các ngày đã chốt), dựng từ `RankingSubmission` bằng hàm thuần `buildLeaderboard`:
+  - **Doanh thu**: doanh thu trung bình mỗi ngày, cần ≥ 3 ngày số liệu;
+  - **Đánh giá**: sao trung bình của đánh giá mới trong 7 ngày, cần ≥ 30 đánh giá;
+  - **Nhân viên toàn năng** 0–100: sao cá nhân (làm mượt Bayes 3,5★ × 5) 35% · số đơn mỗi ca (12 đơn = tối đa) 30% · điểm nghiệp vụ 25% · tay nghề 10%; cần ≥ 3 ca và ≥ 10 đơn. Chia theo ca để người làm hai ca không thắng chỉ nhờ làm nhiều giờ.
+- Số liệu từng người trong ngày ghi ở `worker.dayStat` và chốt vào `DayReport.staff`.
+- Chơi đơn: 11 tiệm hư cấu (`content/region.ts`) sinh tất định từ seed + ngày theo đường cong thị trường `marketRevenue`; mỗi tuần thứ hạng đối thủ nhích lên xuống. Người chơi tự bán đứng khoảng hạng 6–8 về doanh thu, cần mở rộng mới vào top.
+- Lúc chốt ngày, `state.standing` lưu hạng tốt nhất của tiệm trên từng bảng; thưởng lượng khách top 1 +8%, top 3 +5%, top 10 +2%.
+- **Hướng online:** giao diện đọc bảng qua `RankingProvider` (`apps/web/src/features/ranking/rankingService.ts`). Bản local dùng `localLeaderboard`; khung `onlineRankingProvider(baseUrl)` gửi `playerSubmission` và nhận danh sách submission của khu vực, bật bằng biến môi trường `VITE_RANKING_URL`. Hạng từ máy chủ đưa vào mô phỏng bằng lệnh `setStanding`.
+
+## 3m. Trò chuyện với khách quen (`chat.ts`, `content/stories.ts`)
+
+- Hồ sơ khách quen có **chân dung** (`persona`: nhóm tuổi, giới tính, độ cởi mở). Chân dung suy từ kiểu khách và băm id, không tốn RNG. 18 câu chuyện đời thường, mỗi chuyện có mở đầu, 2–4 đoạn (khách kể → người bán đáp) và kết. Chuyện có 3 độ sâu: độ sâu 2 cần ≥ 2 lần ghé và độ thân ≥ 30; độ sâu 3 cần ≥ 3 lần ghé, độ thân ≥ 55 và độ cởi mở ≥ 0,55.
+- Bán xong cho khách quen (đã ghé ít nhất một lần), luồng RNG riêng `chat` quyết định khách có nán lại kể chuyện không:
+  - xác suất ≈ độ cởi mở × (0,55 + 0,1 × số lần ghé) × (1 − 0,6 × độ đông);
+  - kể tiếp chuyện dở thì dễ hơn;
+  - người bán cộc lốc hoặc lúng túng thì khó hơn.
+- Trong lúc kể, đơn ở trạng thái `chatting`: khách vẫn đứng quầy và không hao kiên nhẫn, người bán vẫn bận. Khách đang xếp hàng hao kiên nhẫn nhanh hơn 20%.
+- **Độ dài** = min(số đoạn còn lại, sức đỡ lời của người bán, trần theo độ đông):
+  - sức đỡ lời 1–5, gồm 1 + giao tiếp × 3, Hoạt ngôn/Dẻo miệng/Được khách quen quý +1, Nóng tính −2, lúng túng −1;
+  - trần theo độ đông 1–4, tiệm càng đông và hàng càng dài thì càng thấp;
+  - mỗi bước 2,8 giây khi vắng, co lại khi đông, sàn 1,6 giây.
+- **Kết thúc:**
+  - kể trọn: khách hài lòng thêm, có thể được khen "Trò chuyện vui vẻ", chuyện được đánh dấu đã kể;
+  - hẹn kể tiếp: lần ghé sau kể từ đoạn dở;
+  - **nhường khách sau** (lệnh `endChat` khi có người chờ): khách thông cảm, hẹn kể tiếp;
+  - cắt ngang khi không ai chờ: −0,03 hài lòng.
+  - Hài lòng cộng thêm = (0,025 × số đoạn + 0,05 nếu trọn) × độ ấm giọng người bán, chặn [−0,05; +0,18]. Độ thân +3 + 3 × số đoạn (+6 nếu trọn).
+- NPC tự nhường khách sau khi có người chờ mà kiên nhẫn còn dưới ngưỡng: 0,45 mặc định, 0,25 với người Hoạt ngôn (mải kể), 0,75 với người Nóng tính.
+
+## 3n. Hạng nhân viên S/A/B/C và lương theo năng lực (`recruit.ts`)
+
+- Điểm năng lực 0–100 (`staffScore`) tính theo phần nhìn thấy: hiểu hàng 34 · tốc độ 32 · giao tiếp 24 · đặc điểm ±10 (kỹ năng đặc biệt +10, tốt +6, vừa +2, xấu −7/−10, chia đôi) · dược sĩ +3 · nền 5. Tay nghề (cấp) nâng tốc độ và hiểu hàng thực tế nên người làm lâu có thể lên hạng. Đặc điểm ẩn chưa tính, lộ ra thì hạng có thể đổi.
+- Ngưỡng: S ≥ 87, A ≥ 71, B ≥ 55. Đo 5000 ứng viên: S ~7%, A ~25%, B ~41%, C ~28%.
+- Tỉ lệ độ hiếm nới rộng từ 70/22/7/1 thành 55/30/12/3. Người thường có đặc điểm 80% (trước 55%), người khá có 30% cơ hội mang kỹ năng đặc biệt; hơn 75% ứng viên có ít nhất một đặc điểm.
+- **Lương mỗi ca** = 1,5 + điểm × 0,115, dược sĩ +1, chặn [4; 14]. Theo hạng: C 5–9, B 8–11, A 10–12, S 12–14 xu/ca. **Phí tuyển** = lương × số ca (C 3, B 4, A 5, S 6), làm tròn 5 xu: C 15–25, S 70–85 xu. Thẻ ứng viên ước tính lãi gộp mỗi ca theo lượng khách hiện tại để so với lương.
+- Đồ sưu tầm "Dễ gặp ứng viên giỏi" dời trọng số độ hiếm (`rarityWeights`).
+
+## 3o. Thưởng mục tiêu ngày và đồ sưu tầm (`collection.ts`, `content/collectibles.ts`)
+
+- Chốt ngày trao **xu thưởng** theo số mục tiêu đạt: 8/18/32 xu, nhân (1 + 0,2 × (cấp tiệm − 1)). Xu thưởng là thu nhập ngoài bán hàng (`stats.rewardCoins`), không tính vào lãi ròng.
+- Cơ hội rơi **đồ sưu tầm** theo luồng RNG `loot`: 1 sao 12%, 2 sao 30%, 3 sao 55%. Bộ sưu tập đầy (30 món) thì món mới được bán ngay lấy xu.
+- 18 món, chia 4 loại chỗ đặt: nhân vật đeo, trên quầy, trên kệ, trang trí tiệm (tường, góc cửa). Mỗi món có độ hợp tiệm:
+
+  | Độ hợp tiệm | Mặt hại | Tỉ lệ hạng S/A/B/C |
+  | ----------- | ------- | ------------------ |
+  | Hợp nhà thuốc | không có | 14/30/40/16 |
+  | Dễ thương | không có | 6/22/44/28 |
+  | Lạc quẻ | luôn có (vd. đèn nháy kéo khách nhưng khách chê chói) | 2/8/30/60 |
+
+  Hạng nhân mặt lợi (S × 1,6 … C × 0,6) và giảm mặt hại (S × 0,4 … C × 1,4).
+- Chỉ số tác động (tổng có trần cả hai chiều):
+  - khách quay lại (±12%);
+  - khách chấm sao (±0,08 hài lòng);
+  - dễ gặp ứng viên giỏi (±0,3);
+  - khách chờ kiên nhẫn (±15%);
+  - người biết tới tiệm (±4 điểm/ngày).
+- Chỉ món đang đặt mới có tác dụng; món đeo chỉ có tác dụng khi người đeo có mặt trong ca. Bán theo hạng: 40/24/12/5 xu. Bỏ đi thì không được xu.
+- Bộ sưu tập thuộc về **người chơi**: điều chuyển chi nhánh vẫn giữ (món đeo trên nhân viên cũ được cất lại). Web lưu thêm một bản riêng (`bo-cong-anh.collection`). "Chơi lại từ đầu" sẽ nạp lại bản này qua `restoreCollection`, hàm này bỏ món lạ và tính lại hiệu ứng theo hạng.
+- Balance 12 seed × 12 ngày sau các thay đổi: Bình + Chi 173,1; Chi + Dũng 171,1; Bình + Dũng 165,1 xu/ngày (đã gồm xu thưởng). Vắng 35 phút ước tính 413–433 xu; không ván nào mất người.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

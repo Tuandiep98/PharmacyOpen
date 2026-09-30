@@ -7,7 +7,9 @@ import {
   type DeepReadonly,
   type SimState,
 } from "@pharmacy/simulation";
-import { CoinIcon } from "../../art/Icons";
+import { CoinIcon, GiftIcon, MapIcon } from "../../art/Icons";
+import { Segmented } from "../../ui/Segmented";
+import { CollectionPanel } from "../collection/CollectionPanel";
 import { UpgradeArt } from "../../art/Upgrades";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
@@ -32,11 +34,40 @@ const MAX_LEVEL: Record<string, number> = {
   signboard: 3,
 };
 
+/** Tab Mở rộng: nâng cấp tiệm và Bộ sưu tập đồ trang trí/đeo (thưởng mục tiêu ngày). */
 export function UpgradePanel({ state }: { state: DeepReadonly<SimState> }) {
+  const view = useUi((s) => s.expansionView);
+  const setView = useUi((s) => s.setExpansionView);
+  return (
+    <div className="panel expansion-panel">
+      <Segmented
+        label="Mục trong Mở rộng"
+        value={view}
+        onChange={setView}
+        options={[
+          { id: "upgrades", label: "Nâng cấp", icon: <MapIcon /> },
+          {
+            id: "collection",
+            label: "Bộ sưu tập",
+            icon: <GiftIcon />,
+            badge: state.collection.items.length,
+          },
+        ]}
+      />
+      {view === "upgrades" ? (
+        <UpgradesView state={state} />
+      ) : (
+        <CollectionPanel state={state} />
+      )}
+    </div>
+  );
+}
+
+function UpgradesView({ state }: { state: DeepReadonly<SimState> }) {
   const level = playerLevel(state);
   const next = MILESTONES.find((m) => m.level > level);
   return (
-    <div className="panel expansion-panel">
+    <div className="upgrades-view">
       <PanelHeading description="Mở hàng mới theo từng mốc. Kho cho phép nhập, cửa hàng cho phép trưng bày; cần nâng cả hai.">
         Mở rộng
       </PanelHeading>

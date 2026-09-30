@@ -34,6 +34,14 @@ import {
 } from "./shift";
 import { addStock, takeStock } from "./stock";
 import { cancelDelivery, nextPackItem } from "./delivery";
+import { endChat, maybeStartChat } from "./chat";
+import {
+  equipItem,
+  pruneEquipped,
+  removeItem,
+  unequipItem,
+  type CollectionResult,
+} from "./collection";
 import {
   facilityLevel,
   isProductUnlocked,
@@ -50,6 +58,7 @@ import {
   type ShiftId,
   type SimState,
   type OperationsChoiceId,
+  type RegionStanding,
 } from "./types";
 
 /**
@@ -102,7 +111,19 @@ export type Command =
   | { type: "interviewRecruit"; slot: number }
   | { type: "setRestDay"; workerId: string; rest: boolean }
   | { type: "setCounterPolicy"; keepOnShiftChange: boolean }
-  | { type: "assignStation"; workerId: string; station: StationId };
+  | { type: "assignStation"; workerId: string; station: StationId }
+  /** Nhường khách sau: kết thúc lượt trò chuyện với khách quen đang ở quầy. */
+  | { type: "endChat"; workerId: string; orderId: string }
+  /** Đặt/đeo một món sưu tầm ở một chỗ (counter-1, shelf, store-wall, wear:<workerId>…). */
+  | { type: "equipItem"; uid: string; place: string }
+  | { type: "unequipItem"; uid: string }
+  | { type: "sellItem"; uid: string }
+  | { type: "discardItem"; uid: string }
+  /**
+   * Hạng khu vực do máy chủ xếp (chế độ online). Chơi đơn tự tính lúc chốt ngày; khi có máy chủ,
+   * tầng web gửi lệnh này để lượng khách theo đúng hạng thật.
+   */
+  | { type: "setStanding"; standing: RegionStanding };
 
 export type RejectReason =
   | "operations-already-chosen"
@@ -154,7 +175,12 @@ export type RejectReason =
   | "unknown-delivery"
   | "delivery-not-packing"
   | "delivery-not-packed"
-  | "delivery-already-sent";
+  | "delivery-already-sent"
+  | "not-chatting"
+  | "unknown-item"
+  | "invalid-place"
+  | "not-equipped"
+  | "invalid-standing";
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
 
@@ -257,7 +283,43 @@ export function applyCommand(
     case "setCounterPolicy":
       state.keepCounterOnShiftChange = command.keepOnShiftChange;
       return OK;
+    case "endChat": {
+      const order = ownedOrder(state, command.workerId, command.orderId);
+      if (typeof order === "string") return reject(order);
+      return endChat(state, order) ? OK : reject("not-chatting");
+    }
+    case "equipItem":
+      return collectionResult(
+        equipItem(state, command.uid, command.place, emit),
+      );
+    case "unequipItem":
+      return collectionResult(unequipItem(state, command.uid, emit));
+    case "sellItem":
+      return collectionResult(removeItem(state, command.uid, true, emit));
+    case "discardItem":
+      return collectionResult(removeItem(state, command.uid, false, emit));
+    case "setStanding":
+      return setStanding(state, command.standing);
   }
+}
+
+function collectionResult(result: CollectionResult): CommandResult {
+  return result === "ok" ? OK : reject(result);
+}
+
+function setStanding(
+  state: SimState,
+  standing: RegionStanding,
+): CommandResult {
+  const valid = (r: number | null) =>
+    r === null || (Number.isInteger(r) && r >= 1 && r <= 10_000);
+  if (
+    !Number.isInteger(standing.day) ||
+    ![standing.revenue, standing.rating, standing.staff].every(valid)
+  )
+    return reject("invalid-standing");
+  state.standing = { ...standing };
+  return OK;
 }
 
 /** Đơn phải tồn tại và thuộc đúng nhân viên gửi lệnh (không ai làm thay đơn của người khác). */
@@ -820,6 +882,7 @@ function dismissStaff(
   }
   // Việc bổ sung kệ dở dang chưa trừ tiền nên huỷ không mất gì.
   delete state.workers[workerId];
+  pruneEquipped(state);
   handOverCounters(state, emit);
   emit({ type: "staffDismissed", workerId, name: worker.name });
   return OK;
@@ -944,6 +1007,7 @@ export function completeSale(
   let tip = 0;
   if (worker) {
     worker.served += 1;
+    worker.dayStat.sales += 1;
     worker.expression = "happy";
     worker.emoteUntilMs = state.timeMs + state.config.emoteMs;
     gainExperience(worker, emit);
@@ -974,5 +1038,7 @@ export function completeSale(
     workerId: order.workerId,
     counterId,
   });
+  // Khách quen có thể nán lại trò chuyện (chat.ts); không thì rời tiệm ngay.
+  if (maybeStartChat(state, order, customer, emit)) return;
   dismissCustomer(state, customer, "bought", emit);
 }

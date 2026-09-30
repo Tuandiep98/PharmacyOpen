@@ -14,6 +14,9 @@ import { dayPhase, prepComplete, shiftTick, tidyOnDuty } from "./shift";
 import { expireStock } from "./stock";
 import { deliveryTick, resolveDeferral } from "./delivery";
 import { isProductUnlocked, isTrending } from "./progression";
+import { anyChatting, chatTick } from "./chat";
+import { collectionBonus } from "./collection";
+import { arrivalFactor } from "./market";
 import type { Customer, Order, SimState } from "./types";
 
 /** Tiến mô phỏng đúng một bước cố định `config.tickMs`. */
@@ -29,6 +32,7 @@ export function tick(state: SimState, emit: Emit): void {
     advanceOrder(state, order, dt, emit);
   for (const customer of Object.values(state.customers))
     advanceCustomer(state, customer, dt, emit);
+  chatTick(state, emit);
   fillCounters(state, emit);
   shiftTick(state, emit);
   aiTick(state, emit);
@@ -56,6 +60,7 @@ function advanceOrder(
   emit: Emit,
 ): void {
   if (
+    order.state !== "chatting" &&
     order.productId &&
     order.productExpiresAtMs !== null &&
     order.productExpiresAtMs <= state.timeMs
@@ -160,6 +165,11 @@ function advanceCustomer(
   }
 
   const order = customer.orderId ? state.orders[customer.orderId] : undefined;
+  // Đã mua xong và đang trò chuyện: khách vui vẻ, không hao kiên nhẫn.
+  if (order?.state === "chatting") {
+    if (state.timeMs >= customer.emoteUntilMs) customer.expression = "happy";
+    return;
+  }
   const { patienceRate } = state.config;
   const baseRate =
     customer.phase === "queue"
@@ -179,9 +189,16 @@ function advanceCustomer(
   // Chuẩn bị đầu ngày đầy đủ (kệ gọn, hàng cận hạn đã rà) giúp khách bớt sốt ruột.
   // Người "Ngăn nắp" trong ca giữ tiệm gọn gàng: khách đang chờ ở hàng cũng bớt sốt ruột.
   const tidy = customer.phase === "queue" && tidyOnDuty(state) ? 0.9 : 1;
+  // Khách xếp hàng thấy quầy đang tám chuyện thì sốt ruột nhanh hơn; đồ trang trí có thể làm dịu (hoặc ồn thêm).
+  const waitingMood =
+    customer.phase === "queue"
+      ? (anyChatting(state) ? 1.2 : 1) *
+        (1 - collectionBonus(state, "queuePatience"))
+      : 1;
   const rate =
     (prepComplete(state) ? served * state.config.prepPatienceFactor : served) *
-    tidy;
+    tidy *
+    waitingMood;
   customer.patienceMs = Math.max(0, customer.patienceMs - dt * rate);
 
   if (customer.patienceMs <= 0) {
@@ -231,12 +248,15 @@ function fillCounters(state: SimState, emit: Emit): void {
 function maybeSpawn(state: SimState, emit: Emit): void {
   if (state.timeMs < state.nextSpawnAtMs) return;
   const [min, max] = state.config.spawnIntervalMs;
-  // Danh tiếng tác động lên lượng khách ghé (có trần/sàn), không lên giá trị mỗi đơn.
+  // Danh tiếng tác động lên lượng khách ghé (có trần/sàn), không lên giá trị mỗi đơn. Tiệm mới mở
+  // ít người biết nên khách thưa, tăng dần theo độ nhận biết (market.ts).
   state.nextSpawnAtMs =
     state.timeMs +
     Math.round(
       nextInt(state.rng.spawn, min, max) /
-        (demandMultiplier(state) * state.operations.demandFactor),
+        (demandMultiplier(state) *
+          state.operations.demandFactor *
+          arrivalFactor(state)),
     );
   // Hàng đầy thì khách bỏ đi từ ngoài cửa: mất một lượt khách, UI cảnh báo để người chơi mở rộng.
   if (state.queue.length >= state.config.maxQueue) {
@@ -309,6 +329,8 @@ function maybeSpawn(state: SimState, emit: Emit): void {
     outcome: null,
     leaveAtMs: 0,
     loyaltyId: returning?.id ?? null,
+    chat: null,
+    chatBonus: 0,
   };
   state.queue.push(id);
   state.stats.customersArrived += 1;

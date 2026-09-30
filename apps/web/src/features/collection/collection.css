@@ -1,0 +1,169 @@
+/* Bộ sưu tập: tác dụng đang có, chỗ đặt trong tiệm/trên người, túi đồ theo hạng. */
+.collection-summary {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.item-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item-effects li {
+  padding: 2px 8px;
+  border: 1.5px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.item-effects li.pos {
+  color: #1f6b3e;
+  border-color: #7cc497;
+  background: var(--good-soft);
+}
+.item-effects li.neg {
+  color: #8e2f28;
+  border-color: #de958c;
+  background: var(--danger-soft);
+}
+.place-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.place-tile {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  width: 100%;
+  min-height: 96px;
+  padding: 8px 4px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+button.place-tile:not(:disabled) {
+  cursor: pointer;
+}
+.place-tile.filled {
+  border-style: solid;
+  background: var(--surface-tint);
+}
+.place-tile .small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.place-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+}
+.place-empty {
+  width: 28px;
+  height: 28px;
+  border: 1.5px dashed var(--line);
+  border-radius: 8px;
+}
+.place-name {
+  font-size: 13px;
+  font-weight: 800;
+}
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.item-card {
+  display: grid;
+  gap: 6px;
+  padding: 8px 10px 10px;
+  border: 1.5px solid var(--line);
+  border-left-width: 5px;
+  border-radius: 12px;
+  background: var(--panel);
+}
+.item-card.grade-edge-S {
+  border-left-color: #e0a82e;
+}
+.item-card.grade-edge-A {
+  border-left-color: #4a86d0;
+}
+.item-card.grade-edge-B {
+  border-left-color: #4eaa72;
+}
+.item-card.grade-edge-C {
+  border-left-color: #b8bfbb;
+}
+.item-card-head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.item-card-head:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+.item-card-icon {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.item-card-icon .grade-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+}
+.item-card-text {
+  display: grid;
+  min-width: 0;
+}
+.item-placed {
+  color: var(--primary);
+  font-weight: 800;
+}
+.item-actions {
+  display: grid;
+  gap: 8px;
+}
+.item-actions p {
+  margin: 0;
+}
+.item-place-buttons,
+.item-manage {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

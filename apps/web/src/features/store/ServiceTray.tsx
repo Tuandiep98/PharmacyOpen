@@ -11,9 +11,11 @@ import {
   type SimState,
 } from "@pharmacy/simulation";
 import { BRAND } from "../../brand";
-import { ClinicIcon, ParcelIcon } from "../../art/Icons";
+import { ChatIcon, ClinicIcon, ParcelIcon } from "../../art/Icons";
+import { chatBeat, customerLine, storyTitle } from "./dialogue";
+import "./chat.css";
 import { ProductIcon } from "../../art/Products";
-import { WorkerPortrait } from "../../art/WorkerFigure";
+import { StaffAvatar } from "../staff/GradeBadge";
 import { beginProductGesture } from "../../ui/drag";
 import { useUi } from "../../ui/uiStore";
 import { GameButton } from "../../ui/primitives";
@@ -38,8 +40,73 @@ const WORKING_LABEL: Record<string, string> = {
  * chỉ hiện tóm tắt hoạt động để dành chỗ cho cảnh và các việc khác.
  * Kéo sản phẩm vào khách (hoặc chạm) là đưa hàng; không cần bước "bắt đầu phục vụ" riêng.
  */
+/**
+ * Khách quen đang kể chuyện: tên chuyện, tiến độ (mở đầu → các đoạn → kết) và nút nhường khách sau.
+ * Có người chờ thì nhường là lịch sự (khách hẹn kể tiếp); không ai chờ mà cắt ngang thì khách hơi buồn.
+ */
+function ChatStatus({
+  state,
+  chat,
+  waiting,
+  onYield,
+}: {
+  state: DeepReadonly<SimState>;
+  chat: NonNullable<DeepReadonly<SimState>["customers"][string]["chat"]>;
+  waiting: number;
+  onYield: () => void;
+}) {
+  const steps = chat.planned + 2;
+  const elapsed = Math.min(
+    1,
+    (state.timeMs - chat.stepStartedAtMs) / chat.stepMs,
+  );
+  const closing = chatBeat(chat) === "closing";
+  return (
+    <div className="chat-status">
+      <span className="chat-title">
+        <ChatIcon size={18} />
+        <b>{storyTitle(chat)}</b>
+        <span className="chat-steps" aria-hidden>
+          {Array.from({ length: steps }, (_, i) => (
+            <span
+              key={i}
+              className={
+                i < chat.step ? "done" : i === chat.step ? "now" : undefined
+              }
+              style={
+                i === chat.step
+                  ? { ["--fill" as string]: `${elapsed * 100}%` }
+                  : undefined
+              }
+            />
+          ))}
+        </span>
+      </span>
+      {closing ? (
+        <span className="small muted">Khách đang chào ra về…</span>
+      ) : (
+        <GameButton
+          size="small"
+          tone={waiting > 0 ? "sun" : "secondary"}
+          onClick={onYield}
+          title={
+            waiting > 0
+              ? "Xin phép khách để bán cho người đang chờ; khách hẹn kể tiếp lần sau"
+              : "Không có ai chờ: cắt ngang làm khách hơi hụt hẫng"
+          }
+        >
+          {waiting > 0
+            ? `Nhường khách sau · ${waiting} người chờ`
+            : "Kết thúc câu chuyện"}
+        </GameButton>
+      )}
+    </div>
+  );
+}
+
 export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
-  const { give, refer, defer, restock, assignCounter } = useServiceActions();
+  const { give, refer, defer, restock, assignCounter, endChat } =
+    useServiceActions();
   const dragging = useUi((s) => s.drag?.productId ?? null);
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
@@ -115,6 +182,12 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   if (!playerOperates) {
     const progress = workerProgress(state, operator);
     const waiting = state.queue.length;
+    const npcOrder = operator.orderId ? state.orders[operator.orderId] : undefined;
+    const npcCustomer = npcOrder ? state.customers[npcOrder.customerId] : undefined;
+    const npcChat =
+      npcOrder?.state === "chatting" && npcCustomer?.chat
+        ? { orderId: npcOrder.id, chat: npcCustomer.chat }
+        : null;
     return (
       <section
         className="auto-counter npc-counter"
@@ -130,7 +203,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
             counterLabel={`quầy${counterLabel}`}
           />
         ) : (
-          <WorkerPortrait worker={operator} size={48} />
+          <StaffAvatar worker={operator} size={48} />
         )}
         <div className="auto-counter-info" aria-live="polite">
           <span className="npc-title">
@@ -158,12 +231,23 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
             />
           </span>
         </div>
-        <GameButton
-          size="small"
-          onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}
-        >
-          Tự đứng quầy
-        </GameButton>
+        {npcChat && !npcChat.chat.closing && waiting > 0 ? (
+          <GameButton
+            size="small"
+            tone="sun"
+            onClick={() => endChat(operator.id, npcChat.orderId)}
+            title={`Nhắc ${operator.name} xin phép khách quen để bán cho người đang chờ`}
+          >
+            Nhường khách sau
+          </GameButton>
+        ) : (
+          <GameButton
+            size="small"
+            onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}
+          >
+            Tự đứng quầy
+          </GameButton>
+        )}
         {staffOnDuty && swapOpen && (
           <CounterStaffPicker
             state={state}
@@ -178,6 +262,15 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   let status: React.ReactNode;
   if (!customer) {
     status = null;
+  } else if (order?.state === "chatting" && customer.chat) {
+    status = (
+      <ChatStatus
+        state={state}
+        chat={customer.chat}
+        waiting={state.queue.length}
+        onYield={() => endChat(order.workerId, order.id)}
+      />
+    );
   } else if (order && order.state !== "deciding" && order.state !== "ready") {
     const label =
       order.state === "retrieving" && order.productId
@@ -255,7 +348,9 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
               <p>
                 {order?.state === "referring"
                   ? REFERRAL_MESSAGE
-                  : `“${REQUESTS[customer.requestId]?.text ?? ""}”`}
+                  : order?.state === "chatting"
+                    ? `“${customerLine(state, customer, order, operator)?.text ?? ""}”`
+                    : `“${REQUESTS[customer.requestId]?.text ?? ""}”`}
               </p>
               <div className="tray-speech-status">{status}</div>
             </div>

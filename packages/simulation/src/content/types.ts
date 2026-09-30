@@ -98,7 +98,9 @@ export type ReasonCode =
   | "late-delivery"
   | "on-time-delivery"
   | "awkward-talk"
-  | "patient-advice";
+  | "patient-advice"
+  /** Khách quen được người bán nghe kể chuyện, đối đáp vui. */
+  | "warm-chat";
 
 /**
  * named: khách gọi đúng tên sản phẩm.

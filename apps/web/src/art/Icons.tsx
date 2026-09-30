@@ -183,6 +183,42 @@ export const StaffIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Người + dấu cộng nhỏ: tuyển người mới. */
+export const RecruitIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <circle cx={10} cy={8} r={4} fill="#FDE0C8" />
+    <path d="M3,21 C3,15 6.5,13 10,13 C13.5,13 17,15 17,21 Z" fill={ART.paper} />
+    <path d="M19,5 V11 M16,8 H22" stroke={ART.leaf} strokeWidth={2.4} />
+  </Svg>
+);
+
+/** Cúp: bảng xếp hạng khu vực. */
+export const TrophyIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M7,4 H17 V9 A5,5 0 0 1 7,9 Z" fill={ART.honey} />
+    <path d="M7,6 H4 Q4,11 8,11 M17,6 H20 Q20,11 16,11" />
+    <path d="M12,14 V17 M8,20 H16 L15,17 H9 Z" fill={ART.woodLight} />
+  </Svg>
+);
+
+/** Hộp quà: đồ sưu tầm. */
+export const GiftIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x={3.5} y={9} width={17} height={11} rx={1.5} fill="#F2B8C6" />
+    <rect x={2.5} y={6.5} width={19} height={4} rx={1} fill="#E8879F" />
+    <path d="M12,6.5 V20" stroke={ART.honey} strokeWidth={2.4} />
+    <path d="M12,6.5 C9,2 5.5,4 8,6.5 M12,6.5 C15,2 18.5,4 16,6.5" />
+  </Svg>
+);
+
+/** Hai bong bóng thoại: trò chuyện với khách quen. */
+export const ChatIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3,5 H14 V12 H8 L5,15 V12 H3 Z" fill={ART.paper} />
+    <path d="M10,14 V16 H16 L19,19 V16 H21 V9 H16" fill={ART.mint} />
+  </Svg>
+);
+
 export const BoxIcon = (p: IconProps) => (
   <Svg {...p}>
     <path d="M3,8 L12,4 L21,8 V17 L12,21 L3,17 Z" fill={ART.woodLight} />

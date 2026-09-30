@@ -34,6 +34,8 @@ export function workerStatus(
         return "Đang khuyên khách đi khám";
       case "deferring":
         return "Đang báo khách tạm hết hàng";
+      case "chatting":
+        return "Đang trò chuyện với khách quen";
     }
   }
   if (worker.restDay === state.day) return "Nghỉ hôm nay";
@@ -88,6 +90,15 @@ export function workerProgress(
     )
   ) {
     return Math.max(0, Math.min(1, 1 - order.timerMs / order.timerTotalMs));
+  }
+  const chat =
+    order?.state === "chatting" ? state.customers[order.customerId]?.chat : null;
+  if (chat) {
+    const elapsed = Math.min(
+      1,
+      (state.timeMs - chat.stepStartedAtMs) / chat.stepMs,
+    );
+    return Math.min(1, (chat.step + elapsed) / (chat.planned + 2));
   }
   return null;
 }

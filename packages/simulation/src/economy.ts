@@ -11,6 +11,12 @@ import {
 } from "./shift";
 import { storeRating } from "./reputation";
 import { dailyOperationsCase, evaluateOperations } from "./operations";
+import { addItem, rollCollectible } from "./collection";
+import { ITEM_SELL_PRICE } from "./content/collectibles";
+import { updateAwareness } from "./market";
+import { playerLevel } from "./progression";
+import { regionStanding } from "./ranking";
+import { nextFloat } from "./rng";
 import {
   SHIFT_IDS,
   type DayReport,
@@ -209,9 +215,63 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     operationsChange: state.operations.score - state.operations.scoreAtDayStart,
     incident: dailyOperationsCase(state)?.id ?? null,
     incidentChoice: state.operations.choice,
+    staff: Object.values(state.workers)
+      .filter((w) => w.shiftsToday.length > 0 || w.dayStat.sales > 0)
+      .map((w) => ({
+        workerId: w.id,
+        name: w.name,
+        role: w.role,
+        level: w.level,
+        shifts: w.shiftsToday.length,
+        ...w.dayStat,
+      })),
+    awareness: state.awareness,
+    awarenessChange: 0,
+    chats: diff("chats"),
+    chatsCompleted: diff("chatsCompleted"),
+    reward: { coins: 0, itemUid: null },
   };
   report.grade = dayGoals(report).filter((g) => g.met).length;
   return report;
+}
+
+/** Xu thưởng theo số mục tiêu ngày đạt được (tăng nhẹ theo cấp tiệm) và cơ hội rơi đồ sưu tầm. */
+export const DAY_REWARD_COINS = [0, 8, 18, 32] as const;
+export const DAY_REWARD_ITEM_CHANCE = [0, 0.12, 0.3, 0.55] as const;
+
+export function dayRewardCoins(grade: number, level: number): number {
+  return Math.round(
+    (DAY_REWARD_COINS[Math.max(0, Math.min(3, grade))] ?? 0) *
+      (1 + 0.2 * (level - 1)),
+  );
+}
+
+/** Trao thưởng mục tiêu ngày vào két (thu nhập ngoài bán hàng, không tính vào lãi ròng). */
+function grantDayReward(state: SimState, report: DayReport, emit: Emit): void {
+  const coins = dayRewardCoins(report.grade, playerLevel(state));
+  state.money += coins;
+  state.stats.rewardCoins += coins;
+  let itemUid: string | null = null;
+  let overflowCoins = 0;
+  const chance = DAY_REWARD_ITEM_CHANCE[Math.max(0, Math.min(3, report.grade))] ?? 0;
+  if (chance > 0 && nextFloat(state.rng.loot) < chance) {
+    const item = rollCollectible(state);
+    if (addItem(state, item)) itemUid = item.uid;
+    else {
+      // Bộ sưu tập đầy: món mới được bán luôn lấy xu.
+      overflowCoins = ITEM_SELL_PRICE[item.grade];
+      state.money += overflowCoins;
+      state.stats.itemSales += overflowCoins;
+    }
+  }
+  report.reward = { coins: coins + overflowCoins, itemUid };
+  emit({
+    type: "dayRewarded",
+    day: report.day,
+    coins,
+    itemUid,
+    overflowCoins,
+  });
 }
 
 /** Tiến độ ngày hiện tại, 0..1. */
@@ -258,6 +318,8 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
 
   const report = dayReport(state);
   evaluateOperations(state, report, emit);
+  grantDayReward(state, report, emit);
+  updateAwareness(state, report);
   state.dayReports.push(report);
   if (state.dayReports.length > state.config.keepDayReports) {
     state.dayReports.splice(
@@ -265,6 +327,8 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
       state.dayReports.length - state.config.keepDayReports,
     );
   }
+  // Hạng khu vực chốt theo 7 ngày gần nhất (tính cả hôm nay); dùng cho lượng khách ngày mai.
+  state.standing = regionStanding(state);
   emit({ type: "dayEnded", report });
 
   state.day += 1;

@@ -140,10 +140,11 @@ export interface RarityDef {
 }
 
 export const RARITIES: Record<Rarity, RarityDef> = {
+  // Tỉ lệ nới rộng để người chơi gặp ứng viên có kỹ năng thường xuyên hơn (trước: 70/22/7/1).
   common: {
     id: "common",
     name: "Thường",
-    weight: 70,
+    weight: 55,
     speed: [0.8, 1.05],
     knowledge: [0.45, 0.7],
     communication: [0.5, 0.75],
@@ -152,7 +153,7 @@ export const RARITIES: Record<Rarity, RarityDef> = {
   good: {
     id: "good",
     name: "Khá",
-    weight: 22,
+    weight: 30,
     speed: [0.9, 1.15],
     knowledge: [0.55, 0.8],
     communication: [0.6, 0.85],
@@ -161,7 +162,7 @@ export const RARITIES: Record<Rarity, RarityDef> = {
   rare: {
     id: "rare",
     name: "Hiếm",
-    weight: 7,
+    weight: 12,
     speed: [1, 1.2],
     knowledge: [0.65, 0.85],
     communication: [0.65, 0.9],
@@ -170,7 +171,7 @@ export const RARITIES: Record<Rarity, RarityDef> = {
   legendary: {
     id: "legendary",
     name: "Huyền thoại",
-    weight: 1,
+    weight: 3,
     speed: [1.1, 1.3],
     knowledge: [0.8, 0.95],
     communication: [0.8, 0.95],

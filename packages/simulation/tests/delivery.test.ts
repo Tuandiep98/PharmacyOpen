@@ -43,6 +43,8 @@ function customerAtCounter(
     outcome: null,
     leaveAtMs: 0,
     loyaltyId: null,
+    chat: null,
+    chatBonus: 0,
   };
   s.counters[0]!.customerId = "cx";
   return "cx";

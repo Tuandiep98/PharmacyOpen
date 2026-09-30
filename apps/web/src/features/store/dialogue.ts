@@ -5,6 +5,12 @@ import {
   REQUESTS,
   serviceTone,
   stableHash,
+  STORIES,
+  STORY_CUT,
+  STORY_PAUSE,
+  STORY_RESUME,
+  STORY_YIELD,
+  STORY_YIELD_STAFF,
   type ArchetypeId,
   type Customer,
   type CustomerOutcome,
@@ -594,9 +600,147 @@ export function customerLine(
       return say("referring", REFERRING);
     case "deferring":
       return say("deferring", DEFERRING);
+    case "chatting":
+      return customer.chat
+        ? {
+            ...storyCustomerLine(customer, voice, staffName),
+            regular: true,
+            mood: "happy",
+          }
+        : null;
     default:
       return null;
   }
+}
+
+// ---------- Trò chuyện với khách quen (chat.ts trong simulation giữ nhịp; đây chỉ chọn chữ) ----------
+
+type Chat = NonNullable<C["chat"]>;
+
+/** Thay ký hiệu trong câu chuyện: lời khách ({me}/{you}/{w}) và lời người bán ({a}/{s}). */
+function fillStory(
+  text: string,
+  voice: Voice,
+  staffName: string,
+): string {
+  return cap(
+    text
+      .replaceAll("{You}", cap(voice.you))
+      .replaceAll("{you}", voice.you)
+      .replaceAll("{me}", voice.me)
+      .replaceAll("{w}", staffName)
+      .replaceAll("{A}", cap(voice.honor))
+      .replaceAll("{a}", voice.honor)
+      .replaceAll("{S}", cap(voice.staffSelf))
+      .replaceAll("{s}", voice.staffSelf),
+  );
+}
+
+/** Tên chuyện đang kể (hiện ở khay phục vụ). */
+export function storyTitle(chat: DeepReadonly<Chat>): string {
+  return STORIES[chat.storyId]?.title ?? "Chuyện nhà";
+}
+
+/** Bước hiện tại của lượt trò chuyện: mở đầu, đoạn thứ mấy, hay câu kết. */
+export function chatBeat(
+  chat: DeepReadonly<Chat>,
+): "opening" | "beat" | "closing" {
+  return chat.step === 0
+    ? "opening"
+    : chat.step <= chat.planned && !chat.closing
+      ? "beat"
+      : "closing";
+}
+
+function storyCustomerLine(customer: C, voice: Voice, staffName: string): Line {
+  const chat = customer.chat!;
+  const story = STORIES[chat.storyId];
+  const key = `${customer.id}:${chat.storyId}:${chat.from}`;
+  let text: string;
+  const beat = chatBeat(chat);
+  if (!story) text = "Thôi {me} về nha.";
+  else if (beat === "opening")
+    text =
+      chat.from > 0 ? pick("story.resume", STORY_RESUME, key) : story.opening;
+  else if (beat === "beat")
+    text = story.beats[chat.from + chat.step - 1]?.say ?? story.ending;
+  else
+    text =
+      chat.closing === "complete"
+        ? story.ending
+        : chat.closing === "yield"
+          ? pick("story.yield", STORY_YIELD, key)
+          : chat.closing === "cut"
+            ? pick("story.cut", STORY_CUT, key)
+            : pick("story.pause", STORY_PAUSE, key);
+  return { text: fillStory(text, voice, staffName) };
+}
+
+/** Người bán đáp lại theo giọng: niềm nở/nói nhiều/bình thường dùng câu đáp của chuyện, cộc lốc thì cụt ngủn. */
+const STORY_OPENING_REPLY: Record<ServiceTone, string[]> = {
+  warm: ["Dạ {a} kể {s} nghe với!", "Ơ vậy hả {a}, rồi sao nữa ạ?"],
+  chatty: ["Trời, kể {s} nghe liền đi {a}!", "Nghe hấp dẫn ghê, kể tiếp đi {a}!"],
+  plain: ["Vậy hả {a}?", "Dạ, rồi sao ạ?"],
+  curt: ["Ừ.", "Rồi sao."],
+  awkward: ["À… dạ…", "Ơ… vậy ạ…"],
+};
+const STORY_CURT_REPLY = ["Ừ.", "Vậy à.", "Thế à.", "Ờ."];
+const STORY_AWKWARD_REPLY = ["À… vậy ạ…", "Dạ… hay ạ…", "Ơ… dạ…"];
+const STORY_GOODBYE: Record<ServiceTone, string[]> = {
+  warm: [
+    "Dạ {a} về cẩn thận, hôm nào kể tiếp {s} nghe nha!",
+    "Nghe {a} kể vui ghê, lần sau ghé nữa nha {a}!",
+  ],
+  chatty: ["Hẹn {a} bữa sau kể tiếp nha, {s} hóng lắm đó!"],
+  plain: ["Dạ, {a} về cẩn thận ạ.", "Chào {a} ạ."],
+  curt: ["Ừ, chào.", "Về đi."],
+  awkward: ["Dạ… {a} về… cẩn thận ạ…"],
+};
+const STORY_CUT_STAFF = [
+  "Dạ… {s} xin phép làm việc chút ạ.",
+  "{S} phải dọn kệ chút {a} nha.",
+];
+
+function storyStaffLine(
+  state: State,
+  worker: W,
+  customer: C,
+  voice: Voice,
+  tone: ServiceTone,
+): Line | null {
+  const chat = customer.chat;
+  const story = chat ? STORIES[chat.storyId] : undefined;
+  if (!chat || !story) return null;
+  const key = `${customer.id}${worker.id}:${chat.storyId}:${chat.step}`;
+  const elapsed = (state.timeMs - chat.stepStartedAtMs) / chat.stepMs;
+  const beat = chatBeat(chat);
+  let text: string | null = null;
+  if (beat === "opening") {
+    if (elapsed >= 0.5)
+      text = pick(`story.open.${tone}`, STORY_OPENING_REPLY[tone], key);
+  } else if (beat === "beat") {
+    if (elapsed >= 0.45) {
+      const reply = story.beats[chat.from + chat.step - 1]?.reply ?? "";
+      text =
+        tone === "curt"
+          ? pick("story.curt", STORY_CURT_REPLY, key)
+          : tone === "awkward"
+            ? pick("story.awkward", STORY_AWKWARD_REPLY, key)
+            : reply;
+    }
+  } else {
+    text =
+      chat.closing === "yield"
+        ? pick("story.yield.staff", STORY_YIELD_STAFF, key)
+        : chat.closing === "cut"
+          ? pick("story.cut.staff", STORY_CUT_STAFF, key)
+          : pick(`story.bye.${tone}`, STORY_GOODBYE[tone], key);
+  }
+  if (!text) return null;
+  return {
+    text: fillStory(text, voice, ""),
+    progress: Math.min(1, (chat.step + Math.min(1, elapsed)) / (chat.planned + 2)),
+  };
 }
 
 // ---------- Câu của người bán ----------
@@ -806,6 +950,8 @@ export function staffLine(
       return { text: fill("refer"), progress };
     case "deferring":
       return { text: fill("defer"), progress };
+    case "chatting":
+      return storyStaffLine(state, worker, customer, voice, tone);
     default:
       return null;
   }

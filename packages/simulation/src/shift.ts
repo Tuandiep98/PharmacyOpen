@@ -7,7 +7,8 @@ import {
   QUIT_FATIGUE,
   refreshRecruits,
 } from "./recruit";
-import { PLAYER_WORKER_ID } from "./state";
+import { emptyDayStat, PLAYER_WORKER_ID } from "./state";
+import { pruneEquipped } from "./collection";
 import {
   PREP_TASK_IDS,
   type DayPhase,
@@ -143,6 +144,7 @@ export function closeStaffDay(state: SimState, emit: Emit): void {
       state.money -= paid;
       state.stats.spentOnWages += paid;
       delete state.workers[worker.id];
+      pruneEquipped(state);
       emit({ type: "staffQuit", workerId: worker.id, name: worker.name });
       continue;
     }
@@ -257,6 +259,7 @@ export function startDay(state: SimState, emit: Emit): void {
   state.shiftMark = { shift: "morning", stats: { ...state.stats } };
   for (const worker of Object.values(state.workers)) {
     worker.shiftsToday = [];
+    worker.dayStat = emptyDayStat();
     checkIn(state, worker);
   }
   handOverCounters(state, emit, true);

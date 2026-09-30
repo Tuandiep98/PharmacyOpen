@@ -15,6 +15,7 @@ import {
   unlockedProducts,
 } from "./progression";
 import { isOpenDelivery } from "./delivery";
+import { yieldThreshold } from "./chat";
 
 /**
  * "Bộ não" của nhân viên NPC. Không có đường tắt nào: mọi hành động đều gửi đúng các Command
@@ -114,6 +115,22 @@ function handleOrder(state: SimState, worker: Worker, emit: Emit): void {
       { type: "checkout", workerId: worker.id, orderId: order.id },
       emit,
     );
+    return;
+  }
+  if (order.state === "chatting") {
+    // Đang trò chuyện với khách quen: có người chờ mà sắp hết kiên nhẫn thì xin phép nhường khách sau.
+    // Người nóng tính cắt sớm, người hoạt ngôn mải kể nên để khách chờ lâu hơn.
+    const limit = yieldThreshold(worker);
+    const waitingLow = state.queue.some((id) => {
+      const c = state.customers[id];
+      return !!c && c.patienceMs / c.patienceMaxMs < limit;
+    });
+    if (waitingLow && !state.customers[order.customerId]?.chat?.closing)
+      applyCommand(
+        state,
+        { type: "endChat", workerId: worker.id, orderId: order.id },
+        emit,
+      );
     return;
   }
   if (order.state !== "deciding") return;

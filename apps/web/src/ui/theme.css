@@ -2067,22 +2067,6 @@ button:disabled {
     background: #234331;
     color: #e6f2e2;
   }
-  .rarity-common {
-    background: #26332c;
-    color: #d5ddd4;
-  }
-  .rarity-good {
-    background: #204b33;
-    color: #a4e8b8;
-  }
-  .rarity-rare {
-    background: #1c3451;
-    color: #a9cdfb;
-  }
-  .rarity-legendary {
-    background: linear-gradient(90deg, #54401a, #6c4e17);
-    color: #ffe0a0;
-  }
   :root .tag,
   :root .reason.customer,
   :root .review-avatar.anonymous {

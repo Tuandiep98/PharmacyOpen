@@ -1,0 +1,77 @@
+/* Bộ chuyển mục con trong tab quản lý: dính trên đầu vùng cuộn để luôn đổi mục được. */
+.segmented {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  gap: 4px;
+  margin: 0 0 12px;
+  padding: 4px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  box-shadow: 0 4px 10px rgb(38 58 54 / 8%);
+}
+.segmented.inline {
+  position: static;
+  box-shadow: none;
+}
+.segmented-item {
+  position: relative;
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.segmented-item > span:not(.segmented-badge):not(.segmented-icon) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.segmented-item:hover {
+  background: var(--surface-tint);
+  color: var(--ink);
+}
+.segmented-item:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+.segmented-item.active {
+  background: var(--panel);
+  color: var(--primary);
+  box-shadow:
+    inset 0 -3px 0 var(--primary),
+    0 1px 0 rgb(38 58 54 / 12%);
+}
+.segmented-icon {
+  display: inline-grid;
+  place-items: center;
+}
+.segmented-icon svg {
+  width: 20px;
+  height: 20px;
+}
+.segmented-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--sun);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}

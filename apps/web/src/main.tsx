@@ -1,13 +1,22 @@
 import "@fontsource-variable/nunito";
 import "./styles.css";
 import "./ui/theme.css";
-import { Simulation } from "@pharmacy/simulation";
+import {
+  createInitialState,
+  pruneEquipped,
+  restoreCollection,
+  Simulation,
+} from "@pharmacy/simulation";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { unlockAudioOnFirstGesture } from "./audio/sfx";
 import { GameBridge } from "./game/GameBridge";
-import { loadLatest, writeSave } from "./game/persistence";
+import {
+  loadLatest,
+  readCollectionBackup,
+  writeSave,
+} from "./game/persistence";
 import { GameContext } from "./game/useGame";
 import { useUi } from "./ui/uiStore";
 
@@ -15,10 +24,22 @@ import { useUi } from "./ui/uiStore";
 const OFFLINE_DIALOG_MIN_MS = 60_000;
 
 const { save, hadCorrupt } = loadLatest();
-// Seed chọn ở tầng web (được phép dùng API trình duyệt); mô phỏng chỉ nhận con số này.
-const sim = save
-  ? Simulation.fromState(save.state)
-  : Simulation.create(crypto.getRandomValues(new Uint32Array(1))[0]!);
+
+/** Tiệm mới: mang theo bộ sưu tập của người chơi (nếu có) từ bản lưu riêng. */
+function newGame(): Simulation {
+  // Seed chọn ở tầng web (được phép dùng API trình duyệt); mô phỏng chỉ nhận con số này.
+  const state = createInitialState(
+    crypto.getRandomValues(new Uint32Array(1))[0]!,
+  );
+  const collection = restoreCollection(readCollectionBackup());
+  if (collection) {
+    state.collection = collection;
+    pruneEquipped(state);
+  }
+  return Simulation.fromState(state);
+}
+
+const sim = save ? Simulation.fromState(save.state) : newGame();
 const bridge = new GameBridge(sim, { save: writeSave });
 
 if (save && save.savedAtWallMs > 0) {

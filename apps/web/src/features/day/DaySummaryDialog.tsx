@@ -1,4 +1,5 @@
 import {
+  COLLECTIBLES,
   dayGoals,
   PREP_TASK_IDS,
   serviceRate,
@@ -7,13 +8,19 @@ import {
 } from "@pharmacy/simulation";
 import {
   CheckIcon,
+  CoinIcon,
   CrossMarkIcon,
   StarIcon,
+  TrophyIcon,
   WarningIcon,
 } from "../../art/Icons";
+import { CollectibleIcon } from "../../art/Collectibles";
 import { BRAND } from "../../brand";
+import { useBridge } from "../../game/useGame";
 import { formatRating } from "../../ui/Stars";
 import { GameButton } from "../../ui/primitives";
+import { useUi } from "../../ui/uiStore";
+import { ItemEffects } from "../collection/itemText";
 import {
   GOAL_LABEL,
   percent,
@@ -41,6 +48,7 @@ export function DaySummaryDialog({
       >
         <h1 id="day-summary-title">Kết thúc ngày {report.day}</h1>
         <DayGrade report={report} />
+        <DayRewardCard report={report} onClose={onClose} />
         <p className={report.operationsScore <= 25 ? "notice bad" : "notice"}>
           Đánh giá vận hành: <b>{report.operationsScore}/100</b> (
           {signedNumber(report.operationsChange)} điểm hôm nay).
@@ -96,6 +104,92 @@ export function DaySummaryDialog({
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Thưởng mục tiêu ngày (xu và có thể một món sưu tầm), độ nhận biết của tiệm và thứ hạng khu vực sau
+ * khi chốt ngày. Món mới có nút mở thẳng Bộ sưu tập để đặt/đeo.
+ */
+function DayRewardCard({
+  report,
+  onClose,
+}: {
+  report: DeepReadonly<DayReport>;
+  onClose: () => void;
+}) {
+  const bridge = useBridge();
+  const openView = useUi((s) => s.openView);
+  const state = bridge.state;
+  const item = report.reward.itemUid
+    ? state.collection.items.find((i) => i.uid === report.reward.itemUid)
+    : undefined;
+  const def = item ? COLLECTIBLES[item.defId] : undefined;
+  const standing = state.standing;
+  const ranks = [
+    ["Doanh thu", standing.revenue],
+    ["Đánh giá", standing.rating],
+    ["Nhân viên", standing.staff],
+  ] as const;
+  return (
+    <section className="day-reward" aria-label="Thưởng và tiến triển trong ngày">
+      <div className="day-reward-row">
+        <CoinIcon size={26} />
+        <span>
+          <b>
+            {report.reward.coins > 0
+              ? `Thưởng mục tiêu +${report.reward.coins} ${BRAND.currency}`
+              : "Chưa có thưởng mục tiêu"}
+          </b>
+          <span className="small muted">
+            {report.grade > 0
+              ? `${report.grade}/3 mục tiêu đạt · thưởng tăng theo cấp tiệm`
+              : "Đạt ít nhất 1 mục tiêu để nhận xu, 2–3 mục tiêu để có cơ hội nhận đồ sưu tầm"}
+          </span>
+        </span>
+      </div>
+      {item && def && (
+        <div className="day-reward-item">
+          <span className="item-card-icon">
+            <CollectibleIcon defId={item.defId} size={44} />
+            <span className={`grade-badge grade-${item.grade} size-sm`}>
+              {item.grade}
+            </span>
+          </span>
+          <span className="day-reward-item-text">
+            <b>Nhận được: {def.name}</b>
+            <ItemEffects item={item} />
+          </span>
+          <GameButton
+            size="small"
+            tone="secondary"
+            onClick={() => {
+              openView({ tab: "expansion", view: "collection" });
+              onClose();
+            }}
+          >
+            Đặt / đeo
+          </GameButton>
+        </div>
+      )}
+      <div className="day-reward-row">
+        <TrophyIcon size={26} />
+        <span>
+          <b>
+            Người biết tới tiệm: {Math.round(report.awareness)}/100{" "}
+            <span className={report.awarenessChange >= 0 ? "pos" : "neg"}>
+              ({signedNumber(Math.round(report.awarenessChange * 10) / 10)})
+            </span>
+          </b>
+          <span className="small muted">
+            Top khu vực:{" "}
+            {ranks
+              .map(([label, rank]) => `${label} ${rank ? `#${rank}` : "–"}`)
+              .join(" · ")}
+          </span>
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -216,6 +310,12 @@ function DayMetrics({ report }: { report: DeepReadonly<DayReport> }) {
           ] as [string, string],
         ]
       : []),
+    [
+      "Trò chuyện với khách quen",
+      report.chats > 0
+        ? `${report.chats} lượt · ${report.chatsCompleted} lượt kể trọn chuyện`
+        : "chưa có",
+    ],
     [
       "Giá trị trung bình đơn",
       report.sales > 0

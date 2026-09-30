@@ -31,6 +31,7 @@ export const REASONS: Record<
   "on-time-delivery": { label: "Giao đúng hẹn", scope: "praise" },
   "awkward-talk": { label: "Nói chuyện lúng túng", scope: "staff" },
   "patient-advice": { label: "Tư vấn kiên nhẫn", scope: "praise" },
+  "warm-chat": { label: "Trò chuyện vui vẻ", scope: "praise" },
 };
 
 /**
@@ -154,6 +155,12 @@ export const REVIEW_COMMENTS: Record<ReasonCode, string[]> = {
     "Được gợi ý đúng thứ mình cần, dễ hiểu lắm.",
     "Kể nhu cầu lan man mà nhân viên vẫn kiên nhẫn nghe.",
     "Được so sánh mấy loại rồi mới chọn, rất kỹ.",
+  ],
+  "warm-chat": [
+    "Ghé mua đồ mà được nghe kể chuyện, như về nhà vậy.",
+    "Nhân viên nhớ chuyện lần trước mình kể, dễ thương ghê.",
+    "Tiệm nhỏ mà ấm áp, lần nào ghé cũng vui.",
+    "Được hỏi han chuyện nhà, thấy thân thiết lắm.",
   ],
 };
 

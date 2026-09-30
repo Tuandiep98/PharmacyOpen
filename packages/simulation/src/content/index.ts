@@ -7,3 +7,6 @@ export * from "./upgrades";
 export * from "./reviews";
 export * from "./stations";
 export * from "./names";
+export * from "./collectibles";
+export * from "./stories";
+export * from "./region";
