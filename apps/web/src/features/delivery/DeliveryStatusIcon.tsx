@@ -38,23 +38,45 @@ export function DeliveryStatusIcon({
         </g>
       )}
       {status === "sent" && (
-        <path className="dstat-road" d="M4,29.5 H30" strokeDasharray="3 3" strokeWidth={1.4} />
+        <path
+          className="dstat-road"
+          d="M4,29.5 H30"
+          strokeDasharray="3 3"
+          strokeWidth={1.4}
+        />
       )}
       <g className="dstat-box">
         <path d="M7,12 L17,8 L27,12 V23 L17,27 L7,23 Z" fill="#F2C48D" />
         <path d="M7,12 L17,16 L27,12 M17,16 V27" />
-        <path d="M11.5,10.2 L21.5,14.2 V17.5" stroke={ART.wood} strokeWidth={2} />
+        <path
+          d="M11.5,10.2 L21.5,14.2 V17.5"
+          stroke={ART.wood}
+          strokeWidth={2}
+        />
         {status === "pack" && (
           <>
-            <path className="dstat-flap-l" d="M7,12 L17,8 L13,5 L3,9 Z" fill="#F7D6AC" />
-            <path className="dstat-flap-r" d="M27,12 L17,8 L21,5 L31,9 Z" fill="#F7D6AC" />
+            <path
+              className="dstat-flap-l"
+              d="M7,12 L17,8 L13,5 L3,9 Z"
+              fill="#F7D6AC"
+            />
+            <path
+              className="dstat-flap-r"
+              d="M27,12 L17,8 L21,5 L31,9 Z"
+              fill="#F7D6AC"
+            />
           </>
         )}
       </g>
       {status === "urgent" && (
         <g className="dstat-badge" transform="translate(24.5 7.5)">
           <circle r={6} fill="#FFE6A8" stroke="#B9791A" />
-          <path className="dstat-hand" d="M0,0 V-3.6" stroke="#8A5A10" strokeWidth={1.6} />
+          <path
+            className="dstat-hand"
+            d="M0,0 V-3.6"
+            stroke="#8A5A10"
+            strokeWidth={1.6}
+          />
           <path d="M0,0 H2.4" stroke="#8A5A10" strokeWidth={1.6} />
         </g>
       )}

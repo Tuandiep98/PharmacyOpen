@@ -55,8 +55,10 @@ export function shiftValueEstimate(
     (open / interval) * arrivalFactor(state) * demandMultiplier(state);
   const products = unlockedProducts(state);
   const margin =
-    products.reduce((sum, id) => sum + state.prices[id] - PRODUCTS[id].cost, 0) /
-    Math.max(1, products.length);
+    products.reduce(
+      (sum, id) => sum + state.prices[id] - PRODUCTS[id].cost,
+      0,
+    ) / Math.max(1, products.length);
   // Người giỏi phục vụ kịp và đúng nhiều khách hơn (khoảng 55% → 95% số khách).
   const served = 0.55 + 0.4 * Math.min(1, score / 100);
   return Math.round(customers * served * margin);
@@ -94,7 +96,11 @@ export function RecruitPanel({ state }: { state: DeepReadonly<SimState> }) {
         <div>
           <span className="small muted">Ca còn trống</span>
           <strong>
-            {full ? "Hết chỗ" : openShift ? SHIFT_LABEL[openShift] : "Các ca đã đủ"}
+            {full
+              ? "Hết chỗ"
+              : openShift
+                ? SHIFT_LABEL[openShift]
+                : "Các ca đã đủ"}
           </strong>
         </div>
         <div>
@@ -111,7 +117,9 @@ export function RecruitPanel({ state }: { state: DeepReadonly<SimState> }) {
             if (!r.ok) pushToast("bad", REJECT_TEXT[r.reason]);
           }}
         >
-          {rerolled ? "Đã làm mới hôm nay" : `Làm mới · ${cost} ${BRAND.currency}`}
+          {rerolled
+            ? "Đã làm mới hôm nay"
+            : `Làm mới · ${cost} ${BRAND.currency}`}
         </GameButton>
       </section>
       {full && (
@@ -136,11 +144,11 @@ export function RecruitPanel({ state }: { state: DeepReadonly<SimState> }) {
       <details className="grade-legend">
         <summary>Hạng S · A · B · C được chấm thế nào?</summary>
         <p className="small">
-          Điểm năng lực 0–100 gộp: hiểu hàng (34), tốc độ (32), giao tiếp (24) và
-          đặc điểm (±10); dược sĩ +3. S từ {GRADE_THRESHOLDS.S}, A từ{" "}
+          Điểm năng lực 0–100 gộp: hiểu hàng (34), tốc độ (32), giao tiếp (24)
+          và đặc điểm (±10); dược sĩ +3. S từ {GRADE_THRESHOLDS.S}, A từ{" "}
           {GRADE_THRESHOLDS.A}, B từ {GRADE_THRESHOLDS.B}. Lương tỉ lệ với năng
-          lực, có trần nên người giỏi không đắt quá tầm. Làm lâu lên tay nghề thì
-          hạng có thể tăng.
+          lực, có trần nên người giỏi không đắt quá tầm. Làm lâu lên tay nghề
+          thì hạng có thể tăng.
         </p>
         <ul className="grade-legend-list">
           {(["S", "A", "B", "C"] as const).map((g) => (

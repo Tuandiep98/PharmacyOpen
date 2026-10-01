@@ -618,11 +618,7 @@ export function customerLine(
 type Chat = NonNullable<C["chat"]>;
 
 /** Thay ký hiệu trong câu chuyện: lời khách ({me}/{you}/{w}) và lời người bán ({a}/{s}). */
-function fillStory(
-  text: string,
-  voice: Voice,
-  staffName: string,
-): string {
+function fillStory(text: string, voice: Voice, staffName: string): string {
   return cap(
     text
       .replaceAll("{You}", cap(voice.you))
@@ -679,7 +675,10 @@ function storyCustomerLine(customer: C, voice: Voice, staffName: string): Line {
 /** Người bán đáp lại theo giọng: niềm nở/nói nhiều/bình thường dùng câu đáp của chuyện, cộc lốc thì cụt ngủn. */
 const STORY_OPENING_REPLY: Record<ServiceTone, string[]> = {
   warm: ["Dạ {a} kể {s} nghe với!", "Ơ vậy hả {a}, rồi sao nữa ạ?"],
-  chatty: ["Trời, kể {s} nghe liền đi {a}!", "Nghe hấp dẫn ghê, kể tiếp đi {a}!"],
+  chatty: [
+    "Trời, kể {s} nghe liền đi {a}!",
+    "Nghe hấp dẫn ghê, kể tiếp đi {a}!",
+  ],
   plain: ["Vậy hả {a}?", "Dạ, rồi sao ạ?"],
   curt: ["Ừ.", "Rồi sao."],
   awkward: ["À… dạ…", "Ơ… vậy ạ…"],
@@ -739,7 +738,10 @@ function storyStaffLine(
   if (!text) return null;
   return {
     text: fillStory(text, voice, ""),
-    progress: Math.min(1, (chat.step + Math.min(1, elapsed)) / (chat.planned + 2)),
+    progress: Math.min(
+      1,
+      (chat.step + Math.min(1, elapsed)) / (chat.planned + 2),
+    ),
   };
 }
 

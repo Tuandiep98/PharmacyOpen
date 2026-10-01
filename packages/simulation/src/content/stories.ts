@@ -247,8 +247,7 @@ export const STORIES: Record<string, StoryDef> = {
         reply: "{A} khéo tay ghê!",
       },
     ],
-    ending:
-      "Mai tụi nó về quê ngoại, {me} lại ghé tiệm nói chuyện cho đỡ nhớ.",
+    ending: "Mai tụi nó về quê ngoại, {me} lại ghé tiệm nói chuyện cho đỡ nhớ.",
   },
   "senior-dance": {
     id: "senior-dance",

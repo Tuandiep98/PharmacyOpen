@@ -44,6 +44,7 @@ export {
   DAY_REWARD_COINS,
   DAY_REWARD_ITEM_CHANCE,
   dayRewardCoins,
+  operationsRewardChance,
   type DayGoalId,
 } from "./economy";
 export {
@@ -130,9 +131,27 @@ export {
 } from "./delivery";
 export * from "./progression";
 export {
+  BLIND_BAG_GRADE_ODDS,
+  BLIND_BAG_TRASH,
+  blindBagPrice,
+  type BlindBagResult,
+} from "./blindBag";
+export {
+  burglaryChance,
+  shoplifterSpawnChance,
+  SECURITY_CAMERA_UPGRADE,
+  SECURITY_LOCK_UPGRADE,
+  SECURITY_LOCK_USES,
+  LOAN_INTEREST,
+  THIEF_LINES,
+  staffShoplifterDetectionChance,
+  staffShoplifterCatchChance,
+} from "./security";
+export {
   OPERATIONS_CASES,
   dailyOperationsCase,
   dailyOperationsView,
+  operationsCaseChance,
   type OperationsCase,
   type OperationsChoice,
   type OperationsChoiceText,

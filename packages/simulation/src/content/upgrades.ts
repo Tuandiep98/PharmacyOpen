@@ -53,6 +53,23 @@ export const UPGRADES: Record<string, UpgradeDef> = {
     cost: 200,
     effects: [{ type: "spawnInterval", factor: 0.75 }],
   },
+  "security-camera": {
+    id: "security-camera",
+    name: "Camera quan sát",
+    benefit: "Lộ nhãn Trộm vặt trên khách đáng ngờ để có thể bấm đuổi đi.",
+    tradeoff:
+      "Tiệm càng nổi tiếng càng hút trộm; camera không ngăn cạy cửa ban đêm.",
+    cost: 320,
+    effects: [{ type: "security", device: "camera" }],
+  },
+  "security-lock": {
+    id: "security-lock",
+    name: "Khoá chống trộm",
+    benefit: "Giảm một nửa nguy cơ cạy cửa và chặn trọn ba lần đột nhập.",
+    tradeoff: "Mỗi lần chặn làm mòn một độ bền; hết ba lần phải mua lại.",
+    cost: 520,
+    effects: [{ type: "security", device: "lock" }],
+  },
 };
 
 // Giá tăng nhanh hơn lợi ích tuyến tính để các mốc cao là lựa chọn quản lý, không phải mua ngay khi đủ xu.

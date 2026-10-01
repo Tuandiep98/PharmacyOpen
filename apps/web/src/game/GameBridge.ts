@@ -164,8 +164,7 @@ export class GameBridge {
       ticks++;
     }
     if (ticks > 0) this.publish();
-    if (this.running && !document.hidden)
-      this.schedule();
+    if (this.running && !document.hidden) this.schedule();
   };
 
   private publish(): void {

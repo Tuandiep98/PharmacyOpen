@@ -121,6 +121,10 @@ export function createInitialState(
     itemSales: 0,
     chats: 0,
     chatsCompleted: 0,
+    shopliftedUnits: 0,
+    shopliftedCost: 0,
+    burglaryLoss: 0,
+    blindBagSpent: 0,
   };
 
   const ownConfig = cloneConfig(config);
@@ -141,10 +145,18 @@ export function createInitialState(
       delivery: createStream(seed, "delivery"),
       chat: createStream(seed, "chat"),
       loot: createStream(seed, "loot"),
+      risk: createStream(seed, "risk"),
     },
     awareness: ownConfig.awarenessStart,
     standing: { day: 0, revenue: null, rating: null, staff: null },
     collection: emptyCollection(),
+    finance: { loan: null, notice: null, bankrupt: false },
+    security: {
+      lockDurability: 0,
+      riskHeat: 0,
+      forceShoplifter: false,
+      forceBurglary: false,
+    },
     nextSpawnAtMs: ownConfig.firstSpawnMs,
     customers: {},
     queue: [],

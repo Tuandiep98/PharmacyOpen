@@ -44,8 +44,11 @@ export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
   const storeOpen = canRunUnattended(state);
   // Only summary counters must survive in-place mutations during catch-up.
   const before = {
-    day: state.day, money: state.money, config: { ...state.config },
-    stats: { ...state.stats }, reputation: { ...state.reputation },
+    day: state.day,
+    money: state.money,
+    config: { ...state.config },
+    stats: { ...state.stats },
+    reputation: { ...state.reputation },
   };
   const capMs = before.config.offlineCapMs;
   const targetMs = storeOpen ? Math.min(Math.max(0, awayMs), capMs) : 0;

@@ -60,10 +60,18 @@ import {
   OperationsDialog,
   TransferDialog,
 } from "./features/day/OperationsDialog";
+import { FinanceDialog } from "./features/day/FinanceDialog";
 import { clockLabel, phaseLabel, SHIFT_LABEL } from "./features/day/dayText";
 import { formatRating, starText } from "./ui/Stars";
 import { useBridge, useGameEvents, useGameState } from "./game/useGame";
-import { appSignal, hudSignal, navigationSignal, inventorySignal, expansionSignal, reviewsSignal } from "./game/signals";
+import {
+  appSignal,
+  hudSignal,
+  navigationSignal,
+  inventorySignal,
+  expansionSignal,
+  reviewsSignal,
+} from "./game/signals";
 import { useMediaQuery } from "./ui/useMediaQuery";
 import { useUi, type Tab } from "./ui/uiStore";
 import { useSettings } from "./ui/settings";
@@ -97,6 +105,11 @@ const StaffPanel = lazy(() =>
 const UpgradePanel = lazy(() =>
   import("./features/expansion/UpgradePanel").then((m) => ({
     default: m.UpgradePanel,
+  })),
+);
+const BlindBagPanel = lazy(() =>
+  import("./features/collection/BlindBagPanel").then((m) => ({
+    default: m.BlindBagPanel,
   })),
 );
 const ReviewsPanel = lazy(() =>
@@ -140,7 +153,7 @@ export function App() {
   const activeTab = useUi((s) => s.tab);
   const compact = useMediaQuery("(max-width: 819px), (max-height: 560px)");
   const sceneVisible = !compact || activeTab === "store";
-  const reducedEffects = useSettings(s => s.reducedEffects);
+  const reducedEffects = useSettings((s) => s.reducedEffects);
   const incidentPending =
     dailyOperationsCase(state) !== null && state.operations.choice === null;
   // Người chơi tự bấm tạm dừng từ menu tuỳ chọn.
@@ -155,8 +168,10 @@ export function App() {
     detailSelection?.kind === "product" ||
     detailSelection?.kind === "worker" ||
     incidentPending ||
-    state.operations.pendingTransfer;
-  const togglePause = useCallback(() => setUserPaused(v => !v), []);
+    state.operations.pendingTransfer ||
+    state.finance.notice !== null ||
+    state.finance.bankrupt;
+  const togglePause = useCallback(() => setUserPaused((v) => !v), []);
   const openInfo = useCallback(() => setShowInfo(true), []);
   const openBrand = useCallback(() => setShowBrand(true), []);
 
@@ -240,11 +255,18 @@ export function App() {
         !offline &&
         !showInfo &&
         !showBrand &&
+        state.finance.notice && <FinanceDialog state={state} />}
+      {!daySummary &&
+        !offline &&
+        !showInfo &&
+        !showBrand &&
+        !state.finance.notice &&
         state.operations.pendingTransfer && <TransferDialog state={state} />}
       {!daySummary &&
         !offline &&
         !showInfo &&
         !showBrand &&
+        !state.finance.notice &&
         !state.operations.pendingTransfer &&
         incidentPending && <OperationsDialog state={state} />}
       {showInfo && (
@@ -285,17 +307,29 @@ function useWageWarning(state: DeepReadonly<SimState>) {
   }, [phase, day, short]);
 }
 
-const LiveHud = memo(function LiveHud(props: Omit<Parameters<typeof Hud>[0], "state">) {
+const LiveHud = memo(function LiveHud(
+  props: Omit<Parameters<typeof Hud>[0], "state">,
+) {
   const state = useGameState(hudSignal);
   return <Hud {...props} state={state} />;
 });
-const LivePrimaryNav = memo(function LivePrimaryNav({ paused }: { paused: boolean }) {
+const LivePrimaryNav = memo(function LivePrimaryNav({
+  paused,
+}: {
+  paused: boolean;
+}) {
   const state = useGameState(navigationSignal);
   return <PrimaryNav state={state} paused={paused} />;
 });
 const LiveScene = memo(function LiveScene({ paused }: { paused: boolean }) {
   const state = useGameState();
-  return <><StoreScene state={state} paused={paused} /><OpeningPanel state={state} /><SceneShortcuts state={state} /></>;
+  return (
+    <>
+      <StoreScene state={state} paused={paused} />
+      <OpeningPanel state={state} />
+      <SceneShortcuts state={state} />
+    </>
+  );
 });
 const LiveServiceTray = memo(function LiveServiceTray() {
   return <ServiceTray state={useGameState()} />;
@@ -397,6 +431,46 @@ function useEventFeedback() {
             }
             break;
           }
+          case "shoplifted":
+            playSfx("warn");
+            pushToast(
+              "bad",
+              `Trộm vặt đã lấy ${e.units} món trên kệ (giá vốn ${e.cost} ${BRAND.currency}).`,
+            );
+            break;
+          case "shoplifterSpotted": {
+            const worker = bridge.state.workers[e.workerId];
+            playSfx("warn");
+            pushToast(
+              "warn",
+              `${worker?.name ?? "Nhân viên"} phát hiện Trộm vặt: “${e.line}”`,
+            );
+            break;
+          }
+          case "shoplifterConfronted":
+            playSfx("leave");
+            pushToast(
+              "good",
+              e.workerId
+                ? `${bridge.state.workers[e.workerId]?.name ?? "Nhân viên"} đã bắt Trộm vặt: “${e.staffLine}”`
+                : `Đã đuổi Trộm vặt: “${e.line}”`,
+            );
+            break;
+          case "burglaryBlocked":
+          case "overnightBurglary":
+          case "emergencyLoanTaken":
+          case "loanInterestCharged":
+          case "debtSeized":
+          case "bankruptcyDeclared":
+            playSfx("warn");
+            break;
+          case "loanRepaid":
+            playSfx("sale");
+            pushToast(
+              "good",
+              `Đã trả hết ${e.amount} ${BRAND.currency} tiền vay.`,
+            );
+            break;
           case "staffHired": {
             const worker = bridge.state.workers[e.workerId];
             playSfx("milestone");
@@ -902,12 +976,17 @@ function SoundToggle() {
 }
 
 function EffectsToggle() {
-  const enabled = useSettings(s => s.reducedEffects);
-  const toggle = useSettings(s => s.toggleReducedEffects);
+  const enabled = useSettings((s) => s.reducedEffects);
+  const toggle = useSettings((s) => s.toggleReducedEffects);
   return (
-    <GameButton surface="custom" className="hud-menu-item"
-      onClick={toggle} aria-pressed={enabled}>
-      <PauseIcon size={22} paused={enabled} /> Giảm hiệu ứng: {enabled ? "Bật" : "Tắt"}
+    <GameButton
+      surface="custom"
+      className="hud-menu-item"
+      onClick={toggle}
+      aria-pressed={enabled}
+    >
+      <PauseIcon size={22} paused={enabled} /> Giảm hiệu ứng:{" "}
+      {enabled ? "Bật" : "Tắt"}
     </GameButton>
   );
 }
@@ -918,12 +997,15 @@ const Inspector = memo(function Inspector() {
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
   const bridge = useBridge();
-  const signal = useCallback((s: DeepReadonly<SimState>) => {
-    if (tab === "inventory") return inventorySignal(s);
-    if (tab === "expansion") return expansionSignal(s);
-    if (tab === "reviews") return reviewsSignal(s);
-    return tab === "store" && !selection ? 0 : bridge.getVersion();
-  }, [tab, selection, bridge]);
+  const signal = useCallback(
+    (s: DeepReadonly<SimState>) => {
+      if (tab === "inventory") return inventorySignal(s);
+      if (tab === "expansion" || tab === "blindbag") return expansionSignal(s);
+      if (tab === "reviews") return reviewsSignal(s);
+      return tab === "store" && !selection ? 0 : bridge.getVersion();
+    },
+    [tab, selection, bridge],
+  );
   const state = useGameState(signal);
 
   if (
@@ -962,6 +1044,7 @@ const Inspector = memo(function Inspector() {
   if (tab === "inventory") content = <InventoryPanel state={state} />;
   else if (tab === "staff") content = <StaffPanel state={state} />;
   else if (tab === "expansion") content = <UpgradePanel state={state} />;
+  else if (tab === "blindbag") content = <BlindBagPanel state={state} />;
   else if (tab === "reviews") content = <ReviewsPanel state={state} />;
   else if (selection?.kind === "customer")
     content = <CustomerInfo state={state} customerId={selection.id} />;
@@ -993,7 +1076,9 @@ const Inspector = memo(function Inspector() {
                     ? "Kho hàng"
                     : tab === "reviews"
                       ? "Đánh giá"
-                      : "Mở rộng"}
+                      : tab === "blindbag"
+                        ? "Túi mù"
+                        : "Mở rộng"}
               </strong>
               <GameButton
                 surface="flat"
@@ -1144,4 +1229,3 @@ function DragGhost() {
 }
 
 const GhostArt = memo(ProductIcon);
-

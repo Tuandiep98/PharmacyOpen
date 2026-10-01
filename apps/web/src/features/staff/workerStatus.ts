@@ -92,7 +92,9 @@ export function workerProgress(
     return Math.max(0, Math.min(1, 1 - order.timerMs / order.timerTotalMs));
   }
   const chat =
-    order?.state === "chatting" ? state.customers[order.customerId]?.chat : null;
+    order?.state === "chatting"
+      ? state.customers[order.customerId]?.chat
+      : null;
   if (chat) {
     const elapsed = Math.min(
       1,

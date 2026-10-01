@@ -247,7 +247,7 @@
       "delta": {
         "TaskDuration": 0.049129000000000006,
         "ScriptDuration": 0.019398,
-        "LayoutDuration": 6.199999999999956E-05,
+        "LayoutDuration": 6.199999999999956e-5,
         "RecalcStyleDuration": 0.0015330000000000014,
         "LayoutCount": 1,
         "RecalcStyleCount": 16

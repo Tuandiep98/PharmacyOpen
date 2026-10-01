@@ -13,7 +13,12 @@ import { ProductIcon } from "../../art/Products";
 import { WorkerPortrait } from "../../art/WorkerFigure";
 import { BRAND } from "../../brand";
 import { useBridge } from "../../game/useGame";
-import { EmptyState, GameButton, IconButton, PanelHeading } from "../../ui/primitives";
+import {
+  EmptyState,
+  GameButton,
+  IconButton,
+  PanelHeading,
+} from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
 import { gameDuration } from "../day/dayText";
 import { REJECT_TEXT } from "../store/rejectText";
@@ -77,7 +82,9 @@ export function DeliveryChip({ state }: { state: State }) {
   return (
     <IconButton
       surface="raised"
-      tone={status === "late" ? "danger" : status === "urgent" ? "sun" : "neutral"}
+      tone={
+        status === "late" ? "danger" : status === "urgent" ? "sun" : "neutral"
+      }
       className={`scene-quick-btn delivery-chip ${status}`}
       onClick={() => select({ kind: "deliveries" })}
       aria-label={`Đơn ship: ${open.length} đơn cần gói hoặc gửi, ${state.deliveries.length - open.length} đơn đang giao. ${label}.`}

@@ -81,10 +81,19 @@ export const TRAITS: Record<TraitId, TraitDef> = {
     tone: "good",
     special: false,
   },
+  "sharp-eyed": {
+    id: "sharp-eyed",
+    name: "Tinh mắt",
+    description:
+      "Dễ nhận ra khách đáng ngờ và có khả năng tự bắt trộm rất cao.",
+    tone: "good",
+    special: true,
+  },
   lazy: {
     id: "lazy",
     name: "Siêu lười",
-    description: "Hay lướt điện thoại vài giây trước khi làm việc.",
+    description:
+      "Hay lướt điện thoại trước khi làm việc, dễ bỏ sót và tạo cơ hội cho trộm.",
     tone: "bad",
     special: false,
   },
@@ -105,7 +114,16 @@ export const TRAITS: Record<TraitId, TraitDef> = {
   late: {
     id: "late",
     name: "Hay đi trễ",
-    description: "Vào ca muộn vài giây, quầy có thể bỏ trống.",
+    description:
+      "Vào ca muộn vài giây, quầy có thể bỏ trống và trộm dễ ra tay hơn.",
+    tone: "bad",
+    special: false,
+  },
+  "early-leaver": {
+    id: "early-leaver",
+    name: "Hay về sớm",
+    description:
+      "Cuối ca thường thu dọn sớm, giảm khả năng để ý và tạo điểm mù cho trộm.",
     tone: "bad",
     special: false,
   },

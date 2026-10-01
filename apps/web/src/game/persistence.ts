@@ -72,10 +72,7 @@ export function loadLatest(): StartupLoad {
 export function writeSave(state: DeepReadonly<SimState>): boolean {
   if (!enabled) return false;
   try {
-    localStorage.setItem(
-      SLOTS[nextSlot]!,
-      serializeSave(state, Date.now()),
-    );
+    localStorage.setItem(SLOTS[nextSlot]!, serializeSave(state, Date.now()));
     nextSlot = (nextSlot + 1) % SLOTS.length;
     // Bộ sưu tập là của người chơi: giữ thêm một bản riêng, không bị xoá khi chơi lại từ đầu.
     localStorage.setItem(COLLECTION_KEY, JSON.stringify(state.collection));

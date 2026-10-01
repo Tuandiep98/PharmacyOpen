@@ -1563,8 +1563,10 @@ button:disabled {
 @media not ((min-width: 820px) and (orientation: landscape)) {
   @media (max-width: 1099px) {
     .scene-wrap {
-      flex: 1 1 0;
-      min-height: clamp(180px, 34dvh, 320px);
+      /* Giữ viewBox cảnh ổn định khi khay/bong bóng khách đổi chiều cao trên iPhone. */
+      flex: 0 0 clamp(180px, 40dvh, 320px);
+      height: clamp(180px, 40dvh, 320px);
+      min-height: 180px;
     }
     .side {
       flex: 0 1 auto;

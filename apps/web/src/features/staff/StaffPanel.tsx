@@ -14,6 +14,8 @@ import {
   SHIFT_IDS,
   shiftHeadcount,
   staffLimits,
+  staffShoplifterCatchChance,
+  staffShoplifterDetectionChance,
   stationHeadcount,
   stationOf,
   STATION_IDS,
@@ -34,12 +36,7 @@ import { useBridge } from "../../game/useGame";
 import { useUi } from "../../ui/uiStore";
 import { GameButton, PanelHeading } from "../../ui/primitives";
 import { Segmented } from "../../ui/Segmented";
-import {
-  CoinIcon,
-  RecruitIcon,
-  StaffIcon,
-  WarningIcon,
-} from "../../art/Icons";
+import { CoinIcon, RecruitIcon, StaffIcon, WarningIcon } from "../../art/Icons";
 import { REJECT_TEXT } from "../store/rejectText";
 import { useServiceActions } from "../store/useServiceActions";
 import { DismissButton } from "./DismissButton";
@@ -476,10 +473,15 @@ function TeamView({ state }: { state: DeepReadonly<SimState> }) {
                 <ReviewTraits state={state} worker={w} />
               </div>
             )}
-            {w.controller === "player" && <ReviewTraits state={state} worker={w} />}
+            {w.controller === "player" && (
+              <ReviewTraits state={state} worker={w} />
+            )}
             {w.controller === "ai" && <WorkerMeters state={state} worker={w} />}
             {w.resigning && <ResignNotice worker={w} />}
-            <dl className="team-card-metrics" aria-label={`Thống kê của ${w.name}`}>
+            <dl
+              className="team-card-metrics"
+              aria-label={`Thống kê của ${w.name}`}
+            >
               <div>
                 <dt>Đã bán</dt>
                 <dd>{w.served}</dd>
@@ -526,6 +528,14 @@ function TeamView({ state }: { state: DeepReadonly<SimState> }) {
                     </b>
                   </summary>
                   <TraitDetails traits={w.traits} />
+                  <span className="small">
+                    An ninh: phát hiện trộm{" "}
+                    <b>
+                      {Math.round(staffShoplifterDetectionChance(w) * 100)}%
+                    </b>
+                    {" · "}tự bắt tại quầy{" "}
+                    <b>{Math.round(staffShoplifterCatchChance(w) * 100)}%</b>
+                  </span>
                   <StatBars
                     speed={w.speed}
                     knowledge={w.knowledge}
@@ -750,7 +760,7 @@ function RestToggle({
       aria-pressed={tomorrow}
       onClick={toggle}
     >
-      {tomorrow ? "✓ Nghỉ phép mai · Huỷ" : "Cho nghỉ phép ngày mai"}
+      {tomorrow ? "✓ Nghỉ mai · Huỷ" : "Cho nghỉ ngày mai"}
     </GameButton>
   );
 }

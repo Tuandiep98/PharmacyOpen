@@ -183,8 +183,12 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   if (!playerOperates) {
     const progress = workerProgress(state, operator);
     const waiting = state.queue.length;
-    const npcOrder = operator.orderId ? state.orders[operator.orderId] : undefined;
-    const npcCustomer = npcOrder ? state.customers[npcOrder.customerId] : undefined;
+    const npcOrder = operator.orderId
+      ? state.orders[operator.orderId]
+      : undefined;
+    const npcCustomer = npcOrder
+      ? state.customers[npcOrder.customerId]
+      : undefined;
     const npcChat =
       npcOrder?.state === "chatting" && npcCustomer?.chat
         ? { orderId: npcOrder.id, chat: npcCustomer.chat }
@@ -288,10 +292,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
       >
         <span>{label}</span>
         <span className="progress-track">
-          <span
-            className="progress-fill"
-            style={progressStyle(value)}
-          />
+          <span className="progress-fill" style={progressStyle(value)} />
         </span>
       </div>
     );

@@ -66,7 +66,7 @@ Chạm vào kệ trong cảnh sẽ mở chi tiết sản phẩm. Chạm vào kh�
 | 7c   | Nhân viên: ứng viên ngẫu nhiên theo độ hiếm, đặc điểm, tay nghề, mệt mỏi/xin nghỉ, ngoại hình theo giới tính               | ✅                            |
 | 7d   | Ngày nghỉ và mệt do làm liên tục, phỏng vấn ứng viên, tuỳ chọn giữ quầy khi đổi ca                                         | ✅                            |
 | 7e   | Vị trí làm việc: quầy bán, kho & nhập hàng, hỗ trợ (danh mục mở rộng được)                                                 | ✅                            |
-| 7f   | Giữ chân người chơi: độ nhận biết tiệm, top khu vực, trò chuyện khách quen, hạng S/A/B/C, thưởng mục tiêu và đồ sưu tầm      | ✅                            |
+| 7f   | Giữ chân người chơi: độ nhận biết tiệm, top khu vực, trò chuyện khách quen, hạng S/A/B/C, thưởng mục tiêu và đồ sưu tầm    | ✅                            |
 | 7g   | Ghép đồ: 3 món trong túi đổi 1 món ngẫu nhiên, tỉ lệ công khai, bảo hiểm A+ sau 10 lần                                     | ✅                            |
 | 8    | Online (tuỳ chọn): bảng xếp hạng đã có khung `RankingProvider` + lệnh `setStanding`                                        |                               |
 
@@ -282,13 +282,14 @@ Logic ở `packages/simulation/src/delivery.ts`, lệnh ở `commands.ts`, NPC �
 - Cơ hội rơi **đồ sưu tầm** theo luồng RNG `loot`: 1 sao 12%, 2 sao 30%, 3 sao 55%. Bộ sưu tập đầy (30 món) thì món mới được bán ngay lấy xu.
 - 18 món, chia 4 loại chỗ đặt: nhân vật đeo, trên quầy, trên kệ, trang trí tiệm (tường, góc cửa). Mỗi món có độ hợp tiệm:
 
-  | Độ hợp tiệm | Mặt hại | Tỉ lệ hạng S/A/B/C |
-  | ----------- | ------- | ------------------ |
-  | Hợp nhà thuốc | không có | 14/30/40/16 |
-  | Dễ thương | không có | 6/22/44/28 |
-  | Lạc quẻ | luôn có (vd. đèn nháy kéo khách nhưng khách chê chói) | 2/8/30/60 |
+  | Độ hợp tiệm   | Mặt hại                                               | Tỉ lệ hạng S/A/B/C |
+  | ------------- | ----------------------------------------------------- | ------------------ |
+  | Hợp nhà thuốc | không có                                              | 14/30/40/16        |
+  | Dễ thương     | không có                                              | 6/22/44/28         |
+  | Lạc quẻ       | luôn có (vd. đèn nháy kéo khách nhưng khách chê chói) | 2/8/30/60          |
 
   Hạng nhân mặt lợi (S × 1,6 … C × 0,6) và giảm mặt hại (S × 0,4 … C × 1,4).
+
 - Chỉ số tác động (tổng có trần cả hai chiều):
   - khách quay lại (±12%);
   - khách chấm sao (±0,08 hài lòng);
@@ -313,6 +314,27 @@ Tham khảo cơ chế "trade-up"/fusion của các game gacha: đổi nhiều m�
 - Bảo hiểm: `collection.fusePity` đếm số lần ghép liên tiếp chưa ra A/S. Đủ 9 lần thì lần thứ 10 bỏ B/C khỏi bảng tỉ lệ (chắc chắn A trở lên). `restoreCollection` giữ lại số đếm này.
 - Ghép luôn lỗ xu so với bán lẻ 3 món (vd. BBB bán 36 xu, kỳ vọng ghép ≈ 17 xu), nên đây là kênh săn hạng cao hoặc đổi loại món, không phải kênh kiếm xu.
 - UI: tab con "Ghép đồ" trong Mở rộng. Có 3 ô chọn món, viên nang lắc khoảng 1,1 giây rồi mở ra món mới; người dùng bật giảm chuyển động thì mở ngay. Có bảng tỉ lệ theo hạng và loại, thanh bảo hiểm và lưới túi đồ. Thanh chọn mục ở chế độ gọn: mục đang chọn hiện chữ, các mục khác chỉ còn icon và số.
+
+## 3q. Trộm vặt, cạy cửa và cứu vốn (`security.ts`)
+
+- **Trộm vặt:** xác suất nền mỗi khách là 0,5% ở ngày 1–2, 3% ở ngày 3–5, 6% ở ngày 6–10, 10% ở ngày 11–20 và 15% từ ngày 21. Độ nhận biết tiệm cộng tuyến tính tối đa 12 điểm % khi đạt 100/100; mức nóng từ sự cố nhân tiếp xác suất, có trần 45%. Khách đáng ngờ đứng lâu hơn ở khâu thanh toán và có 25/45/60/75% khả năng ra tay theo giai đoạn. Khi ra tay có thể lấy ngẫu nhiên 1–4 món. Trước ngày 8 luôn chừa ít nhất 4 món trong tiệm; ngày 1–5 chỉ mất tối đa 1 món.
+- **Camera quan sát** giá 320 xu, mở ở cấp tiệm 3. Camera hiện nhãn `Trộm vặt`; bấm nhãn để đuổi khách trước khi họ lấy hàng, kèm một câu thoại vui. Đuổi đúng người không tính là phục vụ lỗi.
+- **Cạy cửa ban đêm:** nguy cơ nền là 0,6% ở ngày 1–5, 2% ở ngày 6–15 và 4,5% từ ngày 16. Độ nhận biết cộng tối đa 4 điểm % khi đạt 100/100; mức nóng từ sự cố nhân tiếp xác suất, có trần 30%. Khi xảy ra, kẻ trộm lấy 65–100% tiền mặt và tối đa 20% từng kệ, nên phần lớn hàng vẫn còn.
+- **Khoá chống trộm** giá 520 xu, mở ở cấp tiệm 4. Khoá giảm một nửa xác suất cạy cửa và chặn trọn vẹn 3 lần; mỗi lần chặn mất 1 độ bền, hết độ bền thì gỡ nâng cấp và phải mua lại.
+- Khi toàn bộ kệ hết hàng và tiền không đủ mua nổi một món đã mở, ngân hàng tự cấp khoản vay cứu vốn. Hạn trả sau 7 ngày; từ ngày kế tiếp quá hạn, dư nợ tăng 10% mỗi ngày. Sau thêm 7 ngày ngân hàng siết nợ: đủ tiền thì tự thu, không đủ thì phá sản và người chơi phải khởi động lại tiệm.
+- Hai sự cố an ninh mới là **Ảnh két tiền lên sóng** và **Cửa sau khép mà như chưa**. Xử lý kỹ giảm mức nóng 0,35–0,4; xử lý tạm giảm 0,08–0,1; chọn đường tắt tăng 0,55–0,65. Đường tắt ở sự cố ảnh két ép khách trộm kế tiếp xuất hiện và chắc chắn ra tay nếu không bị camera đuổi; đường tắt ở cửa sau ép cạy cửa ngay trong đêm. Camera/khoá vẫn chặn được hai lượt cưỡng bức này. Mức nóng tự tiến 0,08 về 0 mỗi đêm.
+
+## 3r. Túi mù (`blindBag.ts`)
+
+- Tab `Túi mù` dùng hoạt ảnh túi giấy riêng, không dùng lại hình viên nang ghép đồ. Giá nền tăng theo cấp tiệm, số ngày và tăng thêm 22% cho mỗi túi đã mua.
+- Kết quả công khai: 25% rác/không có gì (`Trúng gió`, `Cái nịt`, `Cọng thun`...), 27% hàng bán ngẫu nhiên (1–5 món, không vượt sức chứa kệ), 48% đồ sưu tầm. Nếu nhánh hàng bán gặp toàn bộ kệ đầy, lượt đó chuyển sang đồ sưu tầm.
+- Trong nhánh đồ sưu tầm, tỉ lệ S/A/B/C là 0,5/2,5/17/80%, thấp hơn rõ rệt so với ghép đồ. Túi đồ đầy thì món nhận được bán tự động theo giá hạng.
+
+## 3s. Sự cố quản lý vùng (`operations.ts`)
+
+- Sự cố không còn xuất hiện mỗi ngày. Xác suất theo ngày là 32% ở ngày 2–4, 46% ở ngày 5–9 và 58% từ ngày 10; seed và ngày quyết định tất định để replay/save cho cùng kết quả.
+- Chọn cách xử lý `careful` thêm 18% cơ hội nhận đồ sưu tầm khi chốt ngày; `practical` thêm 8%; `shortcut` không có thưởng thêm. Xác suất này kết hợp độc lập với thưởng mục tiêu ngày.
+- Ở iPhone dọc, vùng cảnh dùng chiều cao ổn định `clamp(180px, 40dvh, 320px)`, nên hội thoại và khay phục vụ thay đổi nội dung không làm quầy, nhân vật hoặc kệ co giãn/nhảy vị trí.
 
 ## 4. Nợ kỹ thuật và điều cần làm tiếp
 

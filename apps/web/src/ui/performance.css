@@ -30,7 +30,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app *, .app *::before, .app *::after {
+  .app *,
+  .app *::before,
+  .app *::after {
     animation: none !important;
     transition: none !important;
   }

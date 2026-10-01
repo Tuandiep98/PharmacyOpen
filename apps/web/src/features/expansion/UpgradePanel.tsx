@@ -1,8 +1,10 @@
 import {
+  burglaryChance,
   MILESTONES,
   UPGRADES,
   facilityLevel,
   playerLevel,
+  shoplifterSpawnChance,
   staffLimits,
   type DeepReadonly,
   type SimState,
@@ -35,7 +37,7 @@ const MAX_LEVEL: Record<string, number> = {
   signboard: 3,
 };
 
-/** Tab Mở rộng: nâng cấp tiệm, Bộ sưu tập đồ trang trí/đeo (thưởng mục tiêu ngày) và Ghép đồ. */
+/** Tab Mở rộng: nâng cấp tiệm, Bộ sưu tập đồ trang trí/đeo và Ghép đồ. */
 export function UpgradePanel({ state }: { state: DeepReadonly<SimState> }) {
   const view = useUi((s) => s.expansionView);
   const setView = useUi((s) => s.setExpansionView);
@@ -122,7 +124,63 @@ function UpgradesView({ state }: { state: DeepReadonly<SimState> }) {
           <FurnitureCard key={id} state={state} id={id} />
         ))}
       </ul>
+      <h3>An ninh</h3>
+      <p className="small muted">
+        Tiệm càng được biết tới càng hút kẻ gian. Nguy cơ hiện tại:{" "}
+        {Math.round(
+          shoplifterSpawnChance(
+            state.day,
+            state.awareness,
+            state.security.riskHeat,
+          ) * 100,
+        )}
+        % khách đáng ngờ ·{" "}
+        {Math.round(
+          burglaryChance(
+            state.day,
+            state.security.lockDurability > 0,
+            state.awareness,
+            state.security.riskHeat,
+          ) * 1000,
+        ) / 10}
+        % cạy cửa/đêm. Camera nhận diện trộm vặt; khoá chặn tối đa ba lần rồi
+        phải thay mới.
+      </p>
+      <ul className="inventory-list upgrade-list">
+        <SecurityCard state={state} id="security-camera" unlockLevel={3} />
+        <SecurityCard state={state} id="security-lock" unlockLevel={4} />
+      </ul>
     </div>
+  );
+}
+
+function SecurityCard({
+  state,
+  id,
+  unlockLevel,
+}: {
+  state: DeepReadonly<SimState>;
+  id: "security-camera" | "security-lock";
+  unlockLevel: number;
+}) {
+  const owned = state.upgrades.includes(id);
+  const durability = id === "security-lock" ? state.security.lockDurability : 0;
+  return (
+    <UpgradeItem
+      state={state}
+      art={<UpgradeArt id={id} level={owned ? 1 : 0} />}
+      name={UPGRADES[id]!.name}
+      current={owned ? 1 : 0}
+      max={1}
+      nextId={owned ? undefined : id}
+      unlockLevel={unlockLevel}
+    >
+      <span>
+        {id === "security-lock" && owned
+          ? `Độ bền còn ${durability}/3 lần chặn`
+          : UPGRADES[id]!.benefit}
+      </span>
+    </UpgradeItem>
   );
 }
 

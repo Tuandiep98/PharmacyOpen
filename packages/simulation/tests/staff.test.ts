@@ -306,7 +306,10 @@ describe("ngày nghỉ, phỏng vấn và giữ quầy", () => {
       for (let d = 0; d < days; d++) {
         s.nextSpawnAtMs = Number.MAX_SAFE_INTEGER;
         s.nextDeliveryAtMs = Number.MAX_SAFE_INTEGER;
-        runFor(sim, s.config.dayMs);
+        runFor(sim, s.config.dayMs, () => {
+          if (s.finance.notice && !s.finance.bankrupt)
+            sim.dispatch({ type: "acknowledgeFinanceNotice" });
+        });
       }
     };
     return { sim, s, run };

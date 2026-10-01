@@ -16,10 +16,17 @@ import {
 export function wornItemOf(
   state: DeepReadonly<SimState> | undefined,
   workerId: string,
-): { defId: string; grade: "S" | "A" | "B" | "C"; effects: readonly { stat: string; value: number }[] }[] {
+): {
+  defId: string;
+  grade: "S" | "A" | "B" | "C";
+  effects: readonly { stat: string; value: number }[];
+}[] {
   if (!state) return [];
   return Object.entries(state.collection.equipped)
-    .filter(([place]) => place === `wear:${workerId}` || place.startsWith(`wear:${workerId}:`))
+    .filter(
+      ([place]) =>
+        place === `wear:${workerId}` || place.startsWith(`wear:${workerId}:`),
+    )
     .map(([, uid]) => state.collection.items.find((item) => item.uid === uid))
     .filter((item): item is NonNullable<typeof item> => !!item)
     .map(({ defId, grade, effects }) => ({ defId, grade, effects }));
@@ -35,15 +42,26 @@ export function WorkerFigure({
   action?: CharacterAction;
   accessories?: ReturnType<typeof wornItemOf>;
 }) {
-  return <FigureVisual player={worker.id === PLAYER_WORKER_ID}
-    role={worker.role} expression={worker.expression} action={action}
-    lookKey={JSON.stringify(worker.look)}
-    accessoriesKey={JSON.stringify(accessories ?? [])} />;
+  return (
+    <FigureVisual
+      player={worker.id === PLAYER_WORKER_ID}
+      role={worker.role}
+      expression={worker.expression}
+      action={action}
+      lookKey={JSON.stringify(worker.look)}
+      accessoriesKey={JSON.stringify(accessories ?? [])}
+    />
+  );
 }
 
 // Memoize primitive visual snapshots, never the mutable simulation worker object.
 const FigureVisual = memo(function FigureVisual({
-  player, role, expression, action, lookKey, accessoriesKey,
+  player,
+  role,
+  expression,
+  action,
+  lookKey,
+  accessoriesKey,
 }: {
   player: boolean;
   role: Worker["role"];
@@ -54,7 +72,8 @@ const FigureVisual = memo(function FigureVisual({
 }) {
   const look = useMemo(() => JSON.parse(lookKey) as Worker["look"], [lookKey]);
   const accessories = useMemo(
-    () => JSON.parse(accessoriesKey) as ReturnType<typeof wornItemOf>, [accessoriesKey],
+    () => JSON.parse(accessoriesKey) as ReturnType<typeof wornItemOf>,
+    [accessoriesKey],
   );
   if (player)
     return (
@@ -92,7 +111,10 @@ export function WorkerPortrait({
         r={33}
         fill={worker.role === "pharmacist" ? "#DCEFE3" : "#F8ECD6"}
       />
-      <WorkerFigure worker={worker} accessories={wornItemOf(state, worker.id)} />
+      <WorkerFigure
+        worker={worker}
+        accessories={wornItemOf(state, worker.id)}
+      />
     </svg>
   );
 }

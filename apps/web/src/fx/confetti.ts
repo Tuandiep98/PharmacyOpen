@@ -29,7 +29,10 @@ export function burst(x = 0.5, y = 0.45): void {
 /** Pháo giấy bắn từ hai bên trong ~0,8 giây. */
 export function celebrate(): void {
   if (document.hidden || reducedMotion()) return;
-  for (const [x, angle] of [[0, 60], [1, 120]]) {
+  for (const [x, angle] of [
+    [0, 60],
+    [1, 120],
+  ]) {
     void fire({
       particleCount: 40,
       angle,

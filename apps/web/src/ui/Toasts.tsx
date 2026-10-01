@@ -39,7 +39,9 @@ export function splitToast(text: string): {
 } {
   let rest = text.trim();
   let coins: string | undefined;
-  const money = new RegExp(`[:,]?\\s*([+−-]\\s?\\d[\\d.,]*)\\s*${BRAND.currency}\\.?$`).exec(rest);
+  const money = new RegExp(
+    `[:,]?\\s*([+−-]\\s?\\d[\\d.,]*)\\s*${BRAND.currency}\\.?$`,
+  ).exec(rest);
   if (money) {
     coins = money[1]!.replace(/\s/g, "").replace("-", "−");
     rest = rest.slice(0, money.index).trim();
@@ -47,7 +49,11 @@ export function splitToast(text: string): {
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const dash = rest.indexOf(" — ");
   if (dash > 0)
-    return { title: rest.slice(0, dash), body: cap(rest.slice(dash + 3)), coins };
+    return {
+      title: rest.slice(0, dash),
+      body: cap(rest.slice(dash + 3)),
+      coins,
+    };
   const colon = rest.indexOf(": ");
   if (colon > 0 && colon <= 32 && colon < rest.length - 2)
     return { title: rest.slice(0, colon), body: rest.slice(colon + 2), coins };
@@ -95,7 +101,9 @@ function ToastItem({ toast }: { toast: Toast }) {
         {body && <span>{body}</span>}
       </span>
       {coins && (
-        <span className={`toast-card-coins ${coins.startsWith("−") ? "neg" : ""}`}>
+        <span
+          className={`toast-card-coins ${coins.startsWith("−") ? "neg" : ""}`}
+        >
           <CoinIcon size={16} />
           {coins}
         </span>

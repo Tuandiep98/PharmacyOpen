@@ -14,7 +14,7 @@ import type {
 } from "./content/types";
 import type { RngState } from "./rng";
 
-export const SAVE_VERSION = 17;
+export const SAVE_VERSION = 19;
 
 /** Hạng đánh giá dùng chung cho nhân viên và đồ sưu tầm: S > A > B > C. */
 export type Grade = "S" | "A" | "B" | "C";
@@ -78,11 +78,7 @@ export interface DayReward {
 export type CollectibleSlot = "wear" | "counter" | "shelf" | "store";
 /** Chỉ số đồ sưu tầm tác động; giá trị có thể âm (đồ không hợp tiệm). */
 export type CollectStat =
-  | "returnChance"
-  | "rating"
-  | "recruitLuck"
-  | "queuePatience"
-  | "awareness";
+  "returnChance" | "rating" | "recruitLuck" | "queuePatience" | "awareness";
 
 export interface CollectibleItem {
   uid: string;
@@ -102,6 +98,51 @@ export interface CollectionState {
   nextUid: number;
   /** Số lần ghép liên tiếp chưa ra hạng A/S (bảo hiểm ghép đồ); save cũ không có = 0. */
   fusePity?: number;
+  /** Số túi mù đã mua trong ván; giá tăng theo số này để hút bớt tiền late game. */
+  blindBagPurchases: number;
+}
+
+export interface ShopliftingState {
+  /** Camera làm lộ kẻ trộm ngay khi vào tiệm. */
+  revealed: boolean;
+  confronted: boolean;
+  /** Sự cố an ninh xử lý ẩu: nếu không bị camera đuổi thì chắc chắn ra tay. */
+  forcedAttempt: boolean;
+}
+
+export interface LoanState {
+  principal: number;
+  balance: number;
+  borrowedDay: number;
+  dueDay: number;
+  seizureDay: number;
+  lastInterestDay: number;
+}
+
+export type FinanceNotice =
+  | { kind: "emergency-loan"; amount: number }
+  | { kind: "lock-blocked"; durability: number; broken: boolean }
+  | { kind: "burglary"; cashLost: number; stockLost: number }
+  | { kind: "loan-due"; balance: number; daysLeft: number }
+  | { kind: "seized"; amount: number }
+  | { kind: "bankrupt"; balance: number };
+
+export interface FinanceState {
+  loan: LoanState | null;
+  /** Thông báo quan trọng không tự biến mất; UI xác nhận bằng command. */
+  notice: FinanceNotice | null;
+  bankrupt: boolean;
+}
+
+export interface SecurityState {
+  /** 0 = chưa có/đã hỏng; khoá mới có ba lần chặn. */
+  lockDurability: number;
+  /** Mức nóng tích luỹ từ cách xử lý sự cố; âm giảm nguy cơ, dương tăng nguy cơ. */
+  riskHeat: number;
+  /** Lựa chọn xử lý ẩu có thể ép lượt khách trộm kế tiếp xuất hiện. */
+  forceShoplifter: boolean;
+  /** Lựa chọn xử lý ẩu có thể ép một vụ cạy cửa trong đêm nay. */
+  forceBurglary: boolean;
 }
 
 /** Hạng của tiệm trong khu vực ở lần chốt ngày gần nhất (null = chưa đủ điều kiện lên bảng). */
@@ -122,7 +163,9 @@ export type OperationsCaseId =
   | "expiry"
   | "audit"
   | "queue"
-  | "delivery";
+  | "delivery"
+  | "cash-leak"
+  | "rear-door";
 export type OperationsChoiceId = "careful" | "practical" | "shortcut";
 
 export interface OperationsState {
@@ -303,6 +346,9 @@ export interface Customer {
   chat: ChatState | null;
   /** Mức hài lòng cộng/trừ từ lượt trò chuyện, tính khi khách rời tiệm. */
   chatBonus: number;
+  /** Null với khách thường; camera có thể đánh dấu để người chơi đuổi trước khi mất hàng. */
+  shoplifting?: ShopliftingState | null;
+  thiefLine?: string | null;
 }
 
 export type OrderState =
@@ -590,6 +636,10 @@ export interface SimStats {
   /** Lượt trò chuyện với khách quen: bắt đầu và kể trọn chuyện. */
   chats: number;
   chatsCompleted: number;
+  shopliftedUnits: number;
+  shopliftedCost: number;
+  burglaryLoss: number;
+  blindBagSpent: number;
 }
 
 /** Tổng kết một ca: chênh lệch sổ sách giữa lúc vào ca và lúc giao ca. */
@@ -677,6 +727,10 @@ export interface DayReport {
   chats: number;
   chatsCompleted: number;
   reward: DayReward;
+  shopliftedUnits: number;
+  shopliftedCost: number;
+  burglaryLoss: number;
+  blindBagSpent: number;
 }
 
 /** Mốc sổ sách lúc bắt đầu ngày, để tính tổng kết. */
@@ -704,6 +758,7 @@ export interface SimState {
     delivery: RngState;
     chat: RngState;
     loot: RngState;
+    risk: RngState;
   };
   /** Độ nhận biết 0–100: tiệm mới mở ít người biết nên khách mới ghé thưa, tăng dần theo ngày. */
   awareness: number;
@@ -711,6 +766,8 @@ export interface SimState {
   standing: RegionStanding;
   /** Đồ sưu tầm của người chơi (không thuộc chi nhánh, giữ qua điều chuyển). */
   collection: CollectionState;
+  finance: FinanceState;
+  security: SecurityState;
   nextSpawnAtMs: number;
   customers: Record<string, Customer>;
   queue: string[];

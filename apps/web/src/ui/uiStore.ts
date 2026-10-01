@@ -15,7 +15,8 @@ export type Selection =
   | { kind: "ledger" }
   | null;
 
-export type Tab = "store" | "staff" | "inventory" | "reviews" | "expansion";
+export type Tab =
+  "store" | "staff" | "inventory" | "reviews" | "expansion" | "blindbag";
 /** Mục con trong từng tab quản lý. */
 export type StaffView = "team" | "recruit";
 export type ReviewsView = "reviews" | "ranking";
@@ -57,7 +58,8 @@ interface UiState {
     view:
       | { tab: "staff"; view: StaffView }
       | { tab: "reviews"; view: ReviewsView }
-      | { tab: "expansion"; view: ExpansionView },
+      | { tab: "expansion"; view: ExpansionView }
+      | { tab: "blindbag" },
   ) => void;
   selection: Selection;
   activeCounterId: string;
@@ -110,7 +112,9 @@ export const useUi = create<UiState>((set) => ({
         ? { tab: "staff", staffView: target.view }
         : target.tab === "reviews"
           ? { tab: "reviews", reviewsView: target.view }
-          : { tab: "expansion", expansionView: target.view },
+          : target.tab === "expansion"
+            ? { tab: "expansion", expansionView: target.view }
+            : { tab: "blindbag" },
     ),
   selection: null,
   activeCounterId: "counter-1",
@@ -144,7 +148,10 @@ export const useUi = create<UiState>((set) => ({
       return { floaters: floaters.slice(-MAX_FLOATERS) };
     });
     // Cleanup must also work when the scene is unmounted or animation is disabled.
-    floaterTimers.set(id, setTimeout(() => useUi.getState().dropFloater(id), FLOATER_TTL_MS));
+    floaterTimers.set(
+      id,
+      setTimeout(() => useUi.getState().dropFloater(id), FLOATER_TTL_MS),
+    );
   },
   dropFloater: (id) => {
     clearFloaterTimer(id);

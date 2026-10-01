@@ -1,10 +1,32 @@
 import { describe, expect, it, vi } from "vitest";
-import { createInitialState, createSave, loadSave, serializeSave, Simulation, type DeepReadonly, type SimState } from "@pharmacy/simulation";
+import {
+  createInitialState,
+  createSave,
+  loadSave,
+  serializeSave,
+  Simulation,
+  type DeepReadonly,
+  type SimState,
+} from "@pharmacy/simulation";
 import { createSelection } from "../src/game/selection";
-import { expansionSignal, inventorySignal, navigationSignal, reviewsSignal } from "../src/game/signals";
+import {
+  expansionSignal,
+  inventorySignal,
+  navigationSignal,
+  reviewsSignal,
+} from "../src/game/signals";
 import { GameBridge } from "../src/game/GameBridge";
+import { useUi } from "../src/ui/uiStore";
 
 describe("immutable UI signals over mutable simulation", () => {
+  it("mở Túi mù thành panel riêng, không đổi mục con của Mở rộng", () => {
+    useUi.getState().setExpansionView("collection");
+    useUi.getState().openView({ tab: "blindbag" });
+    expect(useUi.getState().tab).toBe("blindbag");
+    expect(useUi.getState().expansionView).toBe("collection");
+    useUi.getState().setTab("store");
+  });
+
   it("caches reads per revision but observes in-place mutations on commands", () => {
     const state = createInitialState(42);
     state.money = 10_000;
@@ -15,7 +37,9 @@ describe("immutable UI signals over mutable simulation", () => {
     const money = read();
     read();
     expect(select).toHaveBeenCalledTimes(1);
-    expect(bridge.dispatch({ type: "hire", candidateId: "binh" }).ok).toBe(true);
+    expect(bridge.dispatch({ type: "hire", candidateId: "binh" }).ok).toBe(
+      true,
+    );
     expect(bridge.state).toBe(original);
     expect(read()).not.toBe(money);
     expect(select).toHaveBeenCalledTimes(2);
@@ -36,7 +60,9 @@ describe("immutable UI signals over mutable simulation", () => {
     s.stats.sales = 1000;
     s.day = 30;
     expect(inventorySignal(s)).not.toBe(stock);
-    s.stock.mask.batches = [{ qty: 1, expiresAtMs: s.timeMs + s.config.dayMs + 100 }];
+    s.stock.mask.batches = [
+      { qty: 1, expiresAtMs: s.timeMs + s.config.dayMs + 100 },
+    ];
     const expiry = inventorySignal(s);
     s.timeMs += 100;
     expect(inventorySignal(s)).not.toBe(expiry);

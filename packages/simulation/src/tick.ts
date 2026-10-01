@@ -18,10 +18,16 @@ import { anyChatting, chatTick } from "./chat";
 import { collectionBonus } from "./collection";
 import { arrivalFactor } from "./market";
 import type { Customer, Order, SimState } from "./types";
+import { rollShopliftingState, tryStaffSpotShoplifter } from "./security";
 
 /** Tiến mô phỏng đúng một bước cố định `config.tickMs`. */
 export function tick(state: SimState, emit: Emit): void {
-  if (state.operations.pendingTransfer) return;
+  if (
+    state.operations.pendingTransfer ||
+    state.finance.bankrupt ||
+    state.finance.notice
+  )
+    return;
   const dt = state.config.tickMs;
   state.tick += 1;
   state.timeMs += dt;
@@ -331,7 +337,9 @@ function maybeSpawn(state: SimState, emit: Emit): void {
     loyaltyId: returning?.id ?? null,
     chat: null,
     chatBonus: 0,
+    shoplifting: rollShopliftingState(state, !!returning),
   };
+  tryStaffSpotShoplifter(state, state.customers[id]!, emit);
   state.queue.push(id);
   state.stats.customersArrived += 1;
   if (returning) state.stats.returningCustomers += 1;

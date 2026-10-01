@@ -115,8 +115,7 @@ export function accuracyBonus(state: DeepReadonly<SimState>): number {
   const served = state.interactions.filter((i) => i.workerId !== null);
   if (served.length < 5) return 0;
   const clean =
-    served.filter((i) => i.wrongProductIds.length === 0).length /
-    served.length;
+    served.filter((i) => i.wrongProductIds.length === 0).length / served.length;
   return clean >= 0.95 ? 0.05 : clean >= 0.85 ? 0.02 : clean < 0.7 ? -0.04 : 0;
 }
 
@@ -167,7 +166,9 @@ export function awarenessBreakdown(
   const sum = Object.values(parts).reduce((a, b) => a + b, 0);
   return {
     ...parts,
-    total: Math.round(clamp(sum, AWARENESS_DAILY_MIN, AWARENESS_DAILY_MAX) * 10) / 10,
+    total:
+      Math.round(clamp(sum, AWARENESS_DAILY_MIN, AWARENESS_DAILY_MAX) * 10) /
+      10,
   };
 }
 
@@ -233,6 +234,7 @@ export function personaFor(
   return {
     age,
     female,
-    openness: Math.round(clamp(OPENNESS[archetypeId] + jitter, 0.05, 0.95) * 100) / 100,
+    openness:
+      Math.round(clamp(OPENNESS[archetypeId] + jitter, 0.05, 0.95) * 100) / 100,
   };
 }

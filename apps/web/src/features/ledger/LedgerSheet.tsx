@@ -12,7 +12,10 @@ import {
 import { ClockIcon, WarningIcon } from "../../art/Icons";
 import { BRAND } from "../../brand";
 import { formatRating } from "../../ui/Stars";
-import { EmptyState, PanelHeading } from "../../ui/primitives";
+import { EmptyState, GameButton, PanelHeading } from "../../ui/primitives";
+import { useBridge } from "../../game/useGame";
+import { useUi } from "../../ui/uiStore";
+import { REJECT_TEXT } from "../store/rejectText";
 import { DayGrade, ProfitTable } from "../day/DaySummaryDialog";
 import { percent, signed } from "../day/dayText";
 
@@ -29,6 +32,8 @@ export function formatDuration(ms: number): string {
 
 /** Sổ sách: hôm nay (tạm tính), lương, và tổng kết các ngày trước. */
 export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
+  const bridge = useBridge();
+  const pushToast = useUi((s) => s.pushToast);
   const today = dayReport(state);
   const wages = dailyWages(state);
   const dueToday = wagesDueToday(state);
@@ -56,6 +61,30 @@ export function LedgerSheet({ state }: { state: DeepReadonly<SimState> }) {
         Còn khoảng {secondsLeft} giây tới cuối ngày. Cuối ngày tiệm trả lương
         theo số ca đã làm và chốt sổ.
       </p>
+      {state.finance.loan && (
+        <div className="notice warn" role="status">
+          <WarningIcon size={18} />
+          <span>
+            Vay ngân hàng:{" "}
+            <b>
+              {state.finance.loan.balance} {BRAND.currency}
+            </b>{" "}
+            · hạn ngày {state.finance.loan.dueDay} · siết nợ ngày{" "}
+            {state.finance.loan.seizureDay}.
+          </span>
+          <GameButton
+            tone="secondary"
+            size="small"
+            disabled={state.money < state.finance.loan.balance}
+            onClick={() => {
+              const result = bridge.dispatch({ type: "repayLoan" });
+              if (!result.ok) pushToast("bad", REJECT_TEXT[result.reason]);
+            }}
+          >
+            Trả hết
+          </GameButton>
+        </div>
+      )}
       <p className={state.operations.score <= 25 ? "notice bad" : "notice"}>
         <span>
           Điểm quản lý vùng: <b>{state.operations.score}/100</b> · Đã điều

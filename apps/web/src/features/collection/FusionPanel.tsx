@@ -45,7 +45,6 @@ type Phase =
   | { kind: "rolling"; uid: string; pityBefore: number }
   | { kind: "result"; uid: string; pity: boolean };
 
-
 /**
  * Ghép đồ kiểu máy gacha: chọn 3 món trong túi, xem tỉ lệ ra hạng/loại công khai, bấm ghép thì viên nang
  * lắc rồi mở ra món mới. Có bảo hiểm: ghép liên tiếp chưa ra A/S đủ số lần thì lần kế chắc chắn A trở lên.

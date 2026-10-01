@@ -184,13 +184,16 @@ export function rivalSubmissions(
       3,
       Math.min(
         4.85,
-        3.35 + 1.1 * (shop.tier - 0.55) + 0.35 * (unit(`${key}:st${week}`) - 0.5),
+        3.35 +
+          1.1 * (shop.tier - 0.55) +
+          0.35 * (unit(`${key}:st${week}`) - 0.5),
       ),
     );
     const staff: StaffSubmission[] = [0, 1].map((i) => {
       const female = unit(`${key}:g${i}`) < 0.5;
       const names = GIVEN_NAMES[female ? "female" : "male"];
-      const given = names.given[stableHash(`${key}:n${i}`) % names.given.length]!;
+      const given =
+        names.given[stableHash(`${key}:n${i}`) % names.given.length]!;
       const family =
         FAMILY_NAMES[stableHash(`${key}:f${i}`) % FAMILY_NAMES.length]!;
       const skill = Math.max(

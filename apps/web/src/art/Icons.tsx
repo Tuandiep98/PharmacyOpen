@@ -120,6 +120,18 @@ export const BagIcon = (p: IconProps) => (
   </Svg>
 );
 
+/** Túi giấy bí ẩn có dấu hỏi: tách biệt rõ với hộp quà Bộ sưu tập. */
+export const BlindBagIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path
+      d="M5,7.5 L7,5.5 L9,7.5 L12,5.5 L15,7.5 L17,5.5 L19,7.5 L18,21 H6 Z"
+      fill="#F2B8C6"
+    />
+    <path d="M9.5,11 A2.7,2.7 0 1 1 13,13.6 C12,14.3 12,15 12,16" />
+    <circle cx={12} cy={18.6} r={1} fill="currentColor" stroke="none" />
+  </Svg>
+);
+
 export const InfoIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx={12} cy={12} r={9} />
@@ -187,7 +199,10 @@ export const StaffIcon = (p: IconProps) => (
 export const RecruitIcon = (p: IconProps) => (
   <Svg {...p}>
     <circle cx={10} cy={8} r={4} fill="#FDE0C8" />
-    <path d="M3,21 C3,15 6.5,13 10,13 C13.5,13 17,15 17,21 Z" fill={ART.paper} />
+    <path
+      d="M3,21 C3,15 6.5,13 10,13 C13.5,13 17,15 17,21 Z"
+      fill={ART.paper}
+    />
     <path d="M19,5 V11 M16,8 H22" stroke={ART.leaf} strokeWidth={2.4} />
   </Svg>
 );
@@ -285,7 +300,11 @@ export const CapsuleIcon = (p: IconProps) => (
       <path d="M5,12 A7,7 0 0 1 19,12 Z" fill="#F2B8C6" />
       <path d="M5,12 A7,7 0 0 0 19,12 Z" fill={ART.paper} />
       <path d="M4.2,12 H19.8" strokeWidth={2.2} />
-      <path d="M9.5,15 L12,13.8 L14.5,15 L12,17.2 Z" fill={ART.honey} strokeWidth={1.2} />
+      <path
+        d="M9.5,15 L12,13.8 L14.5,15 L12,17.2 Z"
+        fill={ART.honey}
+        strokeWidth={1.2}
+      />
       <path d="M8.4,8.2 Q9.6,6.9 11.2,6.6" stroke="#FFFFFF" strokeWidth={1.4} />
     </g>
   </Svg>

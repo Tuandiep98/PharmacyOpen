@@ -136,6 +136,7 @@ const CONFLICTS: [TraitId, TraitId][] = [
   ["meticulous", "reckless"],
   ["silver-tongue", "hot-tempered"],
   ["ironman", "lazy"],
+  ["sharp-eyed", "lazy"],
 ];
 
 const BLURBS: Record<StaffRole, string[]> = {
@@ -246,7 +247,12 @@ export interface StaffScore {
   /** 0–100: tổng năng lực làm việc (tốc độ, hiểu hàng, giao tiếp, kỹ năng/đặc điểm đã biết). */
   score: number;
   grade: Grade;
-  parts: { speed: number; knowledge: number; communication: number; traits: number };
+  parts: {
+    speed: number;
+    knowledge: number;
+    communication: number;
+    traits: number;
+  };
 }
 
 /**
@@ -290,7 +296,10 @@ export function staffScore(worker: Gradable): StaffScore {
     communication: 24 * Math.max(0, Math.min(1, worker.communication)),
     traits: Math.max(
       -10,
-      Math.min(10, worker.traits.reduce((sum, id) => sum + traitValue(id), 0) / 2),
+      Math.min(
+        10,
+        worker.traits.reduce((sum, id) => sum + traitValue(id), 0) / 2,
+      ),
     ),
   };
   const score = Math.round(
@@ -317,7 +326,10 @@ export function staffScore(worker: Gradable): StaffScore {
 export function wageFor(score: number, role: StaffRole): number {
   return Math.max(
     4,
-    Math.min(14, Math.round(1.5 + score * 0.115) + (role === "pharmacist" ? 1 : 0)),
+    Math.min(
+      14,
+      Math.round(1.5 + score * 0.115) + (role === "pharmacist" ? 1 : 0),
+    ),
   );
 }
 
@@ -338,11 +350,7 @@ export function rarityWeights(luck: number): [Rarity, number][] {
   ]);
 }
 
-export function generateRecruit(
-  r: RngState,
-  id: string,
-  luck = 0,
-): Recruit {
+export function generateRecruit(r: RngState, id: string, luck = 0): Recruit {
   const rarity = pickWeighted(r, rarityWeights(luck));
   const def = RARITIES[rarity];
   const gender: Gender = nextFloat(r) < 0.5 ? "female" : "male";

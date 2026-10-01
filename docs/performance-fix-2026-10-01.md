@@ -21,13 +21,13 @@ Dữ liệu: [performance-fix-browser-results.json](performance-fix-browser-resu
 
 Đại lượng là **thời gian renderer main thread bận / thời gian đo**, không phải phần trăm CPU hệ thống, điện năng hay nhiệt độ điện thoại.
 
-| Luồng | Trước | Sau | Giảm tương đối |
-|---|---:|---:|---:|
-| Người chơi ở cửa hàng | 12,35% | 2,28% | 81,5% |
-| Người chơi, lượt lặp | 12,06% | 2,19% | 81,8% |
-| NPC ở cửa hàng | 8,91% | 1,28% | 85,6% |
-| NPC, tab Kho mobile | 6,56% | 0,61% | 90,7% |
-| Tạm dừng | 0,87% | 0,02% | 97,7% |
+| Luồng                 |  Trước |   Sau | Giảm tương đối |
+| --------------------- | -----: | ----: | -------------: |
+| Người chơi ở cửa hàng | 12,35% | 2,28% |          81,5% |
+| Người chơi, lượt lặp  | 12,06% | 2,19% |          81,8% |
+| NPC ở cửa hàng        |  8,91% | 1,28% |          85,6% |
+| NPC, tab Kho mobile   |  6,56% | 0,61% |          90,7% |
+| Tạm dừng              |  0,87% | 0,02% |          97,7% |
 
 Trong cửa hàng người chơi, 8 giây vẫn có 80 React commits phục vụ timer, nhưng rAF đăng ký từ 453 về 0, geometry reads từ 480 về 0; layout count từ 452 về 80, layout duration từ khoảng 92 ms về 1,8 ms. NPC chỉ đo geometry khi nội dung thay đổi. Tab Kho có 10 commits thay vì 86, không còn scene SVG hay geometry reads; NPC vẫn chạy. Pause không có running animation, React commit hoặc layout trong cửa sổ đo.
 

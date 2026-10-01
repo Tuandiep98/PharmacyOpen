@@ -60,7 +60,6 @@ export function DandelionLogo({
   );
 }
 
-
 /** Avatar thương hiệu người chơi đã chọn, vẽ trong SVG (cắt tròn) để bảng hiệu khớp với thanh trên cùng. */
 export function BrandAvatarArt({
   avatar,

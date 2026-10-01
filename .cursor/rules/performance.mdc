@@ -1,0 +1,16 @@
+---
+description: Performance guardrails for simulation, rendering, effects and browser lifecycle
+alwaysApply: true
+---
+
+# Performance guardrails
+
+- Read `docs/performance-fix-2026-10-01.md` and `docs/performance-review-2026-10-01.md` before changing the game loop, app-level subscriptions, scene rendering, animation, drag handling, persistence or offline catch-up.
+- Preserve the 100 ms fixed-step simulation, command ordering, RNG results and offline behavior unless the task explicitly changes game rules. Do not lower the tick rate or move work to a worker without profiling evidence and equivalence tests.
+- Do not subscribe broad UI trees or management panels to every simulation tick. The simulation snapshot is mutated in place: narrow updates with cached primitive/revision signals, and never rely on `memo`, object identity or `useMemo(..., [state])` alone to observe state changes.
+- Hidden work must stop. Unmount or unsubscribe scenes covered by compact management tabs; cancel timers, `requestAnimationFrame`, observers and audio on pause, hide or unmount. Keep NPC simulation running when only the scene is hidden, and restore the latest snapshot without replaying expired effects.
+- Do not add perpetual decorative animation, filters or size/layout transitions to the live scene. Prefer bounded interaction/state effects and fixed-size fills animated with `transform`/`opacity`; respect both `prefers-reduced-motion` and the in-game **Giảm hiệu ứng** setting. Pause offscreen decoration.
+- Coalesce pointer movement to at most one visual update per animation frame. Any transient UI collection such as floaters, particles or toasts must have independent TTL cleanup and a hard item cap, including when animation is disabled or its component is unmounted.
+- Avoid recurring geometry reads and allocations on timer-only updates. Measure DOM only when position, content or size changes; do not deep-clone or stringify the full simulation snapshot on every frame/tick. Autosave only changed revisions while retaining lifecycle saves and retry-on-failure behavior.
+- For performance-sensitive changes, add regression coverage for scheduler/lifecycle cleanup, selector invalidation over mutable state, and effect limits as applicable. Run `npm run check` and `npm run build`. When the browser hot path changes, rerun `node tools/performance-browser-audit.mjs` on a production build with the same fixture and compare against the stored baseline.
+- Report renderer/main-thread metrics as such. Do not claim reduced system CPU, battery drain or device temperature without comparable long-session measurements on real target devices; treat Android/iPhone thermal validation as a release check.

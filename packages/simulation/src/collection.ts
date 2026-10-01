@@ -32,7 +32,13 @@ import {
  */
 
 export function emptyCollection(): CollectionState {
-  return { items: [], equipped: {}, nextUid: 1, fusePity: 0 };
+  return {
+    items: [],
+    equipped: {},
+    nextUid: 1,
+    fusePity: 0,
+    blindBagPurchases: 0,
+  };
 }
 
 const round3 = (v: number) => Math.round(v * 1000) / 1000;
@@ -62,7 +68,10 @@ export function rollCollectible(state: SimState): CollectibleItem {
   const rng = state.rng.loot;
   const fit = pickWeighted(
     rng,
-    Object.entries(FIT_DROP_WEIGHTS) as [keyof typeof FIT_DROP_WEIGHTS, number][],
+    Object.entries(FIT_DROP_WEIGHTS) as [
+      keyof typeof FIT_DROP_WEIGHTS,
+      number,
+    ][],
   );
   const pool = COLLECTIBLE_IDS.filter((id) => COLLECTIBLES[id]!.fit === fit);
   const defId = pickWeighted(
@@ -91,9 +100,13 @@ export function placesFor(
   const def = COLLECTIBLES[item.defId];
   if (!def) return [];
   if (def.slot === "wear")
-    return Object.keys(state.workers).map((id) => `wear:${id}:${def.wearLayer}`);
-  return (def.places ?? SLOT_PLACES[def.slot]).filter((place) =>
-    !place.startsWith("counter-") || state.counters.some((c) => c.id === place),
+    return Object.keys(state.workers).map(
+      (id) => `wear:${id}:${def.wearLayer}`,
+    );
+  return (def.places ?? SLOT_PLACES[def.slot]).filter(
+    (place) =>
+      !place.startsWith("counter-") ||
+      state.counters.some((c) => c.id === place),
   );
 }
 
@@ -101,7 +114,12 @@ const wearerId = (place: string) => place.split(":")[1];
 
 /** Chỗ đeo đời cũ không ghi lớp; suy ra từ món để tránh hai kính cùng nằm trên mắt. */
 function sameWearLayer(state: SimState, a: string, b: string): boolean {
-  if (!a.startsWith("wear:") || !b.startsWith("wear:") || wearerId(a) !== wearerId(b)) return false;
+  if (
+    !a.startsWith("wear:") ||
+    !b.startsWith("wear:") ||
+    wearerId(a) !== wearerId(b)
+  )
+    return false;
   const layer = (place: string) => {
     const explicit = place.split(":")[2];
     if (explicit) return explicit;
@@ -130,7 +148,10 @@ export function itemAt(
 }
 
 /** Người đeo có đang ở tiệm (trong ca, đã tới) không; người chơi luôn có mặt. */
-function wearerActive(state: DeepReadonly<SimState>, workerId: string): boolean {
+function wearerActive(
+  state: DeepReadonly<SimState>,
+  workerId: string,
+): boolean {
   const worker = state.workers[workerId];
   if (!worker) return false;
   if (worker.controller === "player") return true;
@@ -165,11 +186,7 @@ export function collectionBonus(
 }
 
 export type CollectionResult =
-  | "ok"
-  | "unknown-item"
-  | "invalid-place"
-  | "not-equipped"
-  | "fuse-needs-three";
+  "ok" | "unknown-item" | "invalid-place" | "not-equipped" | "fuse-needs-three";
 
 /** Đặt/đeo một món; chỗ đó đang có món khác thì món cũ được cất lại. */
 export function equipItem(
@@ -180,13 +197,17 @@ export function equipItem(
 ): CollectionResult {
   const item = state.collection.items.find((i) => i.uid === uid);
   if (!item) return "unknown-item";
-  const legacyWear = place === `wear:${wearerId(place)}` &&
-    COLLECTIBLES[item.defId]?.slot === "wear" && !!state.workers[wearerId(place)!];
-  if (!placesFor(state, item).includes(place) && !legacyWear) return "invalid-place";
+  const legacyWear =
+    place === `wear:${wearerId(place)}` &&
+    COLLECTIBLES[item.defId]?.slot === "wear" &&
+    !!state.workers[wearerId(place)!];
+  if (!placesFor(state, item).includes(place) && !legacyWear)
+    return "invalid-place";
   const previous = placeOf(state, uid);
   if (previous) delete state.collection.equipped[previous];
   for (const oldPlace of Object.keys(state.collection.equipped))
-    if (sameWearLayer(state, oldPlace, place)) delete state.collection.equipped[oldPlace];
+    if (sameWearLayer(state, oldPlace, place))
+      delete state.collection.equipped[oldPlace];
   state.collection.equipped[place] = uid;
   emit({ type: "itemEquipped", uid, place });
   return "ok";
@@ -233,7 +254,10 @@ export function fuseGradeOdds(
   let lo = FUSE_GRADE_ANCHORS[0]!;
   let hi = FUSE_GRADE_ANCHORS[FUSE_GRADE_ANCHORS.length - 1]!;
   for (let i = 0; i < FUSE_GRADE_ANCHORS.length - 1; i++) {
-    if (score >= FUSE_GRADE_ANCHORS[i]![0] && score <= FUSE_GRADE_ANCHORS[i + 1]![0]) {
+    if (
+      score >= FUSE_GRADE_ANCHORS[i]![0] &&
+      score <= FUSE_GRADE_ANCHORS[i + 1]![0]
+    ) {
       lo = FUSE_GRADE_ANCHORS[i]!;
       hi = FUSE_GRADE_ANCHORS[i + 1]!;
       break;
@@ -286,15 +310,24 @@ export function fuseItems(
   const used = inputs as CollectibleItem[];
   const pity = fusePityReady(state);
   const rng = state.rng.loot;
-  const gradeOdds = fuseGradeOdds(used.map((i) => i.grade), pity);
-  const grade = pickWeighted(rng, GRADES.map((g) => [g, gradeOdds[g]] as const));
+  const gradeOdds = fuseGradeOdds(
+    used.map((i) => i.grade),
+    pity,
+  );
+  const grade = pickWeighted(
+    rng,
+    GRADES.map((g) => [g, gradeOdds[g]] as const),
+  );
   const slotOdds = fuseSlotOdds(used.map((i) => i.defId));
   const slot = pickWeighted(
     rng,
     Object.entries(slotOdds) as [CollectibleSlot, number][],
   );
   const pool = COLLECTIBLE_IDS.filter((id) => COLLECTIBLES[id]!.slot === slot);
-  const defId = pickWeighted(rng, pool.map((id) => [id, 1] as const));
+  const defId = pickWeighted(
+    rng,
+    pool.map((id) => [id, 1] as const),
+  );
   for (const item of used) {
     const place = placeOf(state, item.uid);
     if (place) delete state.collection.equipped[place];
@@ -351,22 +384,31 @@ export function restoreCollection(raw: unknown): CollectionState | null {
   if (typeof pity === "number" && Number.isFinite(pity))
     restored.fusePity = Math.max(0, Math.min(FUSE_PITY - 1, Math.floor(pity)));
   restored.nextUid =
-    1 +
-    Math.max(0, ...restored.items.map((i) => Number(i.uid.slice(2)) || 0));
+    1 + Math.max(0, ...restored.items.map((i) => Number(i.uid.slice(2)) || 0));
   const equipped =
     typeof source.equipped === "object" && source.equipped !== null
       ? (source.equipped as Record<string, unknown>)
       : {};
   for (const [place, uid] of Object.entries(equipped)) {
-    if (typeof uid !== "string" || Object.values(restored.equipped).includes(uid)) continue;
+    if (
+      typeof uid !== "string" ||
+      Object.values(restored.equipped).includes(uid)
+    )
+      continue;
     const item = restored.items.find((i) => i.uid === uid);
     if (!item) continue;
     const def = COLLECTIBLES[item.defId]!;
     if (def.slot === "wear") {
-      if (place !== "wear:w-player" && place !== `wear:w-player:${def.wearLayer}`) continue;
-      const layerTaken = Object.entries(restored.equipped).some(([oldPlace, oldUid]) =>
-        oldPlace.startsWith("wear:w-player") &&
-        COLLECTIBLES[restored.items.find((i) => i.uid === oldUid)!.defId]?.wearLayer === def.wearLayer,
+      if (
+        place !== "wear:w-player" &&
+        place !== `wear:w-player:${def.wearLayer}`
+      )
+        continue;
+      const layerTaken = Object.entries(restored.equipped).some(
+        ([oldPlace, oldUid]) =>
+          oldPlace.startsWith("wear:w-player") &&
+          COLLECTIBLES[restored.items.find((i) => i.uid === oldUid)!.defId]
+            ?.wearLayer === def.wearLayer,
       );
       if (layerTaken) continue;
     } else if (!(def.places ?? SLOT_PLACES[def.slot]).includes(place)) continue;

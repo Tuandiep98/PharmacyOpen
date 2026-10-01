@@ -22,6 +22,12 @@ export interface OperationsChoice {
   cost: number;
   score: number;
   demandFactor: number;
+  /** Điều chỉnh mức chú ý của trộm; tích luỹ và tự nguội dần mỗi đêm. */
+  securityRisk?: number;
+  /** Xử lý quá ẩu có thể đảm bảo một khách trộm xuất hiện và ra tay. */
+  forceShoplifter?: boolean;
+  /** Xử lý quá ẩu có thể đảm bảo có người cạy cửa trong đêm. */
+  forceBurglary?: boolean;
 }
 
 export interface OperationsCase {
@@ -712,14 +718,173 @@ export const OPERATIONS_CASES: readonly OperationsCase[] = [
       },
     ],
   },
+  {
+    id: "cash-leak",
+    title: "Ảnh két tiền lên sóng",
+    story:
+      "Một tấm ảnh hậu trường vô tình lộ két tiền và góc camera. Bài đăng đang được chia sẻ trong nhóm khu phố.",
+    choices: [
+      {
+        id: "careful",
+        variants: [
+          {
+            title: "Gỡ ảnh, đổi góc camera",
+            hint: "Tốn công rà lại an ninh, dấu vết được xoá sạch",
+          },
+          {
+            title: "Thuê bảo vệ rà soát",
+            hint: "Mất phí nhưng người lạ hết cơ hội dò tiệm",
+          },
+          {
+            title: "Đổi quy trình đóng két",
+            hint: "Chậm một chút, tiền và góc khuất kín hơn",
+          },
+        ],
+        cost: 28,
+        score: 8,
+        demandFactor: 1,
+        securityRisk: -0.35,
+      },
+      {
+        id: "practical",
+        variants: [
+          {
+            title: "Xoá bài và nhắc nhân viên",
+            hint: "Dập được phần lớn tò mò, vẫn còn vài lượt chia sẻ",
+          },
+          {
+            title: "Che két, giữ camera cũ",
+            hint: "Đỡ lộ tiền nhưng góc quan sát chưa thật kín",
+          },
+          {
+            title: "Đăng bài đính chính",
+            hint: "Hạ nhiệt phần nào, người đã xem vẫn nhớ",
+          },
+        ],
+        cost: 5,
+        score: 3,
+        demandFactor: 1,
+        securityRisk: -0.1,
+      },
+      {
+        id: "shortcut",
+        variants: [
+          {
+            title: "Giữ bài để câu tương tác",
+            hint: "Tiệm nổi như cồn; chắc chắn có người tới dò hàng",
+          },
+          {
+            title: "Đùa rằng két còn đầy hơn",
+            hint: "Bình luận bùng nổ và kẻ gian cũng chú ý",
+          },
+          {
+            title: "Kệ đi, đang được quảng cáo miễn phí",
+            hint: "Khách tăng, một vị khách trộm chắc chắn ghé",
+          },
+        ],
+        cost: 0,
+        score: -14,
+        demandFactor: 1.25,
+        securityRisk: 0.55,
+        forceShoplifter: true,
+      },
+    ],
+  },
+  {
+    id: "rear-door",
+    title: "Cửa sau khép mà như chưa",
+    story:
+      "Shipper báo chốt cửa sau bị kẹt. Dấu giày lạ xuất hiện gần kho, còn thợ sửa chỉ rảnh vào ngày mai.",
+    choices: [
+      {
+        id: "careful",
+        variants: [
+          {
+            title: "Thay chốt và thuê người trực",
+            hint: "Khá tốn nhưng đêm nay không còn góc hở",
+          },
+          {
+            title: "Gọi thợ khẩn cấp",
+            hint: "Phí ngoài giờ cao, cửa được khoá chắc",
+          },
+          {
+            title: "Niêm phong cửa sau",
+            hint: "Giao hàng bất tiện hơn, an ninh lại kín",
+          },
+        ],
+        cost: 36,
+        score: 9,
+        demandFactor: 0.95,
+        securityRisk: -0.4,
+      },
+      {
+        id: "practical",
+        variants: [
+          {
+            title: "Chèn cửa và kiểm tra mỗi ca",
+            hint: "Tạm ổn, vẫn nên cảnh giác ban đêm",
+          },
+          {
+            title: "Chuyển hàng xa cửa sau",
+            hint: "Giảm thiệt hại nếu có người thử cửa",
+          },
+          {
+            title: "Mượn xích khoá tạm",
+            hint: "Không đẹp nhưng bớt một góc yếu",
+          },
+        ],
+        cost: 8,
+        score: 3,
+        demandFactor: 0.95,
+        securityRisk: -0.08,
+      },
+      {
+        id: "shortcut",
+        variants: [
+          {
+            title: "Khép hờ cho shipper tiện vào",
+            hint: "Nhanh ban ngày; đêm nay chắc chắn có người thử cửa",
+          },
+          {
+            title: "Dán tờ 'đừng mở' là đủ",
+            hint: "Tiết kiệm được cái chốt, đổi lại một vụ cạy cửa chắc chắn",
+          },
+          {
+            title: "Để mai sửa, tối nay hên xui",
+            hint: "Không phải hên xui nữa: đêm nay sẽ có trộm",
+          },
+        ],
+        cost: 0,
+        score: -16,
+        demandFactor: 1.15,
+        securityRisk: 0.65,
+        forceBurglary: true,
+      },
+    ],
+  },
 ];
 
 export function dailyOperationsCase(
   state: DeepReadonly<SimState>,
 ): OperationsCase | null {
-  return state.day < 2
-    ? null
-    : OPERATIONS_CASES[(state.seed + state.day - 2) % OPERATIONS_CASES.length]!;
+  if (state.day < 2) return null;
+  const chance = operationsCaseChance(state.day);
+  const roll =
+    mix(state.seed * 2654435761 + state.day * 104729) / 0x1_0000_0000;
+  if (roll >= chance) return null;
+  return OPERATIONS_CASES[
+    (((state.seed + state.day - 2) % OPERATIONS_CASES.length) +
+      OPERATIONS_CASES.length) %
+      OPERATIONS_CASES.length
+  ]!;
+}
+
+/** Hồ sơ vùng là biến cố ngẫu nhiên, tăng nhẹ theo tiến độ nhưng không xuất hiện mỗi ngày. */
+export function operationsCaseChance(day: number): number {
+  if (day < 2) return 0;
+  if (day <= 4) return 0.32;
+  if (day <= 9) return 0.46;
+  return 0.58;
 }
 
 export interface OperationsChoiceView extends OperationsChoiceText {
@@ -783,6 +948,15 @@ export function chooseOperations(
       : 0) + choice.cost;
   state.operations.choice = id;
   state.operations.demandFactor = choice.demandFactor;
+  const currentRisk = Number.isFinite(state.security.riskHeat)
+    ? state.security.riskHeat
+    : 0;
+  state.security.riskHeat = Math.max(
+    -0.6,
+    Math.min(2, currentRisk + (choice.securityRisk ?? 0)),
+  );
+  if (choice.forceShoplifter) state.security.forceShoplifter = true;
+  if (choice.forceBurglary) state.security.forceBurglary = true;
   state.operations.score = Math.max(
     0,
     Math.min(100, state.operations.score + choice.score),

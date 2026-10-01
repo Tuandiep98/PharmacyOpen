@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createInitialState, runOffline, Simulation } from "@pharmacy/simulation";
+import {
+  createInitialState,
+  runOffline,
+  Simulation,
+} from "@pharmacy/simulation";
 import { GameBridge } from "../src/game/GameBridge";
 
 let page: EventTarget & { hidden: boolean };
@@ -7,9 +11,23 @@ let browser: EventTarget;
 let bridge: GameBridge | undefined;
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval", "Date", "performance"] });
+  vi.useFakeTimers({
+    toFake: [
+      "setTimeout",
+      "clearTimeout",
+      "setInterval",
+      "clearInterval",
+      "Date",
+      "performance",
+    ],
+  });
   page = Object.assign(new EventTarget(), { hidden: false });
-  browser = Object.assign(new EventTarget(), { setTimeout, clearTimeout, setInterval, clearInterval });
+  browser = Object.assign(new EventTarget(), {
+    setTimeout,
+    clearTimeout,
+    setInterval,
+    clearInterval,
+  });
   vi.stubGlobal("document", page);
   vi.stubGlobal("window", browser);
 });
@@ -25,8 +43,20 @@ function staffed() {
   state.money = 10_000;
   const sim = new Simulation(state);
   expect(sim.dispatch({ type: "hire", candidateId: "binh" }).ok).toBe(true);
-  expect(sim.dispatch({ type: "setShifts", workerId: "w-binh", shifts: ["morning", "afternoon"] }).ok).toBe(true);
-  expect(sim.dispatch({ type: "assignCounter", workerId: "w-binh", counterId: "counter-1" }).ok).toBe(true);
+  expect(
+    sim.dispatch({
+      type: "setShifts",
+      workerId: "w-binh",
+      shifts: ["morning", "afternoon"],
+    }).ok,
+  ).toBe(true);
+  expect(
+    sim.dispatch({
+      type: "assignCounter",
+      workerId: "w-binh",
+      counterId: "counter-1",
+    }).ok,
+  ).toBe(true);
   sim.drainEvents();
   return sim;
 }
@@ -39,7 +69,7 @@ describe("fixed-step browser scheduler", () => {
     const publish = vi.fn();
     const events: unknown[] = [];
     bridge.subscribe(publish);
-    bridge.onEvents(batch => events.push(...batch));
+    bridge.onEvents((batch) => events.push(...batch));
     bridge.setRunning(true);
     vi.advanceTimersByTime(20_000);
     for (let i = 0; i < 200; i++) expected.step();

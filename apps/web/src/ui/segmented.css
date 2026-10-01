@@ -92,7 +92,10 @@
 .segmented-measure .segmented-item {
   flex: 0 0 auto;
 }
-.segmented.compact .segmented-measure .segmented-item:not(.active) .segmented-label {
+.segmented.compact
+  .segmented-measure
+  .segmented-item:not(.active)
+  .segmented-label {
   display: inline;
 }
 /* Gọn: mục không chọn co lại còn icon + badge, mục đang chọn giãn ra hiện chữ. */

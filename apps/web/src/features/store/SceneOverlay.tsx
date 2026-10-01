@@ -11,7 +11,8 @@ import type { Line } from "./dialogue";
  * Không nhận chạm (pointer-events: none) nên không cản kéo thả hay chạm vào nhân vật.
  */
 
-export type TagKind = "player" | "pharmacist" | "clerk" | "regular" | "loyal";
+export type TagKind =
+  "player" | "pharmacist" | "clerk" | "regular" | "loyal" | "thief";
 
 export type BubbleSpec =
   | (Line & {
@@ -32,7 +33,12 @@ export interface OverlayItem {
   /** Đỉnh đầu nhân vật, đơn vị pixel trong khung cảnh. */
   at: { x: number; y: number };
   /** `grade`: hạng nhân viên, tô viền và chữ bảng tên. */
-  tag?: { text: string; kind: TagKind; grade?: Grade };
+  tag?: {
+    text: string;
+    kind: TagKind;
+    grade?: Grade;
+    action?: { label: string; onClick: () => void };
+  };
   bubble?: BubbleSpec;
   fading?: boolean;
 }
@@ -228,17 +234,17 @@ function sceneObstacles(overlay: HTMLElement | null): Rect[] {
   const scene = overlay?.parentElement;
   if (!overlay || !scene) return [];
   const origin = overlay.getBoundingClientRect();
-  return [...scene.querySelectorAll<HTMLElement>(".delivery-chip, .scene-quick-btn")].map(
-    (el) => {
-      const r = el.getBoundingClientRect();
-      return {
-        l: r.left - origin.left - 4,
-        t: r.top - origin.top - 4,
-        r: r.right - origin.left + 4,
-        b: r.bottom - origin.top + 4,
-      };
-    },
-  );
+  return [
+    ...scene.querySelectorAll<HTMLElement>(".delivery-chip, .scene-quick-btn"),
+  ].map((el) => {
+    const r = el.getBoundingClientRect();
+    return {
+      l: r.left - origin.left - 4,
+      t: r.top - origin.top - 4,
+      r: r.right - origin.left + 4,
+      b: r.bottom - origin.top + 4,
+    };
+  });
 }
 
 function sameShifts(a: Record<string, Shift>, b: Record<string, Shift>) {
@@ -295,24 +301,45 @@ export function SceneOverlay({
   const overlayRef = useRef<HTMLDivElement>(null);
   const [shifts, setShifts] = useState<Record<string, Shift>>({});
   // Timers/progress change every tick but do not change a bubble's dimensions.
-  const layoutKey = JSON.stringify({ geometry, content: items.map(item => {
-    const b = item.bubble;
-    if (!b) return null;
-    if (b.speaker === "task") return [b.speaker, b.task.kind,
-      "productId" in b.task ? b.task.productId : null];
-    return [b.speaker, b.text, b.mood, b.productId, b.regular,
-      b.need?.text, b.need?.productId, b.progress !== undefined];
-  }) });
+  const layoutKey = JSON.stringify({
+    geometry,
+    content: items.map((item) => {
+      const b = item.bubble;
+      if (!b) return null;
+      if (b.speaker === "task")
+        return [
+          b.speaker,
+          b.task.kind,
+          "productId" in b.task ? b.task.productId : null,
+        ];
+      return [
+        b.speaker,
+        b.text,
+        b.mood,
+        b.productId,
+        b.regular,
+        b.need?.text,
+        b.need?.productId,
+        b.progress !== undefined,
+      ];
+    }),
+  });
   useLayoutEffect(() => {
-    const stableGeometry = (JSON.parse(layoutKey) as { geometry: BubbleGeometry[] }).geometry;
+    const stableGeometry = (
+      JSON.parse(layoutKey) as { geometry: BubbleGeometry[] }
+    ).geometry;
     let frame = 0;
     let disposed = false;
     const measure = () => {
       frame = 0;
       if (disposed) return;
-      const next = layoutBubbles(stableGeometry, elements.current, width,
-        sceneObstacles(overlayRef.current));
-      setShifts(prev => sameShifts(prev, next) ? prev : next);
+      const next = layoutBubbles(
+        stableGeometry,
+        elements.current,
+        width,
+        sceneObstacles(overlayRef.current),
+      );
+      setShifts((prev) => (sameShifts(prev, next) ? prev : next));
     };
     const schedule = () => {
       if (!frame && !disposed) frame = requestAnimationFrame(measure);
@@ -322,7 +349,9 @@ export function SceneOverlay({
     if (overlayRef.current) observer.observe(overlayRef.current);
     for (const element of elements.current.values()) observer.observe(element);
     for (const element of overlayRef.current?.parentElement?.querySelectorAll(
-      ".delivery-chip, .scene-quick-btn, .scene-quick-list") ?? []) observer.observe(element);
+      ".delivery-chip, .scene-quick-btn, .scene-quick-list",
+    ) ?? [])
+      observer.observe(element);
     void document.fonts?.ready.then(schedule);
     return () => {
       disposed = true;
@@ -331,7 +360,7 @@ export function SceneOverlay({
     };
   }, [layoutKey, width]);
   return (
-    <div className="scene-overlay" aria-hidden ref={overlayRef}>
+    <div className="scene-overlay" ref={overlayRef}>
       {placements.map(({ item, tag, tagTop, side, bubbleBottom }) => {
         const shift = shifts[item.key];
         return (
@@ -340,14 +369,27 @@ export function SceneOverlay({
             className={`overlay-anchor ${item.fading ? "fading" : ""}`}
             style={{ left: item.at.x, top: item.at.y }}
           >
-            {item.tag && !tag?.hidden && (
-              <span
-                className={`nametag nametag-${item.tag.kind}${item.tag.grade ? ` grade-tag-${item.tag.grade}` : ""}`}
-                style={{ top: tagTop, marginLeft: tag?.dx ?? 0 }}
-              >
-                {tag?.text ?? item.tag.text}
-              </span>
-            )}
+            {item.tag &&
+              !tag?.hidden &&
+              (item.tag.action ? (
+                <button
+                  type="button"
+                  className={`nametag nametag-${item.tag.kind} nametag-action`}
+                  style={{ top: tagTop, marginLeft: tag?.dx ?? 0 }}
+                  aria-label={item.tag.action.label}
+                  onClick={item.tag.action.onClick}
+                >
+                  {tag?.text ?? item.tag.text}
+                </button>
+              ) : (
+                <span
+                  aria-hidden
+                  className={`nametag nametag-${item.tag.kind}${item.tag.grade ? ` grade-tag-${item.tag.grade}` : ""}`}
+                  style={{ top: tagTop, marginLeft: tag?.dx ?? 0 }}
+                >
+                  {tag?.text ?? item.tag.text}
+                </span>
+              ))}
             {item.bubble && (
               <Bubble
                 spec={item.bubble}

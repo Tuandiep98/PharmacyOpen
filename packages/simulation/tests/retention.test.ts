@@ -211,8 +211,7 @@ describe("đồ sưu tầm", () => {
       sim.dispatch({ type: "equipItem", uid: bell.uid, place: "shelf" }),
     ).toEqual({ ok: false, reason: "invalid-place" });
     expect(
-      sim.dispatch({ type: "equipItem", uid: bell.uid, place: "counter-1" })
-        .ok,
+      sim.dispatch({ type: "equipItem", uid: bell.uid, place: "counter-1" }).ok,
     ).toBe(true);
     expect(collectionBonus(s, "queuePatience")).toBeGreaterThan(0);
     sim.dispatch({ type: "hire", candidateId: "binh" });
@@ -246,17 +245,38 @@ describe("đồ sưu tầm", () => {
     const bow = makeItem(s, "neck-bow", "B");
     const plant = makeItem(s, "succulent", "B");
     s.collection.items.push(glasses, shades, pin, bow, plant);
-    for (const [item, layer] of [[glasses, "eyes"], [pin, "chest"], [bow, "neck"]] as const)
-      expect(sim.dispatch({ type: "equipItem", uid: item.uid, place: `wear:w-player:${layer}` }).ok).toBe(true);
+    for (const [item, layer] of [
+      [glasses, "eyes"],
+      [pin, "chest"],
+      [bow, "neck"],
+    ] as const)
+      expect(
+        sim.dispatch({
+          type: "equipItem",
+          uid: item.uid,
+          place: `wear:w-player:${layer}`,
+        }).ok,
+      ).toBe(true);
     expect(Object.keys(s.collection.equipped)).toHaveLength(3);
     expect(collectionBonus(s, "rating")).toBeGreaterThan(0);
     expect(collectionBonus(s, "returnChance")).toBeGreaterThan(0);
-    expect(sim.dispatch({ type: "equipItem", uid: shades.uid, place: "wear:w-player:eyes" }).ok).toBe(true);
+    expect(
+      sim.dispatch({
+        type: "equipItem",
+        uid: shades.uid,
+        place: "wear:w-player:eyes",
+      }).ok,
+    ).toBe(true);
     expect(Object.values(s.collection.equipped)).not.toContain(glasses.uid);
     expect(Object.keys(s.collection.equipped)).toHaveLength(3);
-    expect(sim.dispatch({ type: "equipItem", uid: plant.uid, place: "shelf" }).ok).toBe(true);
+    expect(
+      sim.dispatch({ type: "equipItem", uid: plant.uid, place: "shelf" }).ok,
+    ).toBe(true);
     expect(s.collection.equipped.shelf).toBe(plant.uid);
-    expect(sim.dispatch({ type: "equipItem", uid: plant.uid, place: "store-wall" }).ok).toBe(false);
+    expect(
+      sim.dispatch({ type: "equipItem", uid: plant.uid, place: "store-wall" })
+        .ok,
+    ).toBe(false);
   });
 
   it("bộ sưu tập đi theo người chơi khi điều chuyển chi nhánh", () => {
@@ -341,7 +361,11 @@ describe("trò chuyện với khách quen", () => {
       chatBonus: 0,
     };
     s.counters[0]!.customerId = id;
-    sim.dispatch({ type: "startService", workerId: "w-player", customerId: id });
+    sim.dispatch({
+      type: "startService",
+      workerId: "w-player",
+      customerId: id,
+    });
     const orderId = s.customers[id]!.orderId!;
     sim.dispatch({
       type: "pickProduct",
@@ -374,9 +398,9 @@ describe("trò chuyện với khách quen", () => {
       const record = s.interactions.at(-1)!;
       expect(record.outcome).toBe("bought");
       expect(profile.rapport).toBeGreaterThan(70);
-      expect(
-        profile.storiesDone.length > 0 || profile.story !== null,
-      ).toBe(true);
+      expect(profile.storiesDone.length > 0 || profile.story !== null).toBe(
+        true,
+      );
     }
     expect(started).not.toBeNull();
   });
@@ -425,7 +449,11 @@ describe("trò chuyện với khách quen", () => {
     });
     expect(warm).toBeGreaterThan(quiet);
     expect(
-      talkReach({ communication: 0.9, traits: ["hot-tempered"], hiddenTraits: [] }),
+      talkReach({
+        communication: 0.9,
+        traits: ["hot-tempered"],
+        hiddenTraits: [],
+      }),
     ).toBeLessThan(warm);
   });
 });

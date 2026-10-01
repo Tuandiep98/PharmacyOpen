@@ -102,7 +102,12 @@ export function GradeBadge({
         {result.grade}
       </button>
       {open && (
-        <span className="grade-pop" id={panelId} role="dialog" aria-label="Cách tính hạng">
+        <span
+          className="grade-pop"
+          id={panelId}
+          role="dialog"
+          aria-label="Cách tính hạng"
+        >
           <strong>
             Hạng {result.grade} · {GRADE_TEXT[result.grade]}{" "}
             <span className="muted">({result.score}/100)</span>
@@ -115,8 +120,8 @@ export function GradeBadge({
           </span>
           {hidden > 0 && (
             <span className="small grade-hidden">
-              Còn {hidden} đặc điểm ẩn chưa tính: lộ ra thì hạng có thể lên
-              hoặc xuống.
+              Còn {hidden} đặc điểm ẩn chưa tính: lộ ra thì hạng có thể lên hoặc
+              xuống.
             </span>
           )}
         </span>

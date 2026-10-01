@@ -253,6 +253,35 @@ export function UpgradeArt({ id, level = 0 }: { id: string; level?: number }) {
         </g>
       );
       break;
+    case "security-camera":
+      drawing = (
+        <g>
+          <path d="M22 28h42v24H22z" fill={ART.paper} {...S} />
+          <path d="M64 34l15-7v26l-15-7z" fill={ART.leafLight} {...S} />
+          <circle cx={44} cy={40} r={9} fill={ART.sky} {...S} />
+          <circle cx={44} cy={40} r={3} fill={INK} />
+          <path d="M31 52l-7 9M55 52l7 9" {...S} />
+        </g>
+      );
+      break;
+    case "security-lock":
+      drawing = (
+        <g>
+          <rect
+            x={27}
+            y={31}
+            width={42}
+            height={31}
+            rx={7}
+            fill={ART.honey}
+            {...S}
+          />
+          <path d="M36 31v-8a12 12 0 0124 0v8" fill="none" {...S} />
+          <circle cx={48} cy={44} r={4} fill={INK} />
+          <path d="M48 48v7" {...S} />
+        </g>
+      );
+      break;
     default:
       drawing = (
         <g opacity={0.65}>

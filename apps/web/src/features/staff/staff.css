@@ -910,6 +910,7 @@ button.grade-badge:focus-visible {
 
 /* Khung cảnh báo nhân viên cần chú ý (đầu Đội ngũ). */
 .staff-alerts {
+  container-type: inline-size;
   display: grid;
   gap: 8px;
   margin: 0 0 12px;
@@ -940,7 +941,7 @@ button.grade-badge:focus-visible {
 }
 .staff-alert {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
@@ -966,18 +967,27 @@ button.grade-badge:focus-visible {
   text-align: left;
   cursor: pointer;
 }
+.staff-alert-text b {
+  line-height: 1.2;
+}
 .staff-alert-text span {
   color: var(--ink-soft);
   font-size: 12.5px;
+  line-height: 1.35;
 }
 .staff-alert .btn {
+  grid-column: 1 / -1;
+  width: 100%;
   white-space: nowrap;
 }
-@media (max-width: 400px) {
+
+/* Panel đủ rộng mới đặt nút cùng hàng; dựa theo khung thẻ thay vì viewport. */
+@container (min-width: 520px) {
   .staff-alert {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
   .staff-alert .btn {
-    grid-column: 1 / -1;
+    grid-column: auto;
+    width: auto;
   }
 }

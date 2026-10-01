@@ -9,6 +9,7 @@ import { resolveComplaint } from "./reputation";
 import { acceptTransfer, chooseOperations } from "./operations";
 import type { Emit } from "./events";
 import {
+  createInitialState,
   dismissCustomer,
   newId,
   PLAYER_WORKER_ID,
@@ -50,6 +51,15 @@ import {
   staffLimits,
   stockUnitCost,
 } from "./progression";
+import { openBlindBag } from "./blindBag";
+import {
+  confrontShoplifter,
+  repayLoan,
+  resolveShoplifting,
+  tryStaffCatchShoplifter,
+  SECURITY_LOCK_UPGRADE,
+  SECURITY_LOCK_USES,
+} from "./security";
 import {
   PREP_TASK_IDS,
   SHIFT_IDS,
@@ -121,6 +131,11 @@ export type Command =
   | { type: "sellItem"; uid: string }
   | { type: "discardItem"; uid: string }
   | { type: "fuseItems"; uids: string[] }
+  | { type: "openBlindBag" }
+  | { type: "confrontShoplifter"; customerId: string }
+  | { type: "repayLoan" }
+  | { type: "acknowledgeFinanceNotice" }
+  | { type: "restartAfterBankruptcy" }
   /**
    * Hạng khu vực do máy chủ xếp (chế độ online). Chơi đơn tự tính lúc chốt ngày; khi có máy chủ,
    * tầng web gửi lệnh này để lượng khách theo đúng hạng thật.
@@ -183,6 +198,9 @@ export type RejectReason =
   | "invalid-place"
   | "not-equipped"
   | "fuse-needs-three"
+  | "thief-not-revealed"
+  | "no-active-loan"
+  | "bankruptcy-not-pending"
   | "invalid-standing";
 
 export type CommandResult = { ok: true } | { ok: false; reason: RejectReason };
@@ -254,6 +272,25 @@ export function applyCommand(
       return assignCounter(state, command.counterId, command.workerId, emit);
     case "buyUpgrade":
       return buyUpgrade(state, command.upgradeId, emit);
+    case "openBlindBag":
+      return openBlindBag(state, emit) === "ok"
+        ? OK
+        : reject("insufficient-funds");
+    case "confrontShoplifter":
+      return confrontShoplifter(state, command.customerId, emit)
+        ? OK
+        : reject("thief-not-revealed");
+    case "repayLoan":
+      if (!state.finance.loan) return reject("no-active-loan");
+      return repayLoan(state, emit) ? OK : reject("insufficient-funds");
+    case "acknowledgeFinanceNotice":
+      state.finance.notice = null;
+      return OK;
+    case "restartAfterBankruptcy": {
+      if (!state.finance.bankrupt) return reject("bankruptcy-not-pending");
+      Object.assign(state, createInitialState(state.seed, state.config));
+      return OK;
+    }
     case "respondComplaint":
       return respondComplaint(
         state,
@@ -312,10 +349,7 @@ function collectionResult(result: CollectionResult): CommandResult {
   return result === "ok" ? OK : reject(result);
 }
 
-function setStanding(
-  state: SimState,
-  standing: RegionStanding,
-): CommandResult {
+function setStanding(state: SimState, standing: RegionStanding): CommandResult {
   const valid = (r: number | null) =>
     r === null || (Number.isInteger(r) && r >= 1 && r <= 10_000);
   if (
@@ -573,7 +607,9 @@ function checkout(
     return reject("invalid-order-state");
   order.state = "checkingOut";
   order.timerTotalMs = order.timerMs = Math.round(
-    state.config.checkoutMs / workerSpeed(state, order.workerId),
+    (state.config.checkoutMs *
+      (state.customers[order.customerId]?.shoplifting ? 1.8 : 1)) /
+      workerSpeed(state, order.workerId),
   );
   return OK;
 }
@@ -817,10 +853,16 @@ function buyUpgrade(
   }
   if (upgradeId === "counter-2" && playerLevel(state) < 3)
     return reject("level-locked");
+  if (upgradeId === "security-camera" && playerLevel(state) < 3)
+    return reject("level-locked");
+  if (upgradeId === SECURITY_LOCK_UPGRADE && playerLevel(state) < 4)
+    return reject("level-locked");
   if (state.money < upgrade.cost) return reject("insufficient-funds");
   state.money -= upgrade.cost;
   state.stats.spentOnUpgrades += upgrade.cost;
   state.upgrades.push(upgradeId);
+  if (upgradeId === SECURITY_LOCK_UPGRADE)
+    state.security.lockDurability = SECURITY_LOCK_USES;
   for (const effect of upgrade.effects) applyEffect(state, effect);
   emit({ type: "upgradeBought", upgradeId, cost: upgrade.cost });
   return OK;
@@ -967,6 +1009,7 @@ function applyEffect(state: SimState, effect: UpgradeEffect): void {
       break;
     case "catalog":
     case "staff":
+    case "security":
       // Quyền nhập/trưng bày và số chỗ nhân viên được tính từ danh sách nâng cấp trong progression.ts.
       break;
     case "scale":
@@ -1043,6 +1086,8 @@ export function completeSale(
     workerId: order.workerId,
     counterId,
   });
+  const caught = tryStaffCatchShoplifter(state, customer, order.workerId, emit);
+  if (!caught) resolveShoplifting(state, customer, emit, order.workerId);
   // Khách quen có thể nán lại trò chuyện (chat.ts); không thì rời tiệm ngay.
   if (maybeStartChat(state, order, customer, emit)) return;
   dismissCustomer(state, customer, "bought", emit);

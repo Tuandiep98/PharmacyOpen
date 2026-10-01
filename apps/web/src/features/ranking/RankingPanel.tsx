@@ -114,9 +114,7 @@ function BoardList({
   shopName: string;
 }) {
   const top = data.entries.slice(0, 10);
-  const pinned = data.mine.filter(
-    (e) => !top.some((t) => t.id === e.id),
-  );
+  const pinned = data.mine.filter((e) => !top.some((t) => t.id === e.id));
   if (data.day === 0)
     return (
       <p className="notice small">
@@ -163,7 +161,10 @@ function RankRow({
     <li
       className={`ranking-row ${mine ? "mine" : ""} ${entry.qualified ? "" : "unqualified"}`}
     >
-      <span className={`rank-badge ${medal}`} aria-label={entry.rank ? `Hạng ${entry.rank}` : "Chưa xếp hạng"}>
+      <span
+        className={`rank-badge ${medal}`}
+        aria-label={entry.rank ? `Hạng ${entry.rank}` : "Chưa xếp hạng"}
+      >
         {medal ? <TrophyIcon size={16} /> : null}
         {entry.rank ?? "–"}
       </span>
@@ -172,7 +173,9 @@ function RankRow({
         <span className="small muted">
           {entry.staffName ? `${shop} · ` : ""}
           {mine && !entry.staffName ? "Tiệm của bạn · " : ""}
-          {entry.qualified ? sampleText(board, entry) : missingText(board, entry)}
+          {entry.qualified
+            ? sampleText(board, entry)
+            : missingText(board, entry)}
         </span>
         {entry.parts && mine && (
           <span className="rank-parts small">

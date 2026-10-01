@@ -62,5 +62,8 @@ export const REJECT_TEXT: Record<RejectReason, string> = {
   "invalid-place": "Món này không đặt được ở chỗ đó.",
   "not-equipped": "Món này đang được cất, chưa đặt ở đâu.",
   "fuse-needs-three": "Cần chọn đúng 3 món khác nhau để ghép.",
+  "thief-not-revealed": "Chưa có bằng chứng để đuổi vị khách này.",
+  "no-active-loan": "Tiệm hiện không có khoản vay cần trả.",
+  "bankruptcy-not-pending": "Tiệm chưa ở trạng thái phá sản.",
   "invalid-standing": "Dữ liệu xếp hạng không hợp lệ.",
 };

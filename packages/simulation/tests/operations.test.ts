@@ -48,15 +48,22 @@ describe("sự cố vận hành và điều chuyển", () => {
     const state = createInitialState(3);
     const orders = new Set<string>();
     const titles = new Set<string>();
+    let quietDays = 0;
     for (let day = 2; day < 40; day++) {
       state.day = day;
       const view = dailyOperationsView(state);
       expect(view).toEqual(dailyOperationsView(state));
+      if (view.length === 0) {
+        quietDays++;
+        continue;
+      }
       expect(view).toHaveLength(3);
       expect(view[0]).not.toHaveProperty("score");
       orders.add(view.map((c) => c.id).join());
       for (const c of view) titles.add(c.title);
     }
+    expect(quietDays).toBeGreaterThan(0);
+    expect(quietDays).toBeLessThan(38);
     expect(orders.size).toBeGreaterThan(3);
     expect(titles.size).toBeGreaterThan(OPERATIONS_CASES.length * 3);
   });

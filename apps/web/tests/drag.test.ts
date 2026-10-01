@@ -10,21 +10,44 @@ let hit: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   browser = new EventTarget();
   pending = undefined;
-  hit = vi.fn((x: number) => ({ closest: () => ({ getAttribute: () => x > 50 ? "counter-2" : "counter-1" }) }));
+  hit = vi.fn((x: number) => ({
+    closest: () => ({
+      getAttribute: () => (x > 50 ? "counter-2" : "counter-1"),
+    }),
+  }));
   vi.stubGlobal("window", browser);
   vi.stubGlobal("document", { elementFromPoint: hit });
-  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => { pending = cb; return 1; });
-  vi.stubGlobal("cancelAnimationFrame", () => { pending = undefined; });
+  vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+    pending = cb;
+    return 1;
+  });
+  vi.stubGlobal("cancelAnimationFrame", () => {
+    pending = undefined;
+  });
   useUi.setState({ drag: null });
 });
-afterEach(() => { browser.dispatchEvent(new Event("blur")); vi.unstubAllGlobals(); });
+afterEach(() => {
+  browser.dispatchEvent(new Event("blur"));
+  vi.unstubAllGlobals();
+});
 
 function pointer(type: string, x: number, pointerId = 1) {
-  browser.dispatchEvent(Object.assign(new Event(type), { clientX: x, clientY: 10, pointerId }));
+  browser.dispatchEvent(
+    Object.assign(new Event(type), { clientX: x, clientY: 10, pointerId }),
+  );
 }
 function start(onDrop = vi.fn(), onTap = vi.fn()) {
-  beginProductGesture({ clientX: 0, clientY: 10, pointerId: 1, pointerType: "touch", button: 0 } as React.PointerEvent,
-    "mask", { onDrop, onTap });
+  beginProductGesture(
+    {
+      clientX: 0,
+      clientY: 10,
+      pointerId: 1,
+      pointerType: "touch",
+      button: 0,
+    } as React.PointerEvent,
+    "mask",
+    { onDrop, onTap },
+  );
   return { onDrop, onTap };
 }
 

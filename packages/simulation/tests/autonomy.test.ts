@@ -63,6 +63,8 @@ function runChecked(
 ) {
   const state = sim.snapshot as SimState;
   for (let i = 0; i < ms / state.config.tickMs; i++) {
+    if (state.finance.notice && !state.finance.bankrupt)
+      sim.dispatch({ type: "acknowledgeFinanceNotice" });
     sim.step();
     onEvents?.(sim.drainEvents(), state);
     expect(state.money).toBeGreaterThanOrEqual(0);
@@ -104,7 +106,8 @@ describe("NPC tự phục vụ (idle)", () => {
         stats.spentOnVouchers -
         stats.spentOnWages +
         stats.rewardCoins +
-        stats.itemSales,
+        stats.itemSales -
+        stats.burglaryLoss,
     );
   });
 

@@ -17,6 +17,7 @@ import { updateAwareness } from "./market";
 import { playerLevel } from "./progression";
 import { regionStanding } from "./ranking";
 import { nextFloat } from "./rng";
+import { resolveNightAndDebt } from "./security";
 import {
   SHIFT_IDS,
   type DayReport,
@@ -171,7 +172,11 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     stockCost: diff("spentOnStock"),
     wages,
     wagesOwed: totalWagesOwed(state),
-    investments: diff("spentOnStaff") + diff("spentOnUpgrades") + vouchers,
+    investments:
+      diff("spentOnStaff") +
+      diff("spentOnUpgrades") +
+      vouchers +
+      diff("blindBagSpent"),
     profit: state.money - start.money,
     customers: diff("customersArrived"),
     sales: diff("sales"),
@@ -195,7 +200,10 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
       vouchers -
       operationsCost -
       expiredCost -
-      diff("pilfered"),
+      diff("pilfered") -
+      diff("shopliftedCost") -
+      diff("burglaryLoss") -
+      diff("blindBagSpent"),
     avgWaitMs: served > 0 ? diff("waitMsSum") / served : null,
     prepDone: state.prep.required ? state.prep.done.length : null,
     shifts: [
@@ -230,6 +238,10 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
     chats: diff("chats"),
     chatsCompleted: diff("chatsCompleted"),
     reward: { coins: 0, itemUid: null },
+    shopliftedUnits: diff("shopliftedUnits"),
+    shopliftedCost: diff("shopliftedCost"),
+    burglaryLoss: diff("burglaryLoss"),
+    blindBagSpent: diff("blindBagSpent"),
   };
   report.grade = dayGoals(report).filter((g) => g.met).length;
   return report;
@@ -238,6 +250,17 @@ export function dayReport(state: DeepReadonly<SimState>): DayReport {
 /** Xu thưởng theo số mục tiêu ngày đạt được (tăng nhẹ theo cấp tiệm) và cơ hội rơi đồ sưu tầm. */
 export const DAY_REWARD_COINS = [0, 8, 18, 32] as const;
 export const DAY_REWARD_ITEM_CHANCE = [0, 0.12, 0.3, 0.55] as const;
+
+export function operationsRewardChance(
+  report: DeepReadonly<DayReport>,
+): number {
+  if (!report.incident) return 0;
+  return report.incidentChoice === "careful"
+    ? 0.18
+    : report.incidentChoice === "practical"
+      ? 0.08
+      : 0;
+}
 
 export function dayRewardCoins(grade: number, level: number): number {
   return Math.round(
@@ -253,7 +276,10 @@ function grantDayReward(state: SimState, report: DayReport, emit: Emit): void {
   state.stats.rewardCoins += coins;
   let itemUid: string | null = null;
   let overflowCoins = 0;
-  const chance = DAY_REWARD_ITEM_CHANCE[Math.max(0, Math.min(3, report.grade))] ?? 0;
+  const goalChance =
+    DAY_REWARD_ITEM_CHANCE[Math.max(0, Math.min(3, report.grade))] ?? 0;
+  const operationsChance = operationsRewardChance(report);
+  const chance = 1 - (1 - goalChance) * (1 - operationsChance);
   if (chance > 0 && nextFloat(state.rng.loot) < chance) {
     const item = rollCollectible(state);
     if (addItem(state, item)) itemUid = item.uid;
@@ -327,6 +353,7 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
   }
   state.stats.spentOnWages += paidTotal;
   closeStaffDay(state, emit);
+  resolveNightAndDebt(state, emit);
 
   const report = dayReport(state);
   evaluateOperations(state, report, emit);
@@ -361,6 +388,8 @@ export function endDayIfDue(state: SimState, emit: Emit): void {
 export function canRunUnattended(state: DeepReadonly<SimState>): boolean {
   return (
     !state.operations.pendingTransfer &&
+    !state.finance.bankrupt &&
+    !state.finance.notice &&
     state.counters.some(
       (c) =>
         (c.operatorId ? state.workers[c.operatorId] : undefined)?.controller ===

@@ -75,9 +75,7 @@ export function storyDepth(profile: DeepReadonly<LoyaltyProfile>): 1 | 2 | 3 {
   return 1;
 }
 
-export function storiesFor(
-  profile: DeepReadonly<LoyaltyProfile>,
-): StoryDef[] {
+export function storiesFor(profile: DeepReadonly<LoyaltyProfile>): StoryDef[] {
   const depth = storyDepth(profile);
   return STORY_IDS.map((id) => STORIES[id]!).filter(
     (story) =>
@@ -130,7 +128,9 @@ export function maybeStartChat(
   // Đông khách thì kể ngắn lại; hàng chờ dài càng rút ngắn, nhưng luôn có ít nhất một đoạn.
   const trafficCap = Math.max(
     1,
-    1 + Math.round(3 * (1 - pressure)) - Math.min(2, Math.floor(state.queue.length / 2)),
+    1 +
+      Math.round(3 * (1 - pressure)) -
+      Math.min(2, Math.floor(state.queue.length / 2)),
   );
   const planned = Math.max(
     1,
@@ -164,7 +164,11 @@ export function maybeStartChat(
 }
 
 /** Bước sang câu kết với một cách kết thúc cho trước. */
-function close(state: SimState, chat: ChatState, closing: ChatState["closing"]) {
+function close(
+  state: SimState,
+  chat: ChatState,
+  closing: ChatState["closing"],
+) {
   const inBeat = chat.step >= 1 && chat.step <= chat.planned;
   // Đoạn đang kể dở quá nửa coi như đã kể.
   const half =

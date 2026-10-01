@@ -1,0 +1,94 @@
+.blind-bag-machine {
+  display: grid;
+  place-items: center;
+  gap: 14px;
+  min-height: 270px;
+  padding: 18px;
+  border: 2px solid var(--ink);
+  border-radius: 18px;
+  background: repeating-linear-gradient(
+    -12deg,
+    #fff7de 0 18px,
+    #f8e8b9 18px 36px
+  );
+  box-shadow: 0 5px 0 rgb(38 58 54 / 18%);
+}
+.blind-bag-stage {
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+}
+.blind-bag-pack {
+  position: relative;
+  color: var(--primary);
+}
+.blind-bag-pack > span {
+  position: absolute;
+  inset: 29px 0 auto;
+  text-align: center;
+  font-size: 26px;
+  font-weight: 1000;
+  color: var(--ink);
+}
+.blind-bag-machine.rolling .blind-bag-pack {
+  animation: bag-rattle 950ms ease-in-out both;
+}
+.blind-bag-prize {
+  display: grid;
+  justify-items: center;
+  gap: 7px;
+  min-width: min(250px, 75vw);
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--panel);
+  text-align: center;
+  animation: bag-reveal 280ms var(--sheet-ease) both;
+}
+.blind-bag-prize.trash {
+  border: 2px dashed var(--line);
+}
+.blind-bag-rubber {
+  font-size: 76px;
+  line-height: 1;
+  color: #8b6f43;
+  transform: rotate(-12deg);
+}
+.blind-bag-odds {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface-soft);
+}
+.blind-bag-odds p {
+  margin: 0;
+}
+.blind-bag-odds span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+@keyframes bag-rattle {
+  20%,
+  60% {
+    transform: rotate(-8deg) scale(1.04);
+  }
+  40%,
+  80% {
+    transform: rotate(8deg) scale(1.04);
+  }
+}
+@keyframes bag-reveal {
+  from {
+    opacity: 0;
+    scale: 0.72;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .blind-bag-machine.rolling .blind-bag-pack,
+  .blind-bag-prize {
+    animation: none;
+  }
+}

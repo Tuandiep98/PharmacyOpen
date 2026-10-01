@@ -612,6 +612,49 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
             reward: { coins: 0, itemUid: null },
           });
   },
+  17: (state) => {
+    // v18: trộm vặt/cạy cửa, khoá-camera, vay cứu vốn và túi mù.
+    const seed = isNum(state.seed) ? state.seed : 0;
+    if (isObject(state.rng)) state.rng.risk = createStream(seed, "risk");
+    state.finance = { loan: null, notice: null, bankrupt: false };
+    state.security = { lockDurability: 0 };
+    if (
+      isObject(state.collection) &&
+      !isNum(state.collection.blindBagPurchases)
+    )
+      state.collection.blindBagPurchases = 0;
+    if (isObject(state.customers))
+      for (const customer of Object.values(state.customers))
+        if (isObject(customer)) customer.shoplifting = null;
+    const fresh = {
+      shopliftedUnits: 0,
+      shopliftedCost: 0,
+      burglaryLoss: 0,
+      blindBagSpent: 0,
+    };
+    for (const stats of [
+      state.stats,
+      isObject(state.dayStart) ? state.dayStart.stats : null,
+      isObject(state.shiftMark) ? state.shiftMark.stats : null,
+    ])
+      if (isObject(stats)) Object.assign(stats, fresh);
+    if (Array.isArray(state.dayReports))
+      for (const report of state.dayReports)
+        if (isObject(report)) Object.assign(report, fresh);
+  },
+  18: (state) => {
+    // v19: nguy cơ trộm chịu tác động từ độ nổi tiếng và lựa chọn sự cố an ninh.
+    const security = isObject(state.security) ? state.security : {};
+    if (!isNum(security.lockDurability)) security.lockDurability = 0;
+    security.riskHeat = 0;
+    security.forceShoplifter = false;
+    security.forceBurglary = false;
+    state.security = security;
+    if (isObject(state.customers))
+      for (const customer of Object.values(state.customers))
+        if (isObject(customer) && isObject(customer.shoplifting))
+          customer.shoplifting.forcedAttempt = false;
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -666,7 +709,7 @@ function isValidDelivery(d: unknown): boolean {
 function isValidCollection(c: unknown): boolean {
   if (!isObject(c) || !Array.isArray(c.items) || !isObject(c.equipped))
     return false;
-  if (!isNum(c.nextUid)) return false;
+  if (!isNum(c.nextUid) || !isNum(c.blindBagPurchases)) return false;
   const uids = new Set<string>();
   for (const item of c.items) {
     if (
@@ -677,7 +720,8 @@ function isValidCollection(c: unknown): boolean {
       !GRADES.includes(item.grade as (typeof GRADES)[number]) ||
       !Array.isArray(item.effects) ||
       !item.effects.every(
-        (e: unknown) => isObject(e) && typeof e.stat === "string" && isNum(e.value),
+        (e: unknown) =>
+          isObject(e) && typeof e.stat === "string" && isNum(e.value),
       )
     )
       return false;
@@ -719,9 +763,17 @@ function isValidState(state: Loose): state is SimState & Loose {
   if ((s.money as number) < 0) return false;
   if (
     !isObject(s.rng) ||
-    !["spawn", "customer", "ai", "review", "staff", "delivery", "chat", "loot"].every(
-      (k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s),
-    )
+    ![
+      "spawn",
+      "customer",
+      "ai",
+      "review",
+      "staff",
+      "delivery",
+      "chat",
+      "loot",
+      "risk",
+    ].every((k) => isObject(s.rng) && isObject(s.rng[k]) && isNum(s.rng[k].s))
   )
     return false;
   if (!isObject(s.stock) || !isObject(s.prices)) return false;
@@ -854,7 +906,17 @@ function isValidState(state: Loose): state is SimState & Loose {
     if (
       !isObject(customer) ||
       typeof customer.id !== "string" ||
-      !(customer.loyaltyId === null || typeof customer.loyaltyId === "string")
+      !(
+        customer.loyaltyId === null || typeof customer.loyaltyId === "string"
+      ) ||
+      !(
+        customer.shoplifting === undefined ||
+        customer.shoplifting === null ||
+        (isObject(customer.shoplifting) &&
+          typeof customer.shoplifting.revealed === "boolean" &&
+          typeof customer.shoplifting.confronted === "boolean" &&
+          typeof customer.shoplifting.forcedAttempt === "boolean")
+      )
     )
       return false;
   }
@@ -982,6 +1044,24 @@ function isValidState(state: Loose): state is SimState & Loose {
       ["careful", "practical", "shortcut"].includes(operations.choice as string)
     ) ||
     typeof operations.pendingTransfer !== "boolean"
+  )
+    return false;
+  if (
+    !isObject(s.finance) ||
+    typeof s.finance.bankrupt !== "boolean" ||
+    !(s.finance.loan === null || isObject(s.finance.loan)) ||
+    !(s.finance.notice === null || isObject(s.finance.notice)) ||
+    !isObject(s.security) ||
+    !isNum(s.security.lockDurability) ||
+    !isNum(s.security.riskHeat) ||
+    typeof s.security.forceShoplifter !== "boolean" ||
+    typeof s.security.forceBurglary !== "boolean" ||
+    ![
+      "shopliftedUnits",
+      "shopliftedCost",
+      "burglaryLoss",
+      "blindBagSpent",
+    ].every((key) => isObject(s.stats) && isNum(s.stats[key]))
   )
     return false;
   return true;

@@ -982,7 +982,6 @@ button {
   overflow: hidden;
 }
 
-
 .inspector[data-size="full"] .sheet {
   height: 100%;
   max-height: none;

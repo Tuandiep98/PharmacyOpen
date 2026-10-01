@@ -62,6 +62,27 @@
   content: "♥ ";
   color: #ffc9bd;
 }
+.nametag-thief {
+  border-color: #7c2a24;
+  background: #ffe0d8;
+  color: #7c2a24;
+}
+.nametag-action {
+  pointer-events: auto;
+  cursor: pointer;
+  font-family: inherit;
+  animation: thief-alert 500ms ease-out both;
+}
+.nametag-action:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+@keyframes thief-alert {
+  from {
+    scale: 0.82;
+    opacity: 0;
+  }
+}
 
 /* Bong bóng thoại: khách mọc sang trái, người bán mọc sang phải để hai câu không chồng nhau. */
 .scene-overlay .speech {
@@ -481,7 +502,6 @@
   left: calc(50% - 1px);
 }
 
-
 /*
  * Vùng thông báo trên cảnh: dải trạng thái ngày + toast xếp chồng ở giữa phía trên, chừa cột nút góc phải
  * (và hạ xuống dưới nút Đơn ship khi có). Thẻ co theo nội dung, tối đa ~440px; xuống dòng gọn trên màn hẹp.
@@ -571,7 +591,9 @@
 .toast-card-icon svg [fill]:not([fill="none"]):not([fill="currentColor"]) {
   fill: none;
 }
-.toast-card-icon svg [stroke]:not([stroke="none"]):not([stroke="currentColor"]) {
+.toast-card-icon
+  svg
+  [stroke]:not([stroke="none"]):not([stroke="currentColor"]) {
   stroke: currentColor;
 }
 .toast-card-text {

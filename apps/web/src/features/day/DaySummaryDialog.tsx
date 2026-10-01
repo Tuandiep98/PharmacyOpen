@@ -136,7 +136,10 @@ function DayRewardCard({
     ["Nhân viên", standing.staff],
   ] as const;
   return (
-    <section className="day-reward" aria-label="Thưởng và tiến triển trong ngày">
+    <section
+      className="day-reward"
+      aria-label="Thưởng và tiến triển trong ngày"
+    >
       <div className="day-reward-row">
         <CoinIcon size={26} />
         <span>
@@ -179,7 +182,12 @@ function DayRewardCard({
             onClick={() => setItemOpen((v) => !v)}
           >
             <span className="item-card-icon">
-              <CollectibleIcon defId={item.defId} grade={item.grade} effects={item.effects} size={44} />
+              <CollectibleIcon
+                defId={item.defId}
+                grade={item.grade}
+                effects={item.effects}
+                size={44}
+              />
               <span className={`grade-badge grade-${item.grade} size-sm`}>
                 {item.grade}
               </span>
@@ -288,6 +296,18 @@ export function ProfitTable({ report }: { report: DeepReadonly<DayReport> }) {
       {/* Đối soát két cuối ngày: tiền két khớp sổ trừ khi có người "cầm nhầm". */}
       {report.pilfered > 0 && (
         <Row label="Đối soát két: thiếu" value={-report.pilfered} />
+      )}
+      {report.shopliftedCost > 0 && (
+        <Row
+          label={`Trộm vặt (${report.shopliftedUnits} món)`}
+          value={-report.shopliftedCost}
+        />
+      )}
+      {report.burglaryLoss > 0 && (
+        <Row label="Mất két do cạy cửa" value={-report.burglaryLoss} />
+      )}
+      {report.blindBagSpent > 0 && (
+        <Row label="Mua túi mù" value={-report.blindBagSpent} />
       )}
       <Row
         label={`Lãi ròng${margin(report.netProfit)}`}

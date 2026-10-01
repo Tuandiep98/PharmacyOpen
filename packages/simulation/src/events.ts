@@ -63,6 +63,45 @@ export type SimEvent = { at: number } & (
   | { type: "customerLeft"; customerId: string; reason: "angry" | "unserved" }
   | { type: "customerTurnedAway" }
   | {
+      type: "shoplifted";
+      customerId: string;
+      stolen: Partial<Record<ProductId, number>>;
+      units: number;
+      cost: number;
+    }
+  | {
+      type: "shoplifterSpotted";
+      customerId: string;
+      workerId: string;
+      line: string;
+    }
+  | {
+      type: "shoplifterConfronted";
+      customerId: string;
+      line: string;
+      workerId: string | null;
+      staffLine: string | null;
+    }
+  | { type: "burglaryBlocked"; durability: number; broken: boolean }
+  | { type: "overnightBurglary"; cashLost: number; stockLost: number }
+  | { type: "emergencyLoanTaken"; amount: number; dueDay: number }
+  | { type: "loanInterestCharged"; balance: number; daysLeft: number }
+  | { type: "loanRepaid"; amount: number }
+  | { type: "debtSeized"; amount: number }
+  | { type: "bankruptcyDeclared"; balance: number }
+  | {
+      type: "blindBagOpened";
+      price: number;
+      outcome: "trash" | "product" | "collectible";
+      label: string;
+      uid: string | null;
+      defId: string | null;
+      grade: Grade | null;
+      productId: ProductId | null;
+      qty: number;
+      overflowCoins: number;
+    }
+  | {
       type: "restocked";
       productId: ProductId;
       qty: number;

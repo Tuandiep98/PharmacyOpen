@@ -26,7 +26,17 @@ export function useDocumentBrand() {
       ctx.beginPath();
       ctx.arc(ICON_SIZE / 2, ICON_SIZE / 2, ICON_SIZE / 2, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(image, col * cell, row * cell, cell, cell, 0, 0, ICON_SIZE, ICON_SIZE);
+      ctx.drawImage(
+        image,
+        col * cell,
+        row * cell,
+        cell,
+        cell,
+        0,
+        0,
+        ICON_SIZE,
+        ICON_SIZE,
+      );
       let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
       if (!link) {
         link = document.createElement("link");

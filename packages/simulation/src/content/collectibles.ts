@@ -66,7 +66,8 @@ export const COLLECTIBLES: Record<string, CollectibleDef> = {
     slot: "wear",
     wearLayer: "head",
     fit: "odd",
-    description: "Người qua đường tò mò ghé xem, nhưng khách lớn tuổi thấy kỳ kỳ.",
+    description:
+      "Người qua đường tò mò ghé xem, nhưng khách lớn tuổi thấy kỳ kỳ.",
     effects: [
       { stat: "awareness", base: 1 },
       { stat: "rating", base: -0.02 },
@@ -261,12 +262,11 @@ export const STAT_LABEL: Record<CollectStat, string> = {
 };
 
 /** Chỗ đặt món theo loại; quầy 2 chỉ dùng được khi tiệm đã có quầy 2. */
-export const SLOT_PLACES: Record<Exclude<CollectibleSlot, "wear">, string[]> =
-  {
-    counter: ["counter-1", "counter-2"],
-    shelf: ["shelf"],
-    store: ["store-wall", "store-floor"],
-  };
+export const SLOT_PLACES: Record<Exclude<CollectibleSlot, "wear">, string[]> = {
+  counter: ["counter-1", "counter-2"],
+  shelf: ["shelf"],
+  store: ["store-wall", "store-floor"],
+};
 
 export const MAX_COLLECTION = 30;
 
@@ -278,7 +278,10 @@ export const MAX_COLLECTION = 30;
 export const GRADE_SCORE: Record<Grade, number> = { C: 0, B: 1, A: 2, S: 3 };
 
 /** Tỉ lệ hạng (%) tại các mốc tổng điểm 0 (CCC), 3 (BBB), 6 (AAA), 9 (SSS). */
-export const FUSE_GRADE_ANCHORS: readonly (readonly [number, Record<Grade, number>])[] = [
+export const FUSE_GRADE_ANCHORS: readonly (readonly [
+  number,
+  Record<Grade, number>,
+])[] = [
   [0, { S: 1, A: 9, B: 45, C: 45 }],
   [3, { S: 8, A: 32, B: 50, C: 10 }],
   [6, { S: 30, A: 50, B: 20, C: 0 }],

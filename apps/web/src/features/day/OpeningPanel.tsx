@@ -33,7 +33,9 @@ export function DayBanner({ state }: { state: DeepReadonly<SimState> }) {
         <ClockIcon size={18} />
       </span>
       <span className="toast-card-text">
-        <strong>{overtime ? `Tăng ca · còn ${remaining} khách` : "Đã đóng cửa"}</strong>
+        <strong>
+          {overtime ? `Tăng ca · còn ${remaining} khách` : "Đã đóng cửa"}
+        </strong>
         <span>
           {overtime
             ? "Chốt sổ khi phục vụ xong."

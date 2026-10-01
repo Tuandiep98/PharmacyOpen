@@ -40,7 +40,9 @@ import { useServiceActions } from "./useServiceActions";
 import { SceneOverlay, type OverlayItem } from "./SceneOverlay";
 import { customerLine, customerNeed, familiarity, staffLine } from "./dialogue";
 import { customerAction, workerAction } from "./idleActions";
+import { customerSceneDepth } from "./sceneDepth";
 import { PLAYER_WORKER_ID } from "@pharmacy/simulation";
+import { useBridge } from "../../game/useGame";
 import "./scene.css";
 
 type State = DeepReadonly<SimState>;
@@ -217,6 +219,7 @@ export function StoreScene({
   state: State;
   paused?: boolean;
 }) {
+  const bridge = useBridge();
   const brandIdentity = useBrandIdentity();
   const layout = sceneLayout(state.counters.length);
   const { ref, viewBox, toPx, scale, size } = useSceneViewBox(layout.width);
@@ -271,13 +274,12 @@ export function StoreScene({
       : { x: -40, y: 394, scale: 0.78, hidden: true, seated: false };
   };
 
-  // Vẽ khách xa quầy trước, khách ở quầy sau cùng để không bị che.
-  const depth = (c: DeepReadonly<Customer>) =>
-    c.phase === "leaving"
-      ? 0
-      : c.phase === "counter"
-        ? 100
-        : 50 - state.queue.indexOf(c.id);
+  // SVG dùng painter's order: đường chân càng thấp thì càng vẽ sau.
+  // Nhờ vậy khách ngồi ghế (y=354) nằm sau khách đứng xếp hàng (y=394).
+  const depth = (c: DeepReadonly<Customer>) => {
+    const spot = spotOf(c);
+    return customerSceneDepth(c.phase, spot.y);
+  };
   const customers = Object.values(state.customers).sort(
     (a, b) => depth(a) - depth(b),
   );
@@ -339,8 +341,9 @@ export function StoreScene({
     const index = counterOfCustomer(c.id);
     const order = c.orderId ? state.orders[c.orderId] : undefined;
     const operatorId = index >= 0 ? state.counters[index]?.operatorId : null;
-    const line =
-      c.phase === "queue"
+    const line = c.thiefLine
+      ? { text: c.thiefLine, mood: "urgent" as const }
+      : c.phase === "queue"
         ? null
         : customerLine(
             state,
@@ -353,12 +356,27 @@ export function StoreScene({
       key: `c-${c.id}`,
       at: headAt(spot, spot.scale * (spot.seated ? 0.85 : 1)),
       // Khách thân (ghé từ 3 lần) có bảng tên đậm màu hơn khách mới quen.
-      tag: name
+      tag: c.shoplifting?.revealed
         ? {
-            text: name,
-            kind: familiarity(state, c) === "close" ? "loyal" : "regular",
+            text: "Trộm vặt",
+            kind: "thief",
+            action: c.shoplifting.confronted
+              ? undefined
+              : {
+                  label: `Phát hiện trộm vặt${name ? ` ${name}` : ""}; bấm để đuổi`,
+                  onClick: () =>
+                    bridge.dispatch({
+                      type: "confrontShoplifter",
+                      customerId: c.id,
+                    }),
+                },
           }
-        : undefined,
+        : name
+          ? {
+              text: name,
+              kind: familiarity(state, c) === "close" ? "loyal" : "regular",
+            }
+          : undefined,
       bubble:
         line || need
           ? {
@@ -456,8 +474,16 @@ export function StoreScene({
             >
               <g className="bob">
                 {selected && (
-                  <rect x={-31} y={-112} width={62} height={114} rx={18}
-                    fill="none" stroke="#E6A628" strokeWidth={3} />
+                  <rect
+                    x={-31}
+                    y={-112}
+                    width={62}
+                    height={114}
+                    rx={18}
+                    fill="none"
+                    stroke="#E6A628"
+                    strokeWidth={3}
+                  />
                 )}
                 <WorkerFigure
                   worker={worker}
@@ -484,8 +510,16 @@ export function StoreScene({
           return (
             <g key={counter.id}>
               {active && (
-                <rect x={c.x - 3} y={285} width={c.w + 6} height={90} rx={8}
-                  fill="none" stroke="#E6A628" strokeWidth={3} />
+                <rect
+                  x={c.x - 3}
+                  y={285}
+                  width={c.w + 6}
+                  height={90}
+                  rx={8}
+                  fill="none"
+                  stroke="#E6A628"
+                  strokeWidth={3}
+                />
               )}
               <StaticCounter x={c.x} w={c.w} label={`QUẦY ${index + 1}`} />
               <StaticCounterScanner
@@ -578,10 +612,17 @@ export function StoreScene({
               <g className="enter">
                 <g className="bob">
                   {ring && c.phase !== "leaving" && (
-                    <rect x={-34} y={-114} width={68} height={116} rx={18}
+                    <rect
+                      x={-34}
+                      y={-114}
+                      width={68}
+                      height={116}
+                      rx={18}
                       className={`hl-underlay ${awaiting && !hovered ? (drag ? "hl-pulse-fast" : "hl-pulse") : ""}`}
-                      fill="none" stroke={ring === "fx-ring-mint" ? "#58BCA0" : "#E6A628"}
-                      strokeWidth={hovered ? 4 : 2.5} />
+                      fill="none"
+                      stroke={ring === "fx-ring-mint" ? "#58BCA0" : "#E6A628"}
+                      strokeWidth={hovered ? 4 : 2.5}
+                    />
                   )}
                   <StaticCustomerFigure
                     look={c.look}
@@ -719,7 +760,13 @@ function SceneDecor({
   // Còn chỗ tường bên phải kệ thì gắn giá gỗ nhỏ bên hông kệ, món không che hàng và số tồn.
   const ledge = layout.width - shelfRight >= 40;
   const shelfItem = itemAt(state, "shelf");
-  const spots: { place: string; kind: DecorKind; x: number; y: number; fit: number }[] = [
+  const spots: {
+    place: string;
+    kind: DecorKind;
+    x: number;
+    y: number;
+    fit: number;
+  }[] = [
     ...layout.counters.map((c, i) => ({
       place: `counter-${i + 1}`,
       kind: "counter" as const,
@@ -729,9 +776,21 @@ function SceneDecor({
     })),
     ledge
       ? { place: "shelf", kind: "shelf", x: shelfRight + 18, y: 204, fit: 1 }
-      : { place: "shelf", kind: "shelf", x: shelfRight - 22, y: 127, fit: 0.75 },
+      : {
+          place: "shelf",
+          kind: "shelf",
+          x: shelfRight - 22,
+          y: 127,
+          fit: 0.75,
+        },
     roomyWall
-      ? { place: "store-wall", kind: "wall", x: shelfLeft / 2, y: 180, fit: Math.min(1, shelfLeft / 52) }
+      ? {
+          place: "store-wall",
+          kind: "wall",
+          x: shelfLeft / 2,
+          y: 180,
+          fit: Math.min(1, shelfLeft / 52),
+        }
       : { place: "store-wall", kind: "wall", x: 19, y: 232, fit: 0.7 },
     {
       place: "store-floor",
@@ -787,7 +846,11 @@ function SceneDecor({
               className="scene-decor"
               transform={`translate(${x} ${y}) scale(${scale})`}
             >
-              <CollectibleArt defId={item.defId} grade={item.grade} effects={item.effects} />
+              <CollectibleArt
+                defId={item.defId}
+                grade={item.grade}
+                effects={item.effects}
+              />
             </g>
           </g>
         );

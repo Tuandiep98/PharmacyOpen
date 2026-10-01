@@ -21,7 +21,7 @@ export function useBridge(): GameBridge {
 export function useGameState(select?: GameSelector) {
   const bridge = useBridge();
   const getSnapshot = useMemo(
-    () => select ? createSelection(bridge, select) : bridge.getVersion,
+    () => (select ? createSelection(bridge, select) : bridge.getVersion),
     [bridge, select],
   );
   useSyncExternalStore(bridge.subscribe, getSnapshot);

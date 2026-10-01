@@ -24,7 +24,12 @@ import { useUi } from "../../ui/uiStore";
 import { gradeNameClass } from "../../ui/gradeName";
 import { REJECT_TEXT } from "../store/rejectText";
 import { nameClassOf, StaffAvatar } from "../staff/GradeBadge";
-import { effectText, ItemEffects, placeLabel, WEAR_LAYER_LABEL } from "./itemText";
+import {
+  effectText,
+  ItemEffects,
+  placeLabel,
+  WEAR_LAYER_LABEL,
+} from "./itemText";
 
 type State = DeepReadonly<SimState>;
 type Item = DeepReadonly<CollectibleItem>;
@@ -145,7 +150,12 @@ function PlaceGrid({
               >
                 <span className="place-icon">
                   {item ? (
-                    <CollectibleIcon defId={item.defId} grade={item.grade} effects={item.effects} size={36} />
+                    <CollectibleIcon
+                      defId={item.defId}
+                      grade={item.grade}
+                      effects={item.effects}
+                      size={36}
+                    />
                   ) : (
                     <span className="place-empty" aria-hidden />
                   )}
@@ -169,20 +179,40 @@ function PlaceGrid({
       <ul className="place-grid">
         {Object.values(state.workers).map((worker) => {
           const worn = Object.entries(state.collection.equipped)
-            .filter(([place]) => place === `wear:${worker.id}` || place.startsWith(`wear:${worker.id}:`))
+            .filter(
+              ([place]) =>
+                place === `wear:${worker.id}` ||
+                place.startsWith(`wear:${worker.id}:`),
+            )
             .map(([place]) => ({ place, item: itemOf(place) }))
             .filter((entry) => !!entry.item);
           return (
             <li key={worker.id}>
-              <div className={`place-tile wearer ${worn.length ? "filled" : ""}`}>
+              <div
+                className={`place-tile wearer ${worn.length ? "filled" : ""}`}
+              >
                 <StaffAvatar worker={worker} size={40} badge="sm" />
                 <span className={`place-name ${nameClassOf(worker)}`}>
                   {worker.name.split(" ").pop()}
                 </span>
-                <span className="small muted">{worn.length ? `${worn.length} món đang đeo` : "Chưa đeo gì"}</span>
-                {worn.map(({ place, item }) => item && <button key={place} type="button" className="worn-chip" onClick={() => onPick(item.uid)}>
-                  <span className={gradeNameClass(item.grade)}>{COLLECTIBLES[item.defId]?.name}</span>
-                </button>)}
+                <span className="small muted">
+                  {worn.length ? `${worn.length} món đang đeo` : "Chưa đeo gì"}
+                </span>
+                {worn.map(
+                  ({ place, item }) =>
+                    item && (
+                      <button
+                        key={place}
+                        type="button"
+                        className="worn-chip"
+                        onClick={() => onPick(item.uid)}
+                      >
+                        <span className={gradeNameClass(item.grade)}>
+                          {COLLECTIBLES[item.defId]?.name}
+                        </span>
+                      </button>
+                    ),
+                )}
               </div>
             </li>
           );
@@ -216,7 +246,9 @@ function ItemCard({
     return r.ok;
   };
   return (
-    <li className={`item-card grade-edge-${item.grade} finish-card-${visualLevel} ${open ? "open" : ""}`}>
+    <li
+      className={`item-card grade-edge-${item.grade} finish-card-${visualLevel} ${open ? "open" : ""}`}
+    >
       <button
         type="button"
         className="item-card-head"
@@ -224,7 +256,12 @@ function ItemCard({
         onClick={onToggle}
       >
         <span className="item-card-icon">
-          <CollectibleIcon defId={item.defId} grade={item.grade} effects={item.effects} size={78} />
+          <CollectibleIcon
+            defId={item.defId}
+            grade={item.grade}
+            effects={item.effects}
+            size={78}
+          />
           <span className={`grade-badge grade-${item.grade} size-sm`}>
             {item.grade}
           </span>
@@ -234,7 +271,9 @@ function ItemCard({
           <span className="small muted">
             {SLOT_LABEL[def.slot]} · {FIT_LABEL[def.fit]}
           </span>
-          <span className="small muted">Vẻ ngoài: {APPEARANCE_LABEL[visualLevel]}</span>
+          <span className="small muted">
+            Vẻ ngoài: {APPEARANCE_LABEL[visualLevel]}
+          </span>
           <span className={`small ${place ? "item-placed" : "muted"}`}>
             {place ? `Đang ở: ${placeLabel(state, place)}` : "Đang cất"}
           </span>

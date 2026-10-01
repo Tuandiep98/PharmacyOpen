@@ -49,10 +49,12 @@ export type TraitId =
   | "quick-hands"
   | "regulars-favorite"
   | "tidy"
+  | "sharp-eyed"
   | "lazy"
   | "slow-learner"
   | "hot-tempered"
   | "late"
+  | "early-leaver"
   | "sticky-fingers"
   | "reckless";
 
@@ -161,6 +163,7 @@ export type UpgradeEffect =
   | { type: "queue"; addMax: number; patienceFactor: number }
   | { type: "spawnInterval"; factor: number }
   | { type: "counter" }
+  | { type: "security"; device: "camera" | "lock" }
   /** Thêm chỗ nhân viên: mỗi ca (`perShift`) và người dự phòng để luân phiên nghỉ (`reserve`). Tính trong progression.ts. */
   | { type: "staff"; perShift: number; reserve: number };
 

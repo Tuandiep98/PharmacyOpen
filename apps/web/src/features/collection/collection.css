@@ -117,11 +117,15 @@ button.place-tile:not(:disabled) {
 .item-card.finish-card-3 {
   border-color: #c99b35;
   background: #fffdf7;
-  box-shadow: inset 0 0 0 1px #f2d787, 0 3px 0 #d7a84122;
+  box-shadow:
+    inset 0 0 0 1px #f2d787,
+    0 3px 0 #d7a84122;
 }
 .item-card.grade-edge-A.finish-card-3 {
   border-color: #8baac8;
-  box-shadow: inset 0 0 0 1px #bed2e0, 0 3px 0 #5577931c;
+  box-shadow:
+    inset 0 0 0 1px #bed2e0,
+    0 3px 0 #5577931c;
 }
 .worn-chip {
   min-height: 44px;
@@ -135,7 +139,10 @@ button.place-tile:not(:disabled) {
   font-size: 12px;
   cursor: pointer;
 }
-.worn-chip:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.worn-chip:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
 .item-card-head {
   display: grid;
   grid-template-columns: auto 1fr;
@@ -171,7 +178,12 @@ button.place-tile:not(:disabled) {
   overflow: hidden;
   border: 1px solid #d9dfd2;
   border-radius: 13px;
-  background: radial-gradient(ellipse at 38% 28%, #fffefa 0%, #f4ead6 72%, #eaddc5 100%);
+  background: radial-gradient(
+    ellipse at 38% 28%,
+    #fffefa 0%,
+    #f4ead6 72%,
+    #eaddc5 100%
+  );
 }
 .item-card .item-card-icon::before {
   content: "";
@@ -182,20 +194,45 @@ button.place-tile:not(:disabled) {
   background: #745d4440;
   filter: blur(5px);
 }
-.item-card .item-card-icon svg { position: relative; z-index: 1; overflow: visible; }
+.item-card .item-card-icon svg {
+  position: relative;
+  z-index: 1;
+  overflow: visible;
+}
 .item-card.finish-card-2 .item-card-icon {
-  background: radial-gradient(ellipse at 38% 28%, #fffefa 0%, #e8efe6 72%, #d7e5d6 100%);
+  background: radial-gradient(
+    ellipse at 38% 28%,
+    #fffefa 0%,
+    #e8efe6 72%,
+    #d7e5d6 100%
+  );
 }
 .item-card.finish-card-3 .item-card-icon {
   border-color: #e7cc86;
-  background: radial-gradient(ellipse at 38% 28%, #fffef8 0%, #fff1d0 67%, #e9d29d 100%);
+  background: radial-gradient(
+    ellipse at 38% 28%,
+    #fffef8 0%,
+    #fff1d0 67%,
+    #e9d29d 100%
+  );
 }
 .item-card.grade-edge-A.finish-card-3 .item-card-icon {
   border-color: #a8bfd0;
-  background: radial-gradient(ellipse at 38% 28%, #fffefa 0%, #e7f0ed 67%, #cbdcda 100%);
+  background: radial-gradient(
+    ellipse at 38% 28%,
+    #fffefa 0%,
+    #e7f0ed 67%,
+    #cbdcda 100%
+  );
 }
-.item-card.finish-card-0 .item-card-icon { background: #f1eee5; }
-.item-card .item-card-icon .grade-badge { right: 4px; bottom: 4px; z-index: 2; }
+.item-card.finish-card-0 .item-card-icon {
+  background: #f1eee5;
+}
+.item-card .item-card-icon .grade-badge {
+  right: 4px;
+  bottom: 4px;
+  z-index: 2;
+}
 .item-card-icon .grade-badge {
   position: absolute;
   right: -4px;
@@ -207,7 +244,10 @@ button.place-tile:not(:disabled) {
   gap: 3px;
   min-width: 0;
 }
-.item-card-text strong { font-size: 15px; line-height: 1.2; }
+.item-card-text strong {
+  font-size: 15px;
+  line-height: 1.2;
+}
 .item-placed {
   color: var(--primary);
   font-weight: 800;
@@ -255,8 +295,13 @@ button.place-tile:not(:disabled) {
   font: inherit;
   cursor: pointer;
 }
-.wearer-option:hover:not(.active) { border-color: var(--ink-soft, var(--ink)); }
-.wearer-option:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.wearer-option:hover:not(.active) {
+  border-color: var(--ink-soft, var(--ink));
+}
+.wearer-option:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
 .wearer-option.active {
   border-color: #2f7a55;
   background: var(--good-soft);

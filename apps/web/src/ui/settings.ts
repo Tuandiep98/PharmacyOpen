@@ -13,7 +13,10 @@ function load(): Pick<Settings, "sound" | "reducedEffects"> {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const parsed = JSON.parse(raw) as { sound?: unknown; reducedEffects?: unknown };
+      const parsed = JSON.parse(raw) as {
+        sound?: unknown;
+        reducedEffects?: unknown;
+      };
       return {
         sound: typeof parsed.sound === "boolean" ? parsed.sound : true,
         reducedEffects: parsed.reducedEffects === true,
@@ -34,8 +37,10 @@ function persist(sound: boolean, reducedEffects: boolean) {
 }
 
 export function reducedMotion(): boolean {
-  return useSettings.getState().reducedEffects ||
-    (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+  return (
+    useSettings.getState().reducedEffects ||
+    (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false)
+  );
 }
 
 /** Tuỳ chọn riêng từng thiết bị (không phải state game). */

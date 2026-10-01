@@ -1,6 +1,11 @@
 import type { DeepReadonly, SimState } from "@pharmacy/simulation";
 import type { ReactNode } from "react";
-import { CapsuleIcon, GiftIcon, RecruitIcon } from "../../art/Icons";
+import {
+  BlindBagIcon,
+  CapsuleIcon,
+  GiftIcon,
+  RecruitIcon,
+} from "../../art/Icons";
 import { IconButton } from "../../ui/primitives";
 import { useUi } from "../../ui/uiStore";
 import { DeliveryChip } from "../delivery/DeliveryPanel";
@@ -9,7 +14,7 @@ type Target = Parameters<ReturnType<typeof useUi.getState>["openView"]>[0];
 
 /**
  * Góc phải cảnh: cột nút vuông dùng chung của app — Đơn ship (khi có đơn, số đơn là badge) và các nút tắt
- * mở thẳng Tuyển dụng, Ghép đồ, Bộ sưu tập. Xếp dọc sát mép phải để không che bảng hiệu và kệ hàng.
+ * mở thẳng Tuyển dụng, Ghép đồ, Bộ sưu tập và Túi mù. Xếp dọc sát mép phải để không che bảng hiệu và kệ hàng.
  */
 export function SceneShortcuts({ state }: { state: DeepReadonly<SimState> }) {
   const openView = useUi((s) => s.openView);
@@ -35,6 +40,11 @@ export function SceneShortcuts({ state }: { state: DeepReadonly<SimState> }) {
       label: "Bộ sưu tập",
       icon: <GiftIcon />,
       target: { tab: "expansion", view: "collection" },
+    },
+    {
+      label: "Túi mù",
+      icon: <BlindBagIcon />,
+      target: { tab: "blindbag" },
     },
   ];
   return (
