@@ -367,7 +367,13 @@ button.grade-badge:focus-visible {
 .recruit-detail {
   display: grid;
   gap: 6px;
-  animation: pop 160ms ease both;
+  min-width: 0;
+}
+.recruit-detail[hidden] {
+  display: none;
+}
+.recruit-detail:not([hidden]) {
+  animation: pop 160ms ease;
 }
 .recruit-top {
   display: grid;

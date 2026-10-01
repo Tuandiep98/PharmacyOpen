@@ -21,11 +21,14 @@ export const BLIND_BAG_TRASH = [
   "Một mẩu giấy ghi: chúc may mắn lần sau",
 ] as const;
 
+export const BLIND_BAG_BASE_PRICE = 30;
+export const BLIND_BAG_PRICE_STEP = 5;
+
 export function blindBagPrice(state: DeepReadonly<SimState>): number {
-  const stage =
-    30 + (playerLevel(state) - 1) * 15 + Math.floor((state.day - 1) / 5) * 5;
-  const scaled = stage * (1 + state.collection.blindBagPurchases * 0.22);
-  return Math.ceil(scaled / 5) * 5;
+  return (
+    BLIND_BAG_BASE_PRICE +
+    state.collection.blindBagCollectibles * BLIND_BAG_PRICE_STEP
+  );
 }
 
 export type BlindBagResult = "ok" | "insufficient-funds";
@@ -101,6 +104,7 @@ export function openBlindBag(state: SimState, emit: Emit): BlindBagResult {
     COLLECTIBLE_IDS[nextInt(state.rng.loot, 0, COLLECTIBLE_IDS.length - 1)]!;
   const item = makeItem(state, defId, grade);
   const stored = addItem(state, item);
+  state.collection.blindBagCollectibles += 1;
   const overflowCoins = stored ? 0 : ITEM_SELL_PRICE[grade];
   if (!stored) {
     state.money += overflowCoins;

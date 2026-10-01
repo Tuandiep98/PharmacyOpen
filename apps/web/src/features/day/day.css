@@ -10,12 +10,13 @@
 }
 
 .opening-panel {
+  --opening-panel-top: 10px;
   position: absolute;
-  top: 10px;
+  top: var(--opening-panel-top);
   left: 50%;
   transform: translateX(-50%);
   width: min(360px, calc(100% - 24px));
-  max-height: calc(100% - 20px);
+  max-height: calc(100% - var(--opening-panel-top) - 10px);
   overflow-y: auto;
   z-index: 5;
   display: grid;
@@ -25,6 +26,13 @@
   border: 1.5px solid var(--line);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+}
+
+/* Màn hình dọc cao có thêm chỗ cho cảnh ở pha chuẩn bị: hạ bảng khỏi sát HUD. */
+@media (min-height: 720px) and (max-width: 1099px) {
+  .opening-panel {
+    --opening-panel-top: clamp(20px, 4dvh, 38px);
+  }
 }
 
 .operations-dialog {

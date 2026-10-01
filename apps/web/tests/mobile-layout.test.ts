@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, it } from "vitest";
 
-it("keeps the portrait scene height stable when service chat content changes", () => {
+it("lets the portrait scene fill remaining height with a stable minimum", () => {
   const css = readFileSync(
     new URL("../src/ui/theme.css", import.meta.url),
     "utf8",
   );
-  expect(css).toContain("flex: 0 0 clamp(180px, 40dvh, 320px)");
-  expect(css).toContain("height: clamp(180px, 40dvh, 320px)");
+  expect(css).toContain("flex: 1 1 0");
+  expect(css).toContain("min-height: clamp(180px, 34dvh, 320px)");
 });
 
 it("stacks staff-alert actions by card width so names stay readable", () => {
@@ -34,4 +34,29 @@ it("keeps Túi mù out of the three-item Mở rộng switcher", () => {
   expect(shortcuts.indexOf('label: "Túi mù"')).toBeGreaterThan(
     shortcuts.indexOf('label: "Bộ sưu tập"'),
   );
+});
+
+it("keeps recruit details mounted and reveals them inside the scroll area", () => {
+  const panel = readFileSync(
+    new URL("../src/features/staff/RecruitPanel.tsx", import.meta.url),
+    "utf8",
+  );
+  expect(panel).toContain("hidden={!open}");
+  expect(panel).toContain("scrollIntoView");
+  expect(panel).toContain('block: "nearest"');
+});
+
+it("lets the portrait scene fill remaining height instead of leaving a blank tail", () => {
+  const theme = readFileSync(
+    new URL("../src/ui/theme.css", import.meta.url),
+    "utf8",
+  );
+  const day = readFileSync(
+    new URL("../src/features/day/day.css", import.meta.url),
+    "utf8",
+  );
+  expect(theme).toContain("flex: 1 1 0");
+  expect(theme).toContain("min-height: clamp(180px, 34dvh, 320px)");
+  expect(theme).not.toContain("height: clamp(180px, 40dvh, 320px)");
+  expect(day).toContain("--opening-panel-top: clamp(20px, 4dvh, 38px)");
 });

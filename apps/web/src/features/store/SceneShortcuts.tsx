@@ -43,7 +43,7 @@ export function SceneShortcuts({ state }: { state: DeepReadonly<SimState> }) {
     },
     {
       label: "Túi mù",
-      icon: <BlindBagIcon />,
+      icon: <BlindBagIcon size={28} />,
       target: { tab: "blindbag" },
     },
   ];

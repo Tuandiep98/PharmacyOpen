@@ -14,7 +14,7 @@ import type {
 } from "./content/types";
 import type { RngState } from "./rng";
 
-export const SAVE_VERSION = 19;
+export const SAVE_VERSION = 20;
 
 /** Hạng đánh giá dùng chung cho nhân viên và đồ sưu tầm: S > A > B > C. */
 export type Grade = "S" | "A" | "B" | "C";
@@ -98,8 +98,10 @@ export interface CollectionState {
   nextUid: number;
   /** Số lần ghép liên tiếp chưa ra hạng A/S (bảo hiểm ghép đồ); save cũ không có = 0. */
   fusePity?: number;
-  /** Số túi mù đã mua trong ván; giá tăng theo số này để hút bớt tiền late game. */
+  /** Tổng số túi mù đã mua trong ván, chỉ dùng cho thống kê. */
   blindBagPurchases: number;
+  /** Số túi đã mở ra đồ sưu tầm; chỉ kết quả này mới làm giá túi sau tăng. */
+  blindBagCollectibles: number;
 }
 
 export interface ShopliftingState {

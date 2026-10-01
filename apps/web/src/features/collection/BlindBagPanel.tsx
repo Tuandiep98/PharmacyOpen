@@ -1,5 +1,6 @@
 import {
   BLIND_BAG_GRADE_ODDS,
+  BLIND_BAG_PRICE_STEP,
   COLLECTIBLES,
   blindBagPrice,
   type DeepReadonly,
@@ -84,8 +85,7 @@ export function BlindBagPanel({ state }: { state: DeepReadonly<SimState> }) {
             <BlindBagPrize result={result} />
           ) : (
             <div className="blind-bag-pack" aria-hidden>
-              <BlindBagIcon size={74} />
-              <span>?</span>
+              <BlindBagIcon size={112} />
             </div>
           )}
           {rolling && <span className="sr-only">Đang xé túi…</span>}
@@ -102,7 +102,7 @@ export function BlindBagPanel({ state }: { state: DeepReadonly<SimState> }) {
           <GameButton
             tone="sun"
             size="large"
-            icon={<BlindBagIcon />}
+            icon={<BlindBagIcon size={22} />}
             disabled={rolling || state.money < price}
             onClick={open}
           >
@@ -121,8 +121,9 @@ export function BlindBagPanel({ state }: { state: DeepReadonly<SimState> }) {
           {BLIND_BAG_GRADE_ODDS.C}%.
         </p>
         <span className="small muted">
-          <CoinIcon size={16} /> Đã mua {state.collection.blindBagPurchases}{" "}
-          túi; túi sau đắt hơn.
+          <CoinIcon size={16} /> Đã mua {state.collection.blindBagPurchases} túi
+          · trúng {state.collection.blindBagCollectibles} đồ. Giá chỉ tăng{" "}
+          {BLIND_BAG_PRICE_STEP} {BRAND.currency} sau lượt trúng đồ sưu tầm.
         </span>
       </section>
     </>

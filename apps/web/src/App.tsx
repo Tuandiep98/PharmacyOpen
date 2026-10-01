@@ -201,6 +201,7 @@ export function App() {
     <div
       className={`app${userPaused ? " user-paused" : ""}${paused ? " game-paused" : ""}${reducedEffects ? " effects-reduced" : ""}`}
       data-tab={activeTab}
+      data-day-phase={dayPhase(state)}
     >
       <LiveHud
         paused={userPaused}
@@ -1080,14 +1081,30 @@ const Inspector = memo(function Inspector() {
                         ? "Túi mù"
                         : "Mở rộng"}
               </strong>
-              <GameButton
-                surface="flat"
-                size="small"
-                onClick={close}
-                aria-label="Quay lại cửa hàng"
-              >
-                ← Cửa hàng
-              </GameButton>
+              <div className="sheet-topbar-actions">
+                {tab === "blindbag" && (
+                  <span
+                    className="chip blindbag-topbar-money"
+                    aria-label={`${state.money} xu`}
+                  >
+                    <CoinIcon size={18} />
+                    <b>
+                      {new Intl.NumberFormat("vi-VN", {
+                        notation: "compact",
+                        maximumFractionDigits: 1,
+                      }).format(state.money)}
+                    </b>
+                  </span>
+                )}
+                <GameButton
+                  surface="flat"
+                  size="small"
+                  onClick={close}
+                  aria-label="Quay lại cửa hàng"
+                >
+                  ← Cửa hàng
+                </GameButton>
+              </div>
             </div>
           )}
           <div className="sheet-body">

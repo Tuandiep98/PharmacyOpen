@@ -120,15 +120,48 @@ export const BagIcon = (p: IconProps) => (
   </Svg>
 );
 
-/** Túi giấy bí ẩn có dấu hỏi: tách biệt rõ với hộp quà Bộ sưu tập. */
+/** Túi mù dạng gói xé: viền xanh, miệng gấp hồng và huy hiệu dấu hỏi. */
 export const BlindBagIcon = (p: IconProps) => (
   <Svg {...p}>
     <path
-      d="M5,7.5 L7,5.5 L9,7.5 L12,5.5 L15,7.5 L17,5.5 L19,7.5 L18,21 H6 Z"
-      fill="#F2B8C6"
+      d="M5,6.8 L7,4.6 L9,6.8 L11,4.6 L13,6.8 L15,4.6 L17,6.8 L19,4.6 L20,7 L18.5,20.5 H5.5 Z"
+      fill="#2F8A72"
+      stroke="#22584F"
+      strokeWidth={1.1}
     />
-    <path d="M9.5,11 A2.7,2.7 0 1 1 13,13.6 C12,14.3 12,15 12,16" />
-    <circle cx={12} cy={18.6} r={1} fill="currentColor" stroke="none" />
+    <path d="M5.5,7 H18.5 V10.2 H5.5 Z" fill="#E98DA7" stroke="#B84E70" />
+    <path d="M6.3,18.4 H17.7" stroke="#7CC497" strokeWidth={1.2} />
+    <path
+      d="M7.4,10.5 L7.9,17.7 M16.6,10.5 L16.1,17.7"
+      stroke="#BCE6C8"
+      strokeWidth={1}
+    />
+    <circle
+      cx={12}
+      cy={14}
+      r={4.5}
+      fill="#FFF0B8"
+      stroke="#9A5A32"
+      strokeWidth={1.1}
+    />
+    <path
+      d="M9.7,12.8 A2.4,2.4 0 1 1 12.9,15 C12.1,15.4 12,15.8 12,16.4"
+      stroke="#7A3F59"
+      strokeWidth={1.7}
+    />
+    <circle cx={12} cy={18} r={0.75} fill="#7A3F59" stroke="none" />
+    <path
+      d="M7.3,11 L7.8,11.9 L8.8,12.3 L7.8,12.7 L7.3,13.6 L6.8,12.7 L5.8,12.3 L6.8,11.9 Z"
+      fill="#FFE08A"
+      stroke="#9A6410"
+      strokeWidth={0.65}
+    />
+    <path
+      d="M16.5,11.2 L17,12.1 L18,12.5 L17,12.9 L16.5,13.8 L16,12.9 L15,12.5 L16,12.1 Z"
+      fill="#FFE08A"
+      stroke="#9A6410"
+      strokeWidth={0.55}
+    />
   </Svg>
 );
 

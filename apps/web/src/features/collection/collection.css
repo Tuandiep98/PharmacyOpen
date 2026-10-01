@@ -93,37 +93,42 @@ button.place-tile:not(:disabled) {
   list-style: none;
 }
 .item-card {
+  --grade-edge: #b8bfbb;
   display: grid;
   gap: 10px;
-  padding: 10px 12px 12px;
+  padding: 10px 12px 12px 16px;
   border: 1.5px solid var(--line);
-  border-left-width: 5px;
   border-radius: 16px;
   background: var(--panel);
-  box-shadow: 0 3px 0 #263a360d;
+  box-shadow:
+    inset 5px 0 0 var(--grade-edge),
+    0 3px 0 #263a360d;
+  overflow: hidden;
 }
 .item-card.grade-edge-S {
-  border-left-color: #e0a82e;
+  --grade-edge: #e0a82e;
 }
 .item-card.grade-edge-A {
-  border-left-color: #4a86d0;
+  --grade-edge: #4a86d0;
 }
 .item-card.grade-edge-B {
-  border-left-color: #4eaa72;
+  --grade-edge: #4eaa72;
 }
 .item-card.grade-edge-C {
-  border-left-color: #b8bfbb;
+  --grade-edge: #b8bfbb;
 }
 .item-card.finish-card-3 {
   border-color: #c99b35;
   background: #fffdf7;
   box-shadow:
+    inset 5px 0 0 var(--grade-edge),
     inset 0 0 0 1px #f2d787,
     0 3px 0 #d7a84122;
 }
 .item-card.grade-edge-A.finish-card-3 {
   border-color: #8baac8;
   box-shadow:
+    inset 5px 0 0 var(--grade-edge),
     inset 0 0 0 1px #bed2e0,
     0 3px 0 #5577931c;
 }

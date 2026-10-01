@@ -22,19 +22,11 @@ import { useUi } from "../../ui/uiStore";
 import { GameButton } from "../../ui/primitives";
 import { Portrait } from "./CustomerInfo";
 import { PLAYER_WORKER_ID, useServiceActions } from "./useServiceActions";
-import { workerProgress } from "../staff/workerStatus";
 import { CounterStaffPicker, SwapAvatar } from "../staff/CounterAssign";
 import { ActivityBadge } from "../staff/ActivityBadge";
 import { useState } from "react";
 import { CatalogControls } from "../../ui/CatalogControls";
 import { catalogPageProducts } from "../../ui/catalog";
-
-const WORKING_LABEL: Record<string, string> = {
-  retrieving: "đang lấy",
-  checkingOut: "Đang thanh toán…",
-  referring: "Đang giải thích cho khách…",
-  deferring: "Đang báo tạm hết hàng…",
-};
 
 /**
  * Khi người chơi đứng quầy, khay hiện yêu cầu và sản phẩm; khi NPC đứng quầy,
@@ -128,15 +120,17 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     <div className="counter-tabs" role="group" aria-label="Chọn quầy">
       {state.counters.map((c, i) => (
         <GameButton
-          surface="custom"
+          size="small"
+          tone={c.id === counter.id ? "sun" : "neutral"}
           key={c.id}
           type="button"
           aria-pressed={c.id === counter.id}
+          aria-label={`Chọn quầy ${i + 1}${c.customerId ? ", có khách" : !c.operatorId ? ", chưa mở" : ""}`}
+          title={`Quầy ${i + 1}${c.customerId ? " · Có khách" : !c.operatorId ? " · Chưa mở" : ""}`}
           className={c.id === counter.id ? "active" : ""}
           onClick={() => setActiveCounterId(c.id)}
         >
-          Quầy {i + 1}
-          {c.customerId ? " · Có khách" : !c.operatorId ? " · Chưa mở" : ""}
+          {i + 1}
         </GameButton>
       ))}
     </div>
@@ -156,7 +150,6 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
   const customerId = counter.customerId;
   const customer = customerId ? state.customers[customerId] : undefined;
   const order = customer?.orderId ? state.orders[customer.orderId] : undefined;
-  const server = order ? state.workers[order.workerId] : operator;
   const canServe =
     playerOperates &&
     !!customer &&
@@ -181,7 +174,6 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
     );
   }
   if (!playerOperates) {
-    const progress = workerProgress(state, operator);
     const waiting = state.queue.length;
     const npcOrder = operator.orderId
       ? state.orders[operator.orderId]
@@ -198,7 +190,6 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         className="auto-counter npc-counter"
         aria-label="Quầy tự phục vụ"
       >
-        {counterTabs}
         {staffOnDuty ? (
           <SwapAvatar
             worker={operator}
@@ -221,38 +212,27 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
               <span className="queue-chip">{waiting} khách chờ</span>
             )}
           </span>
-          <span
-            className="progress-track"
-            role="progressbar"
-            aria-label={`Tiến độ công việc của ${operator.name}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round((progress ?? 0) * 100)}
-            data-idle={progress === null || undefined}
-          >
-            <span
-              className="progress-fill"
-              style={progressStyle(progress ?? 0)}
-            />
-          </span>
         </div>
-        {npcChat && !npcChat.chat.closing && waiting > 0 ? (
-          <GameButton
-            size="small"
-            tone="sun"
-            onClick={() => endChat(operator.id, npcChat.orderId)}
-            title={`Nhắc ${operator.name} xin phép khách quen để bán cho người đang chờ`}
-          >
-            Nhường khách sau
-          </GameButton>
-        ) : (
-          <GameButton
-            size="small"
-            onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}
-          >
-            Tự đứng quầy
-          </GameButton>
-        )}
+        <div className="npc-counter-actions">
+          {counterTabs}
+          {npcChat && !npcChat.chat.closing && waiting > 0 ? (
+            <GameButton
+              size="small"
+              tone="sun"
+              onClick={() => endChat(operator.id, npcChat.orderId)}
+              title={`Nhắc ${operator.name} xin phép khách quen để bán cho người đang chờ`}
+            >
+              Nhường khách sau
+            </GameButton>
+          ) : (
+            <GameButton
+              size="small"
+              onClick={() => assignCounter(PLAYER_WORKER_ID, counter.id)}
+            >
+              Tự đứng quầy
+            </GameButton>
+          )}
+        </div>
         {staffOnDuty && swapOpen && (
           <CounterStaffPicker
             state={state}
@@ -277,25 +257,9 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
       />
     );
   } else if (order && order.state !== "deciding" && order.state !== "ready") {
-    const label =
-      order.state === "retrieving" && order.productId
-        ? `${server?.name ?? ""} ${WORKING_LABEL.retrieving} ${PRODUCTS[order.productId].name.toLowerCase()}…`
-        : (WORKING_LABEL[order.state] ?? "");
-    const value =
-      order.timerTotalMs > 0 ? 1 - order.timerMs / order.timerTotalMs : 1;
-    status = (
-      <div
-        className="tray-progress"
-        role="progressbar"
-        aria-label={label}
-        aria-valuenow={Math.round(value * 100)}
-      >
-        <span>{label}</span>
-        <span className="progress-track">
-          <span className="progress-fill" style={progressStyle(value)} />
-        </span>
-      </div>
-    );
+    // Chỉ giữ chip trạng thái; thanh tiến độ chiếm chỗ nhưng không giúp người chơi
+    // quyết định thao tác tiếp theo (vẫn có thể chạm/kéo món khi sẵn sàng).
+    status = <ActivityBadge state={state} worker={operator} />;
   } else if (!canServe) {
     status = <span className="muted">Dược sĩ đang bận…</span>;
   } else {

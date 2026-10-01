@@ -308,13 +308,34 @@ describe("rủi ro late game và cứu vốn", () => {
 });
 
 describe("túi mù", () => {
-  it("giá tăng theo tiến độ và số lần mua; hạng A/S thấp", () => {
+  it("giá gốc ổn định và chỉ tăng nhẹ sau khi ra đồ sưu tầm", () => {
     const state = createInitialState(21);
     state.money = 100_000;
-    const first = blindBagPrice(state);
-    expect(openBlindBag(state, noEvents)).toBe("ok");
-    expect(blindBagPrice(state)).toBeGreaterThan(first);
+    state.day = 80;
+    state.stats.sales = 10_000;
+    expect(blindBagPrice(state)).toBe(30);
+    state.collection.blindBagCollectibles = 2;
+    expect(blindBagPrice(state)).toBe(40);
     expect(BLIND_BAG_GRADE_ODDS.S + BLIND_BAG_GRADE_ODDS.A).toBeLessThan(5);
-    expect(state.stats.blindBagSpent).toBe(first);
+  });
+
+  it("mua rác hoặc hàng không làm túi sau đắt hơn", () => {
+    let sawNonCollectible = false;
+    for (let seed = 1; seed < 500 && !sawNonCollectible; seed++) {
+      const state = createInitialState(seed);
+      state.money = 100_000;
+      const before = blindBagPrice(state);
+      let outcome: string | null = null;
+      expect(
+        openBlindBag(state, (event) => {
+          if (event.type === "blindBagOpened") outcome = event.outcome;
+        }),
+      ).toBe("ok");
+      if (outcome === "collectible") continue;
+      sawNonCollectible = true;
+      expect(state.collection.blindBagCollectibles).toBe(0);
+      expect(blindBagPrice(state)).toBe(before);
+    }
+    expect(sawNonCollectible).toBe(true);
   });
 });

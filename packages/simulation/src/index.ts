@@ -132,6 +132,8 @@ export {
 export * from "./progression";
 export {
   BLIND_BAG_GRADE_ODDS,
+  BLIND_BAG_BASE_PRICE,
+  BLIND_BAG_PRICE_STEP,
   BLIND_BAG_TRASH,
   blindBagPrice,
   type BlindBagResult,

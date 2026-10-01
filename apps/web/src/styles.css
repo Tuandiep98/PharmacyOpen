@@ -430,22 +430,6 @@ button {
   color: var(--primary);
 }
 
-.tray-progress {
-  display: grid;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-}
-
-.tray-progress .progress-track {
-  display: block;
-  height: 8px;
-}
-
-.tray-progress .progress-fill {
-  display: block;
-}
-
 .btn.refer {
   flex: none;
   min-height: 40px;

@@ -38,6 +38,7 @@ export function emptyCollection(): CollectionState {
     nextUid: 1,
     fusePity: 0,
     blindBagPurchases: 0,
+    blindBagCollectibles: 0,
   };
 }
 
@@ -357,9 +358,30 @@ export function fuseItems(
  */
 export function restoreCollection(raw: unknown): CollectionState | null {
   if (typeof raw !== "object" || raw === null) return null;
-  const source = raw as { items?: unknown; equipped?: unknown };
+  const source = raw as {
+    items?: unknown;
+    equipped?: unknown;
+    blindBagPurchases?: unknown;
+    blindBagCollectibles?: unknown;
+  };
   if (!Array.isArray(source.items)) return null;
   const restored = emptyCollection();
+  if (
+    typeof source.blindBagPurchases === "number" &&
+    Number.isFinite(source.blindBagPurchases)
+  )
+    restored.blindBagPurchases = Math.max(
+      0,
+      Math.floor(source.blindBagPurchases),
+    );
+  if (
+    typeof source.blindBagCollectibles === "number" &&
+    Number.isFinite(source.blindBagCollectibles)
+  )
+    restored.blindBagCollectibles = Math.max(
+      0,
+      Math.floor(source.blindBagCollectibles),
+    );
   const fake = { collection: restored, day: 0 } as SimState;
   for (const entry of source.items.slice(0, MAX_COLLECTION)) {
     const e = entry as Partial<CollectibleItem>;

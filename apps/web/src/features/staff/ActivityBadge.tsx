@@ -1,17 +1,38 @@
 import type { DeepReadonly, SimState, Worker } from "@pharmacy/simulation";
-import { BagIcon, BoxIcon, ClockIcon, WarningIcon } from "../../art/Icons";
+import {
+  BoxIcon,
+  CheckIcon,
+  ChatIcon,
+  ClockIcon,
+  CoinIcon,
+  WarningIcon,
+} from "../../art/Icons";
 import {
   workerActivity,
   workerStatus,
   type WorkerActivity,
 } from "./workerStatus";
 
-const ICON: Partial<Record<WorkerActivity, React.ReactNode>> = {
-  serving: <BagIcon size={14} />,
-  working: <BoxIcon size={14} />,
-  waiting: <ClockIcon size={14} />,
-  slack: <WarningIcon size={14} />,
-};
+function activityIcon(
+  state: DeepReadonly<SimState>,
+  worker: DeepReadonly<Worker>,
+  kind: WorkerActivity,
+) {
+  if (kind === "working") return <BoxIcon size={14} />;
+  if (kind === "waiting") return <ClockIcon size={14} />;
+  if (kind === "slack") return <WarningIcon size={14} />;
+  if (kind !== "serving") return <ClockIcon size={14} />;
+
+  const order = worker.orderId ? state.orders[worker.orderId] : undefined;
+  if (order?.state === "retrieving") return <BoxIcon size={14} />;
+  if (order?.state === "checkingOut" || order?.state === "ready") {
+    return <CoinIcon size={14} />;
+  }
+  if (order?.state === "chatting" || order?.state === "deciding") {
+    return <ChatIcon size={14} />;
+  }
+  return <CheckIcon size={14} />;
+}
 
 /** Huy hiệu "đang làm gì": icon + chữ + màu theo nhóm, dùng chung cho khay, thẻ quầy, thẻ và dialog nhân viên. */
 export function ActivityBadge({
@@ -27,7 +48,7 @@ export function ActivityBadge({
   return (
     <span className="activity-badge" data-kind={kind}>
       <span className="activity-icon" aria-hidden>
-        {ICON[kind] ?? <span className="activity-dot" />}
+        {activityIcon(state, worker, kind)}
       </span>
       <span className="activity-text">
         {workerStatus(state, worker)}

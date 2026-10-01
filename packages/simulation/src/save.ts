@@ -655,6 +655,10 @@ const MIGRATIONS: Record<number, (state: Loose) => void> = {
         if (isObject(customer) && isObject(customer.shoplifting))
           customer.shoplifting.forcedAttempt = false;
   },
+  19: (state) => {
+    // v20: giá túi mù chỉ tăng nhẹ khi chính túi đó ra đồ sưu tầm.
+    if (isObject(state.collection)) state.collection.blindBagCollectibles = 0;
+  },
 };
 
 /** Khoá config mới thêm lấy giá trị mặc định; giá trị đã bị nâng cấp thay đổi được giữ nguyên. */
@@ -709,7 +713,12 @@ function isValidDelivery(d: unknown): boolean {
 function isValidCollection(c: unknown): boolean {
   if (!isObject(c) || !Array.isArray(c.items) || !isObject(c.equipped))
     return false;
-  if (!isNum(c.nextUid) || !isNum(c.blindBagPurchases)) return false;
+  if (
+    !isNum(c.nextUid) ||
+    !isNum(c.blindBagPurchases) ||
+    !isNum(c.blindBagCollectibles)
+  )
+    return false;
   const uids = new Set<string>();
   for (const item of c.items) {
     if (
