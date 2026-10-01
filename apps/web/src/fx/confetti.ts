@@ -1,5 +1,8 @@
 // Pháo giấy mừng cột mốc; chuyển thể từ src/games/shared/confetti.ts của dự án LLs.
 import confetti from "canvas-confetti";
+import { reducedMotion } from "../ui/settings";
+
+const fire = confetti.create(undefined, { resize: true, useWorker: true });
 
 const COLORS = [
   "#7ED6B5",
@@ -10,17 +13,11 @@ const COLORS = [
   "#B8A4F5",
 ];
 
-function reducedMotion(): boolean {
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false
-  );
-}
-
 /** Một chùm pháo giấy tại toạ độ tương đối của màn hình (0..1). */
 export function burst(x = 0.5, y = 0.45): void {
-  if (reducedMotion()) return;
-  void confetti({
-    particleCount: 70,
+  if (document.hidden || reducedMotion()) return;
+  void fire({
+    particleCount: 40,
     spread: 75,
     startVelocity: 34,
     origin: { x, y },
@@ -31,24 +28,15 @@ export function burst(x = 0.5, y = 0.45): void {
 
 /** Pháo giấy bắn từ hai bên trong ~0,8 giây. */
 export function celebrate(): void {
-  if (reducedMotion()) return;
-  let frames = 0;
-  const frame = () => {
-    void confetti({
-      particleCount: 5,
-      angle: 60,
+  if (document.hidden || reducedMotion()) return;
+  for (const [x, angle] of [[0, 60], [1, 120]]) {
+    void fire({
+      particleCount: 40,
+      angle,
+      ticks: 120,
       spread: 60,
-      origin: { x: 0, y: 0.7 },
+      origin: { x, y: 0.7 },
       colors: COLORS,
     });
-    void confetti({
-      particleCount: 5,
-      angle: 120,
-      spread: 60,
-      origin: { x: 1, y: 0.7 },
-      colors: COLORS,
-    });
-    if (++frames < 50) requestAnimationFrame(frame);
-  };
-  frame();
+  }
 }

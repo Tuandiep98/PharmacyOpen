@@ -1,5 +1,5 @@
 import {
-  createSave,
+  serializeSave,
   loadSave,
   type DeepReadonly,
   type LoadResult,
@@ -74,7 +74,7 @@ export function writeSave(state: DeepReadonly<SimState>): boolean {
   try {
     localStorage.setItem(
       SLOTS[nextSlot]!,
-      JSON.stringify(createSave(state, Date.now())),
+      serializeSave(state, Date.now()),
     );
     nextSlot = (nextSlot + 1) % SLOTS.length;
     // Bộ sưu tập là của người chơi: giữ thêm một bản riêng, không bị xoá khi chơi lại từ đầu.
@@ -112,7 +112,7 @@ export function resetAndReload(): void {
 }
 
 export function downloadSave(state: DeepReadonly<SimState>): void {
-  const blob = new Blob([JSON.stringify(createSave(state, Date.now()))], {
+  const blob = new Blob([serializeSave(state, Date.now())], {
     type: "application/json",
   });
   const url = URL.createObjectURL(blob);
@@ -137,7 +137,7 @@ export async function importSaveFile(file: File): Promise<LoadResult> {
   disable();
   try {
     // Mốc thời gian = lúc nhập, để không tính "vắng mặt" từ lúc file được xuất.
-    const text = JSON.stringify(createSave(result.state, Date.now()));
+    const text = serializeSave(result.state, Date.now());
     for (const key of SLOTS) localStorage.setItem(key, text);
   } catch {
     return { ok: false, error: "corrupt" };

@@ -1,0 +1,71 @@
+[
+  {
+    "scenario": "player",
+    "ticks": 6000,
+    "simulatedMinutes": 10,
+    "elapsedMs": [
+      50.24569999999994,
+      22.034400000000005,
+      22.337400000000002,
+      19.751499999999965,
+      17.050199999999904,
+      16.025800000000004,
+      17.076400000000035
+    ],
+    "medianMs": 19.751499999999965,
+    "saveMeanMs": 0.5565900000000067,
+    "saveBytes": 30344,
+    "sales": 0,
+    "day": 3,
+    "pendingTransfer": false
+  },
+  {
+    "scenario": "npc",
+    "ticks": 6000,
+    "simulatedMinutes": 10,
+    "elapsedMs": [
+      53.815000000000055,
+      32.57709999999997,
+      29.582300000000032,
+      25.13670000000002,
+      24.187799999999925,
+      22.391200000000026,
+      21.539399999999887
+    ],
+    "medianMs": 25.13670000000002,
+    "saveMeanMs": 0.9226799999999981,
+    "saveBytes": 38507,
+    "sales": 20,
+    "day": 3,
+    "pendingTransfer": false
+  },
+  {
+    "scenario": "offline",
+    "elapsedMs": 26.74610000000007,
+    "summary": {
+      "awayMs": 600000,
+      "simulatedMs": 600000,
+      "capped": false,
+      "storeOpen": true,
+      "customers": 36,
+      "sales": 20,
+      "revenue": 732,
+      "referrals": 16,
+      "leftAngry": 0,
+      "turnedAway": 0,
+      "stockCost": 351,
+      "wages": 24,
+      "reviews": 13,
+      "avgStars": 3.6153846153846154,
+      "complaints": 2,
+      "openComplaints": 2,
+      "daysEnded": 2,
+      "moneyDelta": 397,
+      "expiredStock": 0,
+      "returningCustomers": 8,
+      "deliveries": 9,
+      "lateDeliveries": 0,
+      "cancelledDeliveries": 0
+    }
+  }
+]

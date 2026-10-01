@@ -66,6 +66,8 @@ const StaticWaitingBench = memo(WaitingBench);
 const StaticCounter = memo(Counter);
 const StaticCounterScanner = memo(CounterScanner);
 const StaticQueueLane = memo(QueueLane);
+const StaticCustomerFigure = memo(CustomerFigure);
+const StaticProductArt = memo(ProductArt);
 
 type Spot = { x: number; y: number; scale: number };
 
@@ -222,7 +224,8 @@ export function StoreScene({
   const selection = useUi((s) => s.selection);
   const select = useUi((s) => s.select);
   const setActiveCounterId = useUi((s) => s.setActiveCounterId);
-  const drag = useUi((s) => s.drag);
+  const drag = useUi((s) => s.drag?.productId ?? null);
+  const dragTarget = useUi((s) => s.drag?.target ?? null);
   const catalogCategory = useUi((s) => s.catalogCategory);
   const catalogPage = useUi((s) => s.catalogPage);
   const visibleProducts = catalogPageProducts(
@@ -453,13 +456,8 @@ export function StoreScene({
             >
               <g className="bob">
                 {selected && (
-                  <g className="hl-underlay" filter="url(#fx-ring-gold)">
-                    <WorkerFigure
-                      worker={worker}
-                      action={action}
-                      accessories={wornItemOf(state, worker.id)}
-                    />
-                  </g>
+                  <rect x={-31} y={-112} width={62} height={114} rx={18}
+                    fill="none" stroke="#E6A628" strokeWidth={3} />
                 )}
                 <WorkerFigure
                   worker={worker}
@@ -486,9 +484,8 @@ export function StoreScene({
           return (
             <g key={counter.id}>
               {active && (
-                <g className="hl-underlay" filter="url(#fx-ring-gold)">
-                  <StaticCounter x={c.x} w={c.w} label={`QUẦY ${index + 1}`} />
-                </g>
+                <rect x={c.x - 3} y={285} width={c.w + 6} height={90} rx={8}
+                  fill="none" stroke="#E6A628" strokeWidth={3} />
               )}
               <StaticCounter x={c.x} w={c.w} label={`QUẦY ${index + 1}`} />
               <StaticCounterScanner
@@ -550,7 +547,7 @@ export function StoreScene({
             (!c.orderId ||
               (customerOrder?.workerId === PLAYER_WORKER_ID &&
                 customerOrder.state === "deciding"));
-          const hovered = !!drag && drag.target === assignedCounter?.id;
+          const hovered = !!drag && dragTarget === assignedCounter?.id;
           const ring = hovered
             ? "fx-ring-gold"
             : awaiting
@@ -581,19 +578,12 @@ export function StoreScene({
               <g className="enter">
                 <g className="bob">
                   {ring && c.phase !== "leaving" && (
-                    <g
+                    <rect x={-34} y={-114} width={68} height={116} rx={18}
                       className={`hl-underlay ${awaiting && !hovered ? (drag ? "hl-pulse-fast" : "hl-pulse") : ""}`}
-                      filter={`url(#${ring})`}
-                    >
-                      <CustomerFigure
-                        look={c.look}
-                        expression={c.expression}
-                        seated={seated}
-                        action={action}
-                      />
-                    </g>
+                      fill="none" stroke={ring === "fx-ring-mint" ? "#58BCA0" : "#E6A628"}
+                      strokeWidth={hovered ? 4 : 2.5} />
                   )}
-                  <CustomerFigure
+                  <StaticCustomerFigure
                     look={c.look}
                     expression={c.expression}
                     seated={seated}
@@ -622,9 +612,8 @@ export function StoreScene({
 }
 
 /**
- * Viền nổi bật ôm sát hình (không phải elip rời): nở alpha của hình ra vài đơn vị, tô màu,
- * thêm viền trắng mảnh bên trong và quầng sáng, vẽ dưới hình gốc. Vàng = đang chọn / thả vào đây,
- * xanh bạc hà = có thể thả hàng hoặc chạm để phục vụ.
+ * Definitions shared by the shelf's trending badge and its static glow.
+ * Character/counter selection uses simple outlines instead of duplicated filtered artwork.
  */
 function HighlightDefs() {
   const ring = (id: string, color: string, glow: string) => (
@@ -972,7 +961,7 @@ function ShelfSlot(props: {
       )}
       {count === 0 && (
         <g opacity={0.25}>
-          <ProductArt
+          <StaticProductArt
             id={productId}
             x={x - w / 2}
             y={base - h - 1}
@@ -981,7 +970,7 @@ function ShelfSlot(props: {
         </g>
       )}
       {Array.from({ length: shown }, (_, i) => (
-        <ProductArt
+        <StaticProductArt
           key={i}
           id={productId}
           x={x - w / 2 + (i - (shown - 1) / 2) * spacing}
@@ -1127,9 +1116,10 @@ function PatienceBar({ ratio }: { ratio: number }) {
       />
       <rect
         className="bar-fill"
-        x={1}
-        y={1}
-        width={46 * r}
+        x={0}
+        y={0}
+        width={46}
+        transform={`translate(1 1) scale(${r} 1)`}
         height={5}
         rx={2.5}
         fill={color}

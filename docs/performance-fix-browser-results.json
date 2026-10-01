@@ -1,0 +1,368 @@
+{
+  "reviewDate": "2026-10-01",
+  "baselineCommit": "3832adf",
+  "build": "production",
+  "seed": 42,
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "viewport": "390x844, DPR 1, mobile emulation",
+  "durationSeconds": 8,
+  "caveat": "Paired desktop headless Chrome runs with identical generated fixtures and instrumentation. TaskDuration/elapsed measures renderer main-thread busy time, not system CPU/GPU power or phone temperature. No real-device thermal claims.",
+  "records": [
+    {
+      "build": "before",
+      "name": "player-store",
+      "elapsedMs": 8014.229000022169,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 756,
+        "svgNodes": 611,
+        "animations": 17,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 453,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.989691,
+        "ScriptDuration": 0.15275599999999998,
+        "LayoutDuration": 0.091945,
+        "RecalcStyleDuration": 0.120954,
+        "LayoutCount": 452,
+        "RecalcStyleCount": 452
+      },
+      "rendererMainThreadBusyPercent": 12.349172952223629
+    },
+    {
+      "build": "before",
+      "name": "npc-store",
+      "elapsedMs": 8004.067000001669,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 657,
+        "svgNodes": 547,
+        "animations": 18,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 85,
+        "raf": 453,
+        "rect": 324,
+        "offset": 6,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.7127780000000001,
+        "ScriptDuration": 0.12221499999999999,
+        "LayoutDuration": 0.013926999999999995,
+        "RecalcStyleDuration": 0.083455,
+        "LayoutCount": 453,
+        "RecalcStyleCount": 453
+      },
+      "rendererMainThreadBusyPercent": 8.905197820056372
+    },
+    {
+      "build": "before",
+      "name": "npc-inventory-mobile",
+      "elapsedMs": 8003.943999996409,
+      "startState": {
+        "tab": "inventory",
+        "paused": false,
+        "nodes": 841,
+        "svgNodes": 628,
+        "animations": 14,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 86,
+        "raf": 453,
+        "rect": 328,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.52538,
+        "ScriptDuration": 0.138206,
+        "LayoutDuration": 0.016821000000000003,
+        "RecalcStyleDuration": 0.071016,
+        "LayoutCount": 454,
+        "RecalcStyleCount": 454
+      },
+      "rendererMainThreadBusyPercent": 6.564013941129969
+    },
+    {
+      "build": "before",
+      "name": "player-paused",
+      "elapsedMs": 8004.980999976397,
+      "startState": {
+        "tab": "store",
+        "paused": true,
+        "nodes": 762,
+        "svgNodes": 613,
+        "animations": 4,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 0,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.06978699999999999,
+        "ScriptDuration": 0.0004299999999999998,
+        "LayoutDuration": 0.001686,
+        "RecalcStyleDuration": 0.004477999999999999,
+        "LayoutCount": 51,
+        "RecalcStyleCount": 51
+      },
+      "rendererMainThreadBusyPercent": 0.8717946988282141
+    },
+    {
+      "build": "before",
+      "name": "player-store-repeat",
+      "elapsedMs": 8004.231999977492,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 756,
+        "svgNodes": 611,
+        "animations": 17,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 452,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.9653200000000001,
+        "ScriptDuration": 0.151424,
+        "LayoutDuration": 0.08405099999999999,
+        "RecalcStyleDuration": 0.100595,
+        "LayoutCount": 452,
+        "RecalcStyleCount": 452
+      },
+      "rendererMainThreadBusyPercent": 12.06012019645001
+    },
+    {
+      "build": "after",
+      "name": "player-store",
+      "elapsedMs": 8002.513999992516,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 733,
+        "svgNodes": 588,
+        "animations": 0,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.182436,
+        "ScriptDuration": 0.091596,
+        "LayoutDuration": 0.0018419999999999999,
+        "RecalcStyleDuration": 0.008547000000000003,
+        "LayoutCount": 80,
+        "RecalcStyleCount": 80
+      },
+      "rendererMainThreadBusyPercent": 2.279733593720306
+    },
+    {
+      "build": "after",
+      "name": "npc-store",
+      "elapsedMs": 8015.45000000624,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 657,
+        "svgNodes": 547,
+        "animations": 5,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 87,
+        "raf": 2,
+        "rect": 12,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.102847,
+        "ScriptDuration": 0.066687,
+        "LayoutDuration": 0.0006439999999999987,
+        "RecalcStyleDuration": 0.0030750000000000013,
+        "LayoutCount": 12,
+        "RecalcStyleCount": 30
+      },
+      "rendererMainThreadBusyPercent": 1.2831094947871915
+    },
+    {
+      "build": "after",
+      "name": "npc-inventory-mobile",
+      "elapsedMs": 8005.072000029031,
+      "startState": {
+        "tab": "inventory",
+        "paused": false,
+        "nodes": 281,
+        "svgNodes": 108,
+        "animations": 1,
+        "sceneMounted": false
+      },
+      "audit": {
+        "commits": 10,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.049129000000000006,
+        "ScriptDuration": 0.019398,
+        "LayoutDuration": 6.199999999999956E-05,
+        "RecalcStyleDuration": 0.0015330000000000014,
+        "LayoutCount": 1,
+        "RecalcStyleCount": 16
+      },
+      "rendererMainThreadBusyPercent": 0.613723399362577
+    },
+    {
+      "build": "after",
+      "name": "player-paused",
+      "elapsedMs": 8007.52400001511,
+      "startState": {
+        "tab": "store",
+        "paused": true,
+        "nodes": 739,
+        "svgNodes": 590,
+        "animations": 0,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 0,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.0015959999999999863,
+        "ScriptDuration": 0,
+        "LayoutDuration": 0,
+        "RecalcStyleDuration": 0,
+        "LayoutCount": 0,
+        "RecalcStyleCount": 0
+      },
+      "rendererMainThreadBusyPercent": 0.019931254654959197
+    },
+    {
+      "build": "after",
+      "name": "player-store-repeat",
+      "elapsedMs": 8009.539999999106,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 733,
+        "svgNodes": 588,
+        "animations": 0,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.17570700000000003,
+        "ScriptDuration": 0.08156899999999999,
+        "LayoutDuration": 0.0017370000000000024,
+        "RecalcStyleDuration": 0.008062000000000001,
+        "LayoutCount": 80,
+        "RecalcStyleCount": 80
+      },
+      "rendererMainThreadBusyPercent": 2.193721487126847
+    },
+    {
+      "build": "after",
+      "name": "player-reduced-effects",
+      "elapsedMs": 8008.628999989014,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 733,
+        "svgNodes": 588,
+        "animations": 0,
+        "sceneMounted": true
+      },
+      "audit": {
+        "commits": 81,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.185473,
+        "ScriptDuration": 0.086208,
+        "LayoutDuration": 0.0017709999999999983,
+        "RecalcStyleDuration": 0.010311,
+        "LayoutCount": 80,
+        "RecalcStyleCount": 80
+      },
+      "rendererMainThreadBusyPercent": 2.3159144967291456
+    }
+  ],
+  "assertions": [
+    "Mobile inventory unmounts scene, performs zero scene geometry reads, updates command data and remounts store",
+    "Scene visibility follows breakpoint at 375x812",
+    "Scene visibility follows breakpoint at 844x390",
+    "Scene visibility follows breakpoint at 1280x900",
+    "OS reduced motion disables animations; paused and reduced-effects scenes have no running animations"
+  ],
+  "errors": [],
+  "finalUiVerification": {
+    "assertions": [
+      "Mobile inventory unmounts scene, performs zero scene geometry reads, updates command data and remounts store",
+      "Effects menu toggles and persists reduced-effects preference",
+      "Scene visibility follows breakpoint at 375x812",
+      "Scene visibility follows breakpoint at 844x390",
+      "Scene visibility follows breakpoint at 1280x900",
+      "OS reduced motion disables animations; paused and reduced-effects scenes have no running animations"
+    ],
+    "errors": [],
+    "note": "After paired measurement, added observation of shortcut-container resize; short production UI verification passed on final code."
+  }
+}

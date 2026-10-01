@@ -9,8 +9,8 @@ import {
   type SimState,
 } from "@pharmacy/simulation";
 
-/** Tối đa số tick chạy bù trong một khung hình, tránh vòng lặp đuổi kịp không giới hạn. */
-const MAX_TICKS_PER_FRAME = 10;
+/** Giới hạn chạy bù mỗi lần thức dậy, không phụ thuộc tần số màn hình. */
+const MAX_TICKS_PER_WAKE = 10;
 const AUTOSAVE_MS = 10_000;
 /** Ẩn tab ngắn hơn mức này thì chỉ tiếp tục, không tính là vắng mặt. */
 const MIN_AWAY_MS = 5_000;
@@ -20,7 +20,7 @@ type EventListener = (events: SimEvent[]) => void;
 type OfflineListener = (summary: OfflineSummary) => void;
 
 export interface Persistence {
-  save(state: DeepReadonly<SimState>): void;
+  save(state: DeepReadonly<SimState>): void | boolean;
 }
 
 /**
@@ -33,7 +33,8 @@ export class GameBridge {
   private readonly eventListeners = new Set<EventListener>();
   private readonly offlineListeners = new Set<OfflineListener>();
   private version = 0;
-  private rafId = 0;
+  private loopId = 0;
+  private savedVersion = -1;
   private lastFrame = 0;
   private accumulator = 0;
   private running = false;
@@ -88,7 +89,7 @@ export class GameBridge {
     this.attached = true;
     document.addEventListener("visibilitychange", this.onVisibility);
     window.addEventListener("pagehide", this.save);
-    this.autosaveId = window.setInterval(this.save, AUTOSAVE_MS);
+    this.autosaveId = window.setInterval(this.autosave, AUTOSAVE_MS);
   }
 
   detach(): void {
@@ -103,23 +104,36 @@ export class GameBridge {
   setRunning(running: boolean): void {
     if (running === this.running) return;
     this.running = running;
-    cancelAnimationFrame(this.rafId);
+    window.clearTimeout(this.loopId);
     if (running && !document.hidden) this.resumeLoop();
   }
 
   private resumeLoop(): void {
     this.lastFrame = performance.now();
     this.accumulator = 0;
-    this.rafId = requestAnimationFrame(this.frame);
+    this.schedule();
   }
 
   private save = (): void => {
-    this.persistence?.save(this.sim.snapshot);
+    if (this.persistence && this.persistence.save(this.sim.snapshot) !== false)
+      this.savedVersion = this.version;
   };
+
+  private autosave = (): void => {
+    // Lifecycle saves still refresh the wall clock, even while paused.
+    if (this.version !== this.savedVersion) this.save();
+  };
+
+  private schedule(): void {
+    this.loopId = window.setTimeout(
+      this.frame,
+      Math.max(1, this.sim.snapshot.config.tickMs - this.accumulator),
+    );
+  }
 
   private onVisibility = (): void => {
     if (document.hidden) {
-      cancelAnimationFrame(this.rafId);
+      window.clearTimeout(this.loopId);
       this.save();
       this.hiddenAtWallMs = this.running ? Date.now() : null;
       return;
@@ -135,22 +149,23 @@ export class GameBridge {
     this.resumeLoop();
   };
 
-  private frame = (now: number): void => {
+  private frame = (): void => {
+    const now = performance.now();
     const tickMs = this.sim.snapshot.config.tickMs;
     this.accumulator += Math.min(
       now - this.lastFrame,
-      tickMs * MAX_TICKS_PER_FRAME,
+      tickMs * MAX_TICKS_PER_WAKE,
     );
     this.lastFrame = now;
     let ticks = 0;
-    while (this.accumulator >= tickMs && ticks < MAX_TICKS_PER_FRAME) {
+    while (this.accumulator >= tickMs && ticks < MAX_TICKS_PER_WAKE) {
       this.sim.step();
       this.accumulator -= tickMs;
       ticks++;
     }
     if (ticks > 0) this.publish();
     if (this.running && !document.hidden)
-      this.rafId = requestAnimationFrame(this.frame);
+      this.schedule();
   };
 
   private publish(): void {

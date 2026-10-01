@@ -260,7 +260,8 @@ button {
 }
 
 .bob {
-  animation: bob 2.4s ease-in-out infinite;
+  /* Expressions and event-driven poses provide movement without an idle loop. */
+  animation: none;
 }
 
 .actor:nth-child(2n) .bob {
@@ -268,7 +269,7 @@ button {
 }
 
 .bar-fill {
-  transition: width 120ms linear;
+  transition: none;
 }
 
 .floater {

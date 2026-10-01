@@ -59,6 +59,19 @@ export function createSave(
   };
 }
 
+/** Serialize synchronously without allocating a second copy of the entire state. */
+export function serializeSave(
+  state: DeepReadonly<SimState>,
+  savedAtWallMs: number,
+): string {
+  return JSON.stringify({
+    format: SAVE_FORMAT,
+    version: SAVE_VERSION,
+    savedAtWallMs,
+    state,
+  });
+}
+
 type Loose = Record<string, unknown>;
 const isObject = (v: unknown): v is Loose =>
   typeof v === "object" && v !== null && !Array.isArray(v);

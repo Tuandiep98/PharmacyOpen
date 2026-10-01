@@ -86,6 +86,14 @@ interface UiState {
 
 let seq = 0;
 const MAX_TOASTS = 3;
+const MAX_FLOATERS = 12;
+const FLOATER_TTL_MS = 1600;
+const floaterTimers = new Map<number, ReturnType<typeof setTimeout>>();
+
+function clearFloaterTimer(id: number) {
+  clearTimeout(floaterTimers.get(id));
+  floaterTimers.delete(id);
+}
 
 /** Chỉ chứa trạng thái giao diện; state game luôn đọc từ GameBridge, không sao chép vào đây. */
 export const useUi = create<UiState>((set) => ({
@@ -128,8 +136,18 @@ export const useUi = create<UiState>((set) => ({
     })),
   dismissToast: (id) =>
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
-  pushFloater: (text, x, y) =>
-    set((s) => ({ floaters: [...s.floaters, { id: ++seq, text, x, y }] })),
-  dropFloater: (id) =>
-    set((s) => ({ floaters: s.floaters.filter((f) => f.id !== id) })),
+  pushFloater: (text, x, y) => {
+    const id = ++seq;
+    set((s) => {
+      const floaters = [...s.floaters, { id, text, x, y }];
+      for (const f of floaters.slice(0, -MAX_FLOATERS)) clearFloaterTimer(f.id);
+      return { floaters: floaters.slice(-MAX_FLOATERS) };
+    });
+    // Cleanup must also work when the scene is unmounted or animation is disabled.
+    floaterTimers.set(id, setTimeout(() => useUi.getState().dropFloater(id), FLOATER_TTL_MS));
+  },
+  dropFloater: (id) => {
+    clearFloaterTimer(id);
+    set((s) => ({ floaters: s.floaters.filter((f) => f.id !== id) }));
+  },
 }));

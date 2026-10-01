@@ -2,10 +2,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useSyncExternalStore,
 } from "react";
 import type { SimEvent } from "@pharmacy/simulation";
 import type { GameBridge } from "./GameBridge";
+import { createSelection, type GameSelector } from "./selection";
 
 export const GameContext = createContext<GameBridge | null>(null);
 
@@ -15,10 +17,14 @@ export function useBridge(): GameBridge {
   return bridge;
 }
 
-/** Re-render mỗi khi mô phỏng tiến một bước (~10 lần/giây) và trả về state chỉ đọc. */
-export function useGameState() {
+/** Live state; optional primitive signal narrows which changes trigger a render. */
+export function useGameState(select?: GameSelector) {
   const bridge = useBridge();
-  useSyncExternalStore(bridge.subscribe, bridge.getVersion);
+  const getSnapshot = useMemo(
+    () => select ? createSelection(bridge, select) : bridge.getVersion,
+    [bridge, select],
+  );
+  useSyncExternalStore(bridge.subscribe, getSnapshot);
   return bridge.state;
 }
 

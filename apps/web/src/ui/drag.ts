@@ -33,8 +33,20 @@ export function beginProductGesture(
   const startX = e.clientX;
   const startY = e.clientY;
   let dragging = false;
+  let frame = 0;
+  let latest: { x: number; y: number } | null = null;
+  const pointerId = e.pointerId;
+
+  const flush = () => {
+    frame = 0;
+    if (!latest) return;
+    const { x, y } = latest;
+    const target = dropTarget(x, y);
+    setDrag({ productId, x, y, over: target !== null, target });
+  };
 
   const move = (ev: PointerEvent) => {
+    if (ev.pointerId !== pointerId) return;
     if (!dragging) {
       if (
         handlers.draggable === false ||
@@ -44,16 +56,11 @@ export function beginProductGesture(
       dragging = true;
       playSfx("pick");
     }
-    const target = dropTarget(ev.clientX, ev.clientY);
-    setDrag({
-      productId,
-      x: ev.clientX,
-      y: ev.clientY,
-      over: target !== null,
-      target,
-    });
+    latest = { x: ev.clientX, y: ev.clientY };
+    if (!frame) frame = requestAnimationFrame(flush);
   };
   const up = (ev: PointerEvent) => {
+    if (ev.pointerId !== pointerId) return;
     cleanup();
     if (dragging) {
       const over = dropTarget(ev.clientX, ev.clientY);
@@ -65,16 +72,23 @@ export function beginProductGesture(
       handlers.onTap?.(productId);
     }
   };
-  const cancel = () => {
+  const cancel = (ev: PointerEvent) => {
+    if (ev.pointerId !== pointerId) return;
+    abort();
+  };
+  const abort = () => {
     cleanup();
     setDrag(null);
   };
   function cleanup() {
+    cancelAnimationFrame(frame);
     window.removeEventListener("pointermove", move);
     window.removeEventListener("pointerup", up);
     window.removeEventListener("pointercancel", cancel);
+    window.removeEventListener("blur", abort);
   }
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", up);
   window.addEventListener("pointercancel", cancel);
+  window.addEventListener("blur", abort);
 }

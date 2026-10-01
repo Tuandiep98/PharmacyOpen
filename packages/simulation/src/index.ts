@@ -77,6 +77,7 @@ export {
 } from "./recruit";
 export {
   createSave,
+  serializeSave,
   loadSave,
   SAVE_FORMAT,
   type LoadError,

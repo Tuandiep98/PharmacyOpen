@@ -1,5 +1,6 @@
 import type { DeepReadonly, Grade, WorkerTask } from "@pharmacy/simulation";
 import { useLayoutEffect, useRef, useState } from "react";
+import { progressStyle } from "../../ui/progress";
 import { BoxIcon, ParcelIcon } from "../../art/Icons";
 import { ProductIcon } from "../../art/Products";
 import type { Line } from "./dialogue";
@@ -293,16 +294,42 @@ export function SceneOverlay({
   const elements = useRef(new Map<string, HTMLDivElement>());
   const overlayRef = useRef<HTMLDivElement>(null);
   const [shifts, setShifts] = useState<Record<string, Shift>>({});
-  // Chạy sau mỗi lần vẽ (geometry là mảng mới, chữ trong bong bóng có thể đổi); sameShifts chặn vòng lặp.
+  // Timers/progress change every tick but do not change a bubble's dimensions.
+  const layoutKey = JSON.stringify({ geometry, content: items.map(item => {
+    const b = item.bubble;
+    if (!b) return null;
+    if (b.speaker === "task") return [b.speaker, b.task.kind,
+      "productId" in b.task ? b.task.productId : null];
+    return [b.speaker, b.text, b.mood, b.productId, b.regular,
+      b.need?.text, b.need?.productId, b.progress !== undefined];
+  }) });
   useLayoutEffect(() => {
-    const next = layoutBubbles(
-      geometry,
-      elements.current,
-      width,
-      sceneObstacles(overlayRef.current),
-    );
-    setShifts((prev) => (sameShifts(prev, next) ? prev : next));
-  }, [geometry, width]);
+    const stableGeometry = (JSON.parse(layoutKey) as { geometry: BubbleGeometry[] }).geometry;
+    let frame = 0;
+    let disposed = false;
+    const measure = () => {
+      frame = 0;
+      if (disposed) return;
+      const next = layoutBubbles(stableGeometry, elements.current, width,
+        sceneObstacles(overlayRef.current));
+      setShifts(prev => sameShifts(prev, next) ? prev : next);
+    };
+    const schedule = () => {
+      if (!frame && !disposed) frame = requestAnimationFrame(measure);
+    };
+    measure();
+    const observer = new ResizeObserver(schedule);
+    if (overlayRef.current) observer.observe(overlayRef.current);
+    for (const element of elements.current.values()) observer.observe(element);
+    for (const element of overlayRef.current?.parentElement?.querySelectorAll(
+      ".delivery-chip, .scene-quick-btn, .scene-quick-list") ?? []) observer.observe(element);
+    void document.fonts?.ready.then(schedule);
+    return () => {
+      disposed = true;
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [layoutKey, width]);
   return (
     <div className="scene-overlay" aria-hidden ref={overlayRef}>
       {placements.map(({ item, tag, tagTop, side, bubbleBottom }) => {
@@ -437,7 +464,7 @@ function Bubble({
 function Progress({ value }: { value: number }) {
   return (
     <span className="speech-progress">
-      <span style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+      <span style={progressStyle(value)} />
     </span>
   );
 }

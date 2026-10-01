@@ -1,0 +1,37 @@
+/* Progress is sampled at the fixed simulation tick; no perpetual size tween. */
+.app .mini-patience span,
+.app .progress-fill,
+.app .speech-progress > span,
+.app .ring-fill {
+  transition: none;
+}
+
+/* Decorative motion is a short cue when an element appears, not a background loop. */
+.hl-pulse,
+.hl-pulse-fast,
+.shelf-trending .hl-underlay,
+.tier-art *,
+.dstat *,
+.dot-pulse,
+.activity-icon {
+  animation-iteration-count: 1 !important;
+}
+
+/* A dialog pauses the scene as well as the simulation. */
+.app.game-paused .stage * {
+  animation-play-state: paused !important;
+}
+
+.app.effects-reduced *,
+.app.effects-reduced *::before,
+.app.effects-reduced *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app *, .app *::before, .app *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

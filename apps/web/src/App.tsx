@@ -16,6 +16,7 @@ import {
 } from "@pharmacy/simulation";
 import {
   lazy,
+  memo,
   Suspense,
   useCallback,
   useEffect,
@@ -62,6 +63,8 @@ import {
 import { clockLabel, phaseLabel, SHIFT_LABEL } from "./features/day/dayText";
 import { formatRating, starText } from "./ui/Stars";
 import { useBridge, useGameEvents, useGameState } from "./game/useGame";
+import { appSignal, hudSignal, navigationSignal, inventorySignal, expansionSignal, reviewsSignal } from "./game/signals";
+import { useMediaQuery } from "./ui/useMediaQuery";
 import { useUi, type Tab } from "./ui/uiStore";
 import { useSettings } from "./ui/settings";
 import { GameButton, IconButton } from "./ui/primitives";
@@ -69,6 +72,7 @@ import { playSfx } from "./audio/sfx";
 import { placeLabel } from "./features/collection/itemText";
 import { burst, celebrate } from "./fx/confetti";
 import "./ui/detail.css";
+import "./ui/performance.css";
 
 const InventoryPanel = lazy(() =>
   import("./features/inventory/InventoryPanel").then((m) => ({
@@ -124,7 +128,7 @@ function writeFlag(key: string): void {
 export function App() {
   useDocumentBrand();
   const bridge = useBridge();
-  const state = useGameState();
+  const state = useGameState(appSignal);
   const [firstVisit] = useState(() => !readFlag(WELCOME_KEY));
   const [showInfo, setShowInfo] = useState(firstVisit);
   const [showBrand, setShowBrand] = useState(false);
@@ -134,6 +138,9 @@ export function App() {
   const setDaySummary = useUi((s) => s.setDaySummary);
   const detailSelection = useUi((s) => s.selection);
   const activeTab = useUi((s) => s.tab);
+  const compact = useMediaQuery("(max-width: 819px), (max-height: 560px)");
+  const sceneVisible = !compact || activeTab === "store";
+  const reducedEffects = useSettings(s => s.reducedEffects);
   const incidentPending =
     dailyOperationsCase(state) !== null && state.operations.choice === null;
   // Người chơi tự bấm tạm dừng từ menu tuỳ chọn.
@@ -149,6 +156,9 @@ export function App() {
     detailSelection?.kind === "worker" ||
     incidentPending ||
     state.operations.pendingTransfer;
+  const togglePause = useCallback(() => setUserPaused(v => !v), []);
+  const openInfo = useCallback(() => setShowInfo(true), []);
+  const openBrand = useCallback(() => setShowBrand(true), []);
 
   useEffect(() => {
     bridge.setRunning(!paused);
@@ -174,32 +184,29 @@ export function App() {
 
   return (
     <div
-      className={`app${userPaused ? " user-paused" : ""}`}
+      className={`app${userPaused ? " user-paused" : ""}${paused ? " game-paused" : ""}${reducedEffects ? " effects-reduced" : ""}`}
       data-tab={activeTab}
     >
-      <Hud
-        state={state}
+      <LiveHud
         paused={userPaused}
-        onTogglePause={() => setUserPaused((v) => !v)}
-        onInfo={() => setShowInfo(true)}
-        onBrand={() => setShowBrand(true)}
+        onTogglePause={togglePause}
+        onInfo={openInfo}
+        onBrand={openBrand}
       />
       <main className="stage" inert={userPaused}>
         <div className="scene-wrap">
-          <StoreScene state={state} paused={userPaused} />
-          <OpeningPanel state={state} />
-          <SceneShortcuts state={state} />
+          {sceneVisible && <LiveScene paused={!!paused} />}
           <div className="scene-notices">
-            <DayBanner state={state} />
+            {sceneVisible && <LiveDayBanner />}
             <Toasts />
           </div>
         </div>
         <div className="side">
-          <ServiceTray state={state} />
-          <Inspector state={state} />
+          {sceneVisible && <LiveServiceTray />}
+          <Inspector />
         </div>
       </main>
-      <PrimaryNav state={state} paused={userPaused} />
+      <LivePrimaryNav paused={userPaused} />
       <DragGhost />
       {userPaused && (
         <div
@@ -260,11 +267,12 @@ export function App() {
 /** Lúc tiệm chuyển sang đóng cửa, nhắc một lần nếu tiền hiện có chưa đủ trả lương cuối ngày. */
 function useWageWarning(state: DeepReadonly<SimState>) {
   const phase = dayPhase(state);
+  const day = state.day;
+  const short = wagesDueTonight(state).total - state.money;
   const warnedDay = useRef(0);
   useEffect(() => {
-    if (phase !== "closing" || warnedDay.current === state.day) return;
-    warnedDay.current = state.day;
-    const short = wagesDueTonight(state).total - state.money;
+    if (phase !== "closing" || warnedDay.current === day) return;
+    warnedDay.current = day;
     if (short > 0) {
       playSfx("warn");
       useUi
@@ -274,8 +282,27 @@ function useWageWarning(state: DeepReadonly<SimState>) {
           `Sắp đóng cửa mà còn thiếu ${short} ${BRAND.currency} tiền lương.`,
         );
     }
-  }, [phase, state]);
+  }, [phase, day, short]);
 }
+
+const LiveHud = memo(function LiveHud(props: Omit<Parameters<typeof Hud>[0], "state">) {
+  const state = useGameState(hudSignal);
+  return <Hud {...props} state={state} />;
+});
+const LivePrimaryNav = memo(function LivePrimaryNav({ paused }: { paused: boolean }) {
+  const state = useGameState(navigationSignal);
+  return <PrimaryNav state={state} paused={paused} />;
+});
+const LiveScene = memo(function LiveScene({ paused }: { paused: boolean }) {
+  const state = useGameState();
+  return <><StoreScene state={state} paused={paused} /><OpeningPanel state={state} /><SceneShortcuts state={state} /></>;
+});
+const LiveServiceTray = memo(function LiveServiceTray() {
+  return <ServiceTray state={useGameState()} />;
+});
+const LiveDayBanner = memo(function LiveDayBanner() {
+  return <DayBanner state={useGameState()} />;
+});
 
 function useEventFeedback() {
   const bridge = useBridge();
@@ -759,6 +786,7 @@ function Hud({
                 {paused ? "Tiếp tục" : "Tạm dừng"}
               </GameButton>
               <SoundToggle />
+              <EffectsToggle />
               <GameButton
                 surface="custom"
                 className="hud-menu-item"
@@ -873,11 +901,30 @@ function SoundToggle() {
   );
 }
 
-function Inspector({ state }: { state: DeepReadonly<SimState> }) {
+function EffectsToggle() {
+  const enabled = useSettings(s => s.reducedEffects);
+  const toggle = useSettings(s => s.toggleReducedEffects);
+  return (
+    <GameButton surface="custom" className="hud-menu-item"
+      onClick={toggle} aria-pressed={enabled}>
+      <PauseIcon size={22} paused={enabled} /> Giảm hiệu ứng: {enabled ? "Bật" : "Tắt"}
+    </GameButton>
+  );
+}
+
+const Inspector = memo(function Inspector() {
   const tab = useUi((s) => s.tab);
   const selection = useUi((s) => s.selection);
   const select = useUi((s) => s.select);
   const setTab = useUi((s) => s.setTab);
+  const bridge = useBridge();
+  const signal = useCallback((s: DeepReadonly<SimState>) => {
+    if (tab === "inventory") return inventorySignal(s);
+    if (tab === "expansion") return expansionSignal(s);
+    if (tab === "reviews") return reviewsSignal(s);
+    return tab === "store" && !selection ? 0 : bridge.getVersion();
+  }, [tab, selection, bridge]);
+  const state = useGameState(signal);
 
   if (
     tab === "store" &&
@@ -972,7 +1019,7 @@ function Inspector({ state }: { state: DeepReadonly<SimState> }) {
       )}
     </aside>
   );
-}
+});
 
 function DetailDialog({
   label,
@@ -1088,11 +1135,13 @@ function DragGhost() {
   return (
     <div
       className={`drag-ghost ${drag.over ? "over" : ""}`}
-      style={{ left: drag.x, top: drag.y }}
+      style={{ left: 0, top: 0, translate: `${drag.x}px ${drag.y}px` }}
       aria-hidden
     >
-      <ProductIcon id={drag.productId} size={48} />
+      <GhostArt id={drag.productId} size={48} />
     </div>
   );
 }
+
+const GhostArt = memo(ProductIcon);
 

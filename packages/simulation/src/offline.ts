@@ -1,6 +1,5 @@
 import { canRunUnattended } from "./economy";
 import type { Simulation } from "./simulation";
-import type { SimState } from "./types";
 
 /*
  * Tiến trình khi vắng mặt: chạy ĐÚNG mô phỏng thật (cùng NPC, cùng luật, cùng seed) trong khoảng
@@ -41,8 +40,13 @@ export interface OfflineSummary {
 const DRAIN_EVERY = 500;
 
 export function runOffline(sim: Simulation, awayMs: number): OfflineSummary {
-  const before = JSON.parse(JSON.stringify(sim.snapshot)) as SimState;
-  const storeOpen = canRunUnattended(before);
+  const state = sim.snapshot;
+  const storeOpen = canRunUnattended(state);
+  // Only summary counters must survive in-place mutations during catch-up.
+  const before = {
+    day: state.day, money: state.money, config: { ...state.config },
+    stats: { ...state.stats }, reputation: { ...state.reputation },
+  };
   const capMs = before.config.offlineCapMs;
   const targetMs = storeOpen ? Math.min(Math.max(0, awayMs), capMs) : 0;
   const ticks = Math.floor(targetMs / before.config.tickMs);

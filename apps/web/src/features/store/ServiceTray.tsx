@@ -1,3 +1,4 @@
+import { progressStyle } from "../../ui/progress";
 import {
   ARCHETYPES,
   customerName,
@@ -227,7 +228,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
           >
             <span
               className="progress-fill"
-              style={{ width: `${(progress ?? 0) * 100}%` }}
+              style={progressStyle(progress ?? 0)}
             />
           </span>
         </div>
@@ -289,7 +290,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
         <span className="progress-track">
           <span
             className="progress-fill"
-            style={{ width: `${value * 100}%` }}
+            style={progressStyle(value)}
           />
         </span>
       </div>
@@ -336,7 +337,7 @@ export function ServiceTray({ state }: { state: DeepReadonly<SimState> }) {
                 className="mini-patience"
                 data-level={ratio > 0.5 ? "ok" : ratio > 0.25 ? "mid" : "low"}
               >
-                <span style={{ width: `${ratio * 100}%` }} />
+                <span style={progressStyle(ratio)} />
               </span>
             </div>
             <div className="tray-speech">

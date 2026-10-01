@@ -400,27 +400,27 @@
   }
 }
 
-/* Dải OPEN/CLOSED trên bảng hiệu: đèn chạy đuổi khi mở, nháy chậm khi sắp đóng, tắt khi chưa mở. */
+/* Preserve phase colors without constantly repainting the sign's SVG filters. */
 .open-banner .banner-bulb {
   transition: fill 300ms;
 }
 .banner-open .banner-bulb {
-  animation: bulb-chase 900ms steps(1, end) infinite;
+  opacity: 1;
 }
 .banner-open .banner-bulb.alt {
   animation-delay: -450ms;
 }
 .banner-open .banner-text {
-  animation: sign-glow 2.4s ease-in-out infinite;
+  opacity: 1;
 }
 .banner-closing .banner-bulb {
-  animation: bulb-chase 1800ms steps(1, end) infinite;
+  opacity: 0.65;
 }
 .banner-closing .banner-bulb.alt {
   animation-delay: -900ms;
 }
 .banner-prep .banner-text {
-  animation: sign-flicker 6s linear infinite;
+  opacity: 0.7;
 }
 @keyframes bulb-chase {
   0% {

@@ -23,6 +23,7 @@ export type Sfx =
 let ctx: AudioContext | null = null;
 
 function audio(): AudioContext | null {
+  if (!useSettings.getState().sound || document.hidden) return null;
   if (!ctx) {
     const AC =
       window.AudioContext ??
@@ -31,19 +32,26 @@ function audio(): AudioContext | null {
     if (!AC) return null;
     ctx = new AC();
   }
-  if (ctx.state === "suspended") void ctx.resume();
+  if (ctx.state === "suspended") void ctx.resume().catch(() => {});
   return ctx;
 }
 
 /** Trình duyệt chỉ cho phát âm thanh sau cử chỉ người dùng: mở khoá ở lần chạm đầu tiên. */
 export function unlockAudioOnFirstGesture(): void {
   const unlock = () => {
-    audio();
+    if (!audio()) return;
     window.removeEventListener("pointerdown", unlock);
     window.removeEventListener("keydown", unlock);
   };
   window.addEventListener("pointerdown", unlock);
   window.addEventListener("keydown", unlock);
+  const sync = () => {
+    if (ctx && (!useSettings.getState().sound || document.hidden))
+      void ctx.suspend().catch(() => {});
+    else if (ctx) audio();
+  };
+  document.addEventListener("visibilitychange", sync);
+  useSettings.subscribe(sync);
 }
 
 function tone(
@@ -68,10 +76,14 @@ function tone(
   osc.connect(gain).connect(ac.destination);
   osc.start(t0);
   osc.stop(t0 + duration + 0.05);
+  osc.onended = () => {
+    osc.disconnect();
+    gain.disconnect();
+  };
 }
 
 export function playSfx(name: Sfx): void {
-  if (!useSettings.getState().sound) return;
+  if (!useSettings.getState().sound || document.hidden) return;
   switch (name) {
     case "pick":
       tone(660, 0, 0.07, "triangle", 0.1);

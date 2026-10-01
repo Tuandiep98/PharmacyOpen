@@ -22,6 +22,7 @@ import { useBridge } from "../../game/useGame";
 import { EmptyState, GameButton, PanelHeading } from "../../ui/primitives";
 import { gradeNameClass } from "../../ui/gradeName";
 import { useUi } from "../../ui/uiStore";
+import { reducedMotion } from "../../ui/settings";
 import { REJECT_TEXT } from "../store/rejectText";
 import { ItemEffects } from "./itemText";
 import "./fusion.css";
@@ -44,9 +45,6 @@ type Phase =
   | { kind: "rolling"; uid: string; pityBefore: number }
   | { kind: "result"; uid: string; pity: boolean };
 
-const reducedMotion = () =>
-  typeof window !== "undefined" &&
-  window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 /**
  * Ghép đồ kiểu máy gacha: chọn 3 món trong túi, xem tỉ lệ ra hạng/loại công khai, bấm ghép thì viên nang

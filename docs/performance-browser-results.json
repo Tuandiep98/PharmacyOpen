@@ -1,0 +1,427 @@
+{
+  "reviewDate": "2026-10-01",
+  "commit": "3832adf",
+  "hostCPU": "Intel Core i5-8400 @ 2.80 GHz",
+  "build": "production",
+  "seed": 42,
+  "fixtures": "22 seconds into game, 10000 test coins, player unattended or one fixed test NPC Binh working both shifts",
+  "version": {
+    "protocolVersion": "1.3",
+    "product": "Chrome/154.0.8037.58",
+    "revision": "@a654841425914cbb703a2931e07b70a83aedbafd",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+    "jsVersion": "15.4.80.11"
+  },
+  "viewport": "390x844, DPR 1, mobile emulation",
+  "durationSeconds": 8,
+  "caveat": "Headless desktop Chrome; main-thread metrics are not system CPU/GPU power or phone temperature. Instrumentation counts React commits and geometry reads; ablations are temporary CSS overrides in isolated profiles. Each scenario reloads seed 42 at 22 seconds; audio disabled; no sustained long-session or real-device power measurements.",
+  "records": [
+    {
+      "name": "player-store",
+      "elapsedMs": 8005.003900000001,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 756,
+        "svgNodes": 611,
+        "animations": 17,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 477,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 1.312286,
+        "ScriptDuration": 0.20814999999999997,
+        "LayoutDuration": 0.130221,
+        "RecalcStyleDuration": 0.173865,
+        "LayoutCount": 477,
+        "RecalcStyleCount": 477
+      },
+      "rendererMainThreadBusyPercent": 16.39332118251685
+    },
+    {
+      "name": "player-no-animation",
+      "elapsedMs": 8011.099899999997,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 0,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 478,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.32750899999999994,
+        "ScriptDuration": 0.13366899999999998,
+        "LayoutDuration": 0.014209,
+        "RecalcStyleDuration": 0.011744000000000001,
+        "LayoutCount": 80,
+        "RecalcStyleCount": 80
+      },
+      "rendererMainThreadBusyPercent": 4.088190187217613
+    },
+    {
+      "name": "player-no-animation-no-filter",
+      "elapsedMs": 8008.2628,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 0,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 480,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.3102039999999999,
+        "ScriptDuration": 0.13914100000000001,
+        "LayoutDuration": 0.013641,
+        "RecalcStyleDuration": 0.011361000000000003,
+        "LayoutCount": 80,
+        "RecalcStyleCount": 80
+      },
+      "rendererMainThreadBusyPercent": 3.87354920470392
+    },
+    {
+      "name": "npc-store",
+      "elapsedMs": 8014.789899999996,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 657,
+        "svgNodes": 547,
+        "animations": 18,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 85,
+        "raf": 481,
+        "rect": 324,
+        "offset": 4,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.837268,
+        "ScriptDuration": 0.15087699999999998,
+        "LayoutDuration": 0.01729,
+        "RecalcStyleDuration": 0.100787,
+        "LayoutCount": 481,
+        "RecalcStyleCount": 481
+      },
+      "rendererMainThreadBusyPercent": 10.446537095127102
+    },
+    {
+      "name": "npc-inventory-mobile",
+      "elapsedMs": 8012.181299999997,
+      "startState": {
+        "tab": "inventory",
+        "paused": false,
+        "nodes": 842,
+        "svgNodes": 629,
+        "animations": 18,
+        "sceneVisibility": "hidden"
+      },
+      "audit": {
+        "commits": 86,
+        "raf": 481,
+        "rect": 328,
+        "offset": 6,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.649528,
+        "ScriptDuration": 0.178574,
+        "LayoutDuration": 0.014783999999999992,
+        "RecalcStyleDuration": 0.087007,
+        "LayoutCount": 481,
+        "RecalcStyleCount": 481
+      },
+      "rendererMainThreadBusyPercent": 8.106756146419206
+    },
+    {
+      "name": "player-paused",
+      "elapsedMs": 8014.308300000001,
+      "startState": {
+        "tab": "store",
+        "paused": true,
+        "nodes": 762,
+        "svgNodes": 613,
+        "animations": 4,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 0,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.04990499999999998,
+        "ScriptDuration": 0.0007869999999999822,
+        "LayoutDuration": 0.0016400000000000026,
+        "RecalcStyleDuration": 0.004805,
+        "LayoutCount": 45,
+        "RecalcStyleCount": 45
+      },
+      "rendererMainThreadBusyPercent": 0.6226987798809783
+    },
+    {
+      "name": "player-paused-no-animation",
+      "elapsedMs": 8000.094000000001,
+      "startState": {
+        "tab": "store",
+        "paused": true,
+        "nodes": 763,
+        "svgNodes": 613,
+        "animations": 0,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 0,
+        "raf": 0,
+        "rect": 0,
+        "offset": 0,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.0014379999999999948,
+        "ScriptDuration": 0,
+        "LayoutDuration": 0,
+        "RecalcStyleDuration": 0,
+        "LayoutCount": 0,
+        "RecalcStyleCount": 0
+      },
+      "rendererMainThreadBusyPercent": 0.01797478879623158
+    },
+    {
+      "name": "player-no-bob",
+      "elapsedMs": 8012.086599999999,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 14,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 81,
+        "raf": 477,
+        "rect": 324,
+        "offset": 162,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 1.1624619999999999,
+        "ScriptDuration": 0.187728,
+        "LayoutDuration": 0.111001,
+        "RecalcStyleDuration": 0.135217,
+        "LayoutCount": 477,
+        "RecalcStyleCount": 477
+      },
+      "rendererMainThreadBusyPercent": 14.508854659658823
+    },
+    {
+      "name": "player-no-sign-animation",
+      "elapsedMs": 8000.964800000002,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 8,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 81,
+        "raf": 481,
+        "rect": 324,
+        "offset": 162,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.9843329999999999,
+        "ScriptDuration": 0.186946,
+        "LayoutDuration": 0.111176,
+        "RecalcStyleDuration": 0.10088699999999999,
+        "LayoutCount": 480,
+        "RecalcStyleCount": 480
+      },
+      "rendererMainThreadBusyPercent": 12.302678796937085
+    },
+    {
+      "name": "player-no-transitions",
+      "elapsedMs": 8026.399300000005,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 13,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 81,
+        "raf": 482,
+        "rect": 324,
+        "offset": 162,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.8806840000000001,
+        "ScriptDuration": 0.145712,
+        "LayoutDuration": 0.030111,
+        "RecalcStyleDuration": 0.10257,
+        "LayoutCount": 482,
+        "RecalcStyleCount": 482
+      },
+      "rendererMainThreadBusyPercent": 10.972342230718569
+    },
+    {
+      "name": "player-no-filter",
+      "elapsedMs": 8006.041800000006,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 17,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 480,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 1.06507,
+        "ScriptDuration": 0.189831,
+        "LayoutDuration": 0.10450699999999999,
+        "RecalcStyleDuration": 0.191293,
+        "LayoutCount": 480,
+        "RecalcStyleCount": 480
+      },
+      "rendererMainThreadBusyPercent": 13.303327994115634
+    },
+    {
+      "name": "npc-inventory-display-none",
+      "elapsedMs": 8012.447100000005,
+      "startState": {
+        "tab": "inventory",
+        "paused": false,
+        "nodes": 842,
+        "svgNodes": 629,
+        "animations": 1,
+        "sceneVisibility": "hidden"
+      },
+      "audit": {
+        "commits": 84,
+        "raf": 481,
+        "rect": 324,
+        "offset": 4,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.37703899999999996,
+        "ScriptDuration": 0.154337,
+        "LayoutDuration": 0,
+        "RecalcStyleDuration": 0.027751,
+        "LayoutCount": 0,
+        "RecalcStyleCount": 481
+      },
+      "rendererMainThreadBusyPercent": 4.705666013071085
+    },
+    {
+      "name": "player-store-repeat",
+      "elapsedMs": 8004.670400000003,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 756,
+        "svgNodes": 611,
+        "animations": 17,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 80,
+        "raf": 481,
+        "rect": 320,
+        "offset": 160,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 1.1573660000000001,
+        "ScriptDuration": 0.16874000000000003,
+        "LayoutDuration": 0.11028500000000002,
+        "RecalcStyleDuration": 0.139763,
+        "LayoutCount": 480,
+        "RecalcStyleCount": 480
+      },
+      "rendererMainThreadBusyPercent": 14.458634049441933
+    },
+    {
+      "name": "player-no-animation-repeat",
+      "elapsedMs": 8010.132199999993,
+      "startState": {
+        "tab": "store",
+        "paused": false,
+        "nodes": 757,
+        "svgNodes": 611,
+        "animations": 0,
+        "sceneVisibility": "visible"
+      },
+      "audit": {
+        "commits": 81,
+        "raf": 481,
+        "rect": 324,
+        "offset": 162,
+        "longTasks": 0,
+        "longTaskMs": 0
+      },
+      "delta": {
+        "TaskDuration": 0.30578999999999995,
+        "ScriptDuration": 0.131126,
+        "LayoutDuration": 0.014555000000000002,
+        "RecalcStyleDuration": 0.012273,
+        "LayoutCount": 81,
+        "RecalcStyleCount": 81
+      },
+      "rendererMainThreadBusyPercent": 3.8175399901639606
+    }
+  ],
+  "errors": []
+}

@@ -4,7 +4,7 @@ import {
   type SimState,
   type Worker,
 } from "@pharmacy/simulation";
-import { useContext } from "react";
+import { memo, useContext, useMemo } from "react";
 import { GameContext } from "../game/useGame";
 import {
   PharmacistFigure,
@@ -35,24 +35,45 @@ export function WorkerFigure({
   action?: CharacterAction;
   accessories?: ReturnType<typeof wornItemOf>;
 }) {
-  if (worker.id === PLAYER_WORKER_ID)
+  return <FigureVisual player={worker.id === PLAYER_WORKER_ID}
+    role={worker.role} expression={worker.expression} action={action}
+    lookKey={JSON.stringify(worker.look)}
+    accessoriesKey={JSON.stringify(accessories ?? [])} />;
+}
+
+// Memoize primitive visual snapshots, never the mutable simulation worker object.
+const FigureVisual = memo(function FigureVisual({
+  player, role, expression, action, lookKey, accessoriesKey,
+}: {
+  player: boolean;
+  role: Worker["role"];
+  expression: Worker["expression"];
+  action: CharacterAction;
+  lookKey: string;
+  accessoriesKey: string;
+}) {
+  const look = useMemo(() => JSON.parse(lookKey) as Worker["look"], [lookKey]);
+  const accessories = useMemo(
+    () => JSON.parse(accessoriesKey) as ReturnType<typeof wornItemOf>, [accessoriesKey],
+  );
+  if (player)
     return (
       <PharmacistFigure
-        expression={worker.expression}
+        expression={expression}
         action={action}
         accessories={accessories}
       />
     );
   return (
     <StaffFigure
-      look={worker.look}
-      role={worker.role}
-      expression={worker.expression}
+      look={look}
+      role={role}
+      expression={expression}
       action={action}
       accessories={accessories}
     />
   );
-}
+});
 
 export function WorkerPortrait({
   worker,

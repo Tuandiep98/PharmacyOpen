@@ -1,3 +1,4 @@
+import { progressStyle } from "../../ui/progress";
 import {
   isOnDuty,
   isPresent,
@@ -125,7 +126,7 @@ export function CounterStaffPicker({
                   </span>
                   {progress !== null && (
                     <span className="pick-progress" aria-hidden>
-                      <span style={{ width: `${progress * 100}%` }} />
+                      <span style={progressStyle(progress)} />
                     </span>
                   )}
                 </GameButton>
@@ -252,7 +253,7 @@ export function CounterCard({
         >
           <span
             className="progress-fill"
-            style={{ width: `${(progress ?? 0) * 100}%` }}
+            style={progressStyle(progress ?? 0)}
           />
         </span>
       )}
